@@ -1,5 +1,5 @@
 import {AfterViewInit, Component, ElementRef, ViewChild} from '@angular/core';
-import {MAX_TRAINING_ITERATION, Point, X_STEP, Y_STEP} from "./workers/nn.worker.consts";
+import {DEFAULT_LEARNING_RATE, DEFAULT_NN_LAYERS, MAX_TRAINING_ITERATION, Point} from "./workers/nn.worker.consts";
 
 import * as fileInteraction from './utils/file-interaction';
 
@@ -19,8 +19,8 @@ export class AppComponent implements AfterViewInit {
 
     defaultPointType: number = 0;
 
-    layersConfig: string = "5 5";
-    learningRate: number = 0.01;
+    layersConfig: string = DEFAULT_NN_LAYERS.join(" ");
+    learningRate: number = DEFAULT_LEARNING_RATE;
     maxIterations = MAX_TRAINING_ITERATION;
 
     currentIteration: number = 0;
@@ -33,10 +33,12 @@ export class AppComponent implements AfterViewInit {
         this.nnWorker.onmessage = ({data}) => {
             switch (data.type) {
                 case "training_data":
+                    console.log(`*** Transfer took ${performance.now() - data.t}ms`);
+
                     this.currentIteration = data.iteration;
                     this.training = this.currentIteration < this.maxIterations && this.points.length > 0;
 
-                    this.repaint(data.state);
+                    this.repaint(new Uint8ClampedArray(data.state), data.width, data.height);
                     break;
             }
         }
@@ -135,34 +137,20 @@ export class AppComponent implements AfterViewInit {
         this.nnWorker.postMessage({type: "set_points", points: this.points});
     }
 
-    private repaint(state: [number, number][]) {
+    private repaint(snapshot: Uint8ClampedArray, width: number, height: number) {
         const canvas = this.canvasBg.nativeElement as HTMLCanvasElement;
+        canvas.width = width;
+        canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
             return;
         }
 
-        const xSteps = Math.ceil(1 / X_STEP),
-            ySteps = Math.ceil(1 / Y_STEP);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'low';
 
-        const width = canvas.width, height = canvas.height;
-
-        const pointHeight = Y_STEP * height,
-            pointWidth = X_STEP * width;
-
-        ctx.clearRect(0, 0, width, height);
-
-        for (let x = 0; x < xSteps; x++) {
-            for (let y = 0; y < ySteps; y++) {
-                const pointType = state[x * ySteps + y][0];
-
-                const pointColor = this.getColorByPointType(pointType);
-                if (pointColor) {
-                    ctx.fillStyle = pointColor;
-                    ctx.fillRect(x * X_STEP * width, y * Y_STEP * height, pointWidth + 1, pointHeight + 1);
-                }
-            }
-        }
+        const imageData = new ImageData(snapshot, width, height);
+        ctx.putImageData(imageData, 0, 0);
     }
 
     private getColorByPointType(pointType: number) {

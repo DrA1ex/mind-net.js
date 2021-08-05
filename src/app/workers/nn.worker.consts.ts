@@ -4,8 +4,14 @@ export interface Point {
     y: number
 }
 
-export const ITERATIONS_PER_CALL = 80000;
-export const MAX_TRAINING_ITERATION = ITERATIONS_PER_CALL * 10000;
+export const DRAWING_DELAY = 1000 / 24;
+export const MAX_ITERATION_TIME = DRAWING_DELAY / 4;
 
-export const X_STEP = 1 / 100;
-export const Y_STEP = 1 / 100;
+export const MAX_TRAINING_ITERATION = 5e6;
+
+export const X_STEP = 1 / 1280 * 8;
+export const Y_STEP = 1 / 720 * 8;
+
+
+export const DEFAULT_NN_LAYERS = [13, 5, 5];
+export const DEFAULT_LEARNING_RATE = 0.01;

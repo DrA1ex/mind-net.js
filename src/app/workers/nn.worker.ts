@@ -2,18 +2,21 @@
 
 import {NeuralNetwork} from "../nn/neural_network";
 import * as nnUtils from "../nn/utils";
-import {ITERATIONS_PER_CALL, MAX_TRAINING_ITERATION, Point, X_STEP, Y_STEP} from "./nn.worker.consts"
+import {DEFAULT_LEARNING_RATE, DEFAULT_NN_LAYERS, DRAWING_DELAY, MAX_ITERATION_TIME, MAX_TRAINING_ITERATION, Point, X_STEP, Y_STEP} from "./nn.worker.consts"
 import {Matrix1D} from "../utils/matrix";
 
-let neuralNetwork = new NeuralNetwork(2, 5, 5, 1);
+let neuralNetwork = new NeuralNetwork(2, ...DEFAULT_NN_LAYERS, 1);
+neuralNetwork.learningRate = DEFAULT_LEARNING_RATE;
+
 let points: Point[] = [];
 
 let currentTrainIterations = 0;
+let lastDraw = 0;
 
 addEventListener('message', ({data}) => {
     switch (data.type) {
         case "add_point":
-            points.push(data.point as Point)
+            points.push(data.point as Point);
             currentTrainIterations = 0;
             break;
 
@@ -23,8 +26,8 @@ addEventListener('message', ({data}) => {
             break;
 
         case "refresh":
-            const newLayersConfig = data.config?.layers || [5, 5];
-            const newLearningRateConfig = data.config?.learningRate || 0.01;
+            const newLayersConfig = data.config?.layers || DEFAULT_NN_LAYERS;
+            const newLearningRateConfig = data.config?.learningRate || DEFAULT_LEARNING_RATE;
 
             neuralNetwork = new NeuralNetwork(2, ...newLayersConfig, 1);
             neuralNetwork.learningRate = newLearningRateConfig;
@@ -32,53 +35,74 @@ addEventListener('message', ({data}) => {
     }
 });
 
-async function sendCurrentState() {
-    const xSteps = Math.ceil(1 / X_STEP),
-        ySteps = Math.ceil(1 / Y_STEP);
-
-    const state = new Array(xSteps * ySteps);
-
-    for (let x = 0; x < xSteps; x++) {
-        for (let y = 0; y < ySteps; y++) {
-            const result = neuralNetwork.compute([x * X_STEP, y * Y_STEP]);
-            state[x * ySteps + y] = [...result];
-        }
-    }
-
-    postMessage({
-        type: "training_data",
-        iteration: currentTrainIterations,
-        state: state
-    });
-}
-
-async function train() {
-    if (currentTrainIterations >= MAX_TRAINING_ITERATION || points.length === 0) {
-        setTimeout(train, 300);
+function trainBatch() {
+    const iterationsLeft = MAX_TRAINING_ITERATION - currentTrainIterations;
+    if (iterationsLeft <= 0 || points.length === 0) {
+        setTimeout(trainBatch, MAX_ITERATION_TIME);
         return;
     }
 
     const startTime = performance.now();
     const trainingData: [Matrix1D, Matrix1D][] = points.map(p => ([[p.x, p.y], [p.type]]));
 
-    for (let i = 0; i < ITERATIONS_PER_CALL; i++) {
+    let iterationCnt;
+    for (iterationCnt = 0; iterationCnt < iterationsLeft; iterationCnt++) {
         const data = trainingData[Math.floor(Math.random() * trainingData.length)];
         neuralNetwork.train(data[0], data[1]);
+
+        if (iterationCnt % 10000 == 0 && performance.now() - startTime > MAX_ITERATION_TIME) {
+            break;
+        }
     }
 
-    nnUtils.print(neuralNetwork, trainingData.slice(0, 1))
-    currentTrainIterations += ITERATIONS_PER_CALL;
-
-    console.log(`*** TRAINING OVER ${points.length} SET WITH ${ITERATIONS_PER_CALL} ITERATIONS FINISHED IN ${(performance.now() - startTime).toFixed(2)}ms`);
-
-    await sendCurrentState()
-
+    currentTrainIterations += iterationCnt;
     if (currentTrainIterations >= MAX_TRAINING_ITERATION) {
+        lastDraw = 0;
         console.log('*** DATA SET TRAINING FINISHED ***');
         nnUtils.print(neuralNetwork, trainingData)
     }
 
-    setTimeout(train, 1);
+    sendCurrentState()
 }
 
-setTimeout(train, 1);
+function sendCurrentState() {
+    const t = performance.now();
+    if (t - lastDraw < DRAWING_DELAY) {
+        return;
+    }
+
+    const xSteps = Math.ceil(1 / X_STEP),
+        ySteps = Math.ceil(1 / Y_STEP);
+
+    const state = new Uint32Array(xSteps * ySteps);
+    for (let x = 0; x < xSteps; x++) {
+        for (let y = 0; y < ySteps; y++) {
+            const result = neuralNetwork.compute([x * X_STEP, y * Y_STEP]);
+            state[y * xSteps + x] = 0xff5800ce | ((result[0] * 0xff & 0xff) << 8);
+        }
+    }
+
+    console.log(`*** Computing ${(performance.now() - t).toFixed(2)}ms`);
+
+    const message = {
+        type: "training_data",
+        iteration: currentTrainIterations,
+        state: state.buffer,
+        width: xSteps,
+        height: ySteps,
+        t: performance.now()
+    };
+
+    lastDraw = t;
+    postMessage(message, [state.buffer]);
+}
+
+function runTrainingPass() {
+    try {
+        trainBatch()
+    } finally {
+        setTimeout(runTrainingPass, 3);
+    }
+}
+
+setTimeout(runTrainingPass, 0);
