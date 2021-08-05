@@ -13,5 +13,5 @@ export const X_STEP = 1 / 1280 * 8;
 export const Y_STEP = 1 / 720 * 8;
 
 
-export const DEFAULT_NN_LAYERS = [13, 5, 5];
+export const DEFAULT_NN_LAYERS = [13, 7, 5];
 export const DEFAULT_LEARNING_RATE = 0.01;
