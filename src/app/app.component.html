@@ -1,0 +1,57 @@
+<div class="container" (window:keydown)="onKeyEvent($event)" (window:keyup)="onKeyEvent($event)">
+    <div class="row mt-4 mb-4">
+        <div class="col-auto">
+            <div class="input-group">
+                <span class="input-group-text">Layers</span>
+                <input [(ngModel)]="layersConfig" class="form-control" type="text">
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="input-group">
+                <span class="input-group-text">Learn. Rate</span>
+                <input [(ngModel)]="learningRate" class="form-control" min="0.0001" step="0.01" type="number">
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group" aria-label="Point type">
+                <input type="radio" class="btn-check" checked name="type_checker" id="type_checker_0" autocomplete="false"
+                       [(ngModel)]="defaultPointType" [value]="0">
+                <label class="btn btn-outline-pink" for="type_checker_0">T1</label>
+
+                <input type="radio" class="btn-check" name="type_checker" id="type_checker_1" autocomplete="false"
+                       [(ngModel)]="defaultPointType" [value]="1">
+                <label class="btn btn-outline-green" for="type_checker_1">T2</label>
+            </div>
+        </div>
+        <div class="col-auto">
+            <button (click)="refresh()" class="btn btn-primary fa fa-ignore-lh fa-sync" title="Restart training"></button>
+        </div>
+        <div class="col-auto">
+            <button (click)="removePoints()" class="btn btn-danger fa fa-ignore-lh fa-trash" title="Clear points"></button>
+        </div>
+        <div class="col-auto">
+            <button (click)="savePoints()" class="btn btn-secondary fa fa-ignore-lh fa-file-download" title="Save points"></button>
+        </div>
+        <div class="col-auto">
+            <button (click)="loadPoints()" class="btn btn-secondary fa fa-ignore-lh fa-file-upload" title="Load points"></button>
+        </div>
+    </div>
+
+    <div class="row" oncontextmenu="return false">
+        <div class="col">
+            <div class="position-relative" style="height: 730px">
+                <canvas #canvasBg class="col position-absolute top-0 start-0 p-0" height="720" style="border: 1px solid" width="1280"></canvas>
+                <canvas #canvasPoints (mousedown)="onMouseDown($event)" class="col position-absolute top-0 start-0 p-0" height="720"
+                        style="border: 1px solid" width="1280"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <p *ngIf="training">Neural network is training. Iteration {{currentIteration}} from {{maxIterations}} with {{points.length}} points</p>
+            <p *ngIf="!training">Neural network is not training</p>
+        </div>
+    </div>
+</div>
+
