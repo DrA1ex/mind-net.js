@@ -73,21 +73,7 @@ export class NeuralNetwork {
             matrix.add_to(layer.biases, gradient);
 
             if (prevLayer.prevLayer !== null) {
-                //const frontWeights = matrix.transform(layer.backWeights);
-                //errors = matrix.fill(i => matrix.dot(frontWeights[i], errors), prevLayer.neuronCnt);
-
                 errors = matrix.dot_2d_translated(layer.backWeights, errors);
-
-
-                // const errorsNext = new Array(prevLayer.neuronCnt);
-                // for (let i = 0; i < prevLayer.neuronCnt; i++) {
-                //   errorsNext[i] = 0;
-                //   for (let j = 0; j < layer.neuronCnt; j++) {
-                //     errorsNext[i] += layer.backWeights[j][i] * errors[j];
-                //   }
-                // }
-                //
-                // errors = errorsNext;
             }
         }
     }
