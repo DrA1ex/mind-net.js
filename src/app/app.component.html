@@ -24,12 +24,16 @@
             </div>
         </div>
         <div class="col-auto m-2">
-            <button (click)="refresh()" class="btn btn-primary fa fa-ignore-lh fa-sync me-2" title="Restart training"></button>
-            <button (click)="removePoints()" class="btn btn-danger fa fa-ignore-lh fa-trash" title="Clear points"></button>
+            <button class="btn btn-primary fa fa-ignore-lh fa-sync me-2" title="Restart training"
+                    (click)="refresh()"></button>
+            <button class="btn btn-danger fa fa-ignore-lh fa-trash" title="Clear points"
+                    (click)="removePoints()" [disabled]="points.length === 0"></button>
         </div>
         <div class="col-auto m-2">
-            <button (click)="savePoints()" class="btn btn-secondary fa fa-ignore-lh fa-file-download me-2" title="Save points"></button>
-            <button (click)="loadPoints()" class="btn btn-secondary fa fa-ignore-lh fa-file-upload" title="Load points"></button>
+            <button class="btn btn-secondary fa fa-ignore-lh fa-file-download me-2" title="Save points"
+                    (click)="savePoints()" [disabled]="points.length === 0"></button>
+            <button class="btn btn-secondary fa fa-ignore-lh fa-file-upload" title="Load points"
+                    (click)="loadPoints()"></button>
         </div>
     </div>
 
