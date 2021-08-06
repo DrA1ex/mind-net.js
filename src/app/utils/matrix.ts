@@ -118,6 +118,15 @@ export function max(a: Matrix1D, abs = false): number {
     return max;
 }
 
+export function sum(a: Matrix1D): number {
+    let sum = 0;
+    for (let value of a) {
+        sum += value;
+    }
+
+    return sum;
+}
+
 export function transform(m: Matrix2D): Matrix2D {
     if (m.length === 0) {
         return [];
