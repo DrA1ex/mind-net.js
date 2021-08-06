@@ -48,7 +48,6 @@ addEventListener('message', ({data}) => {
 function trainBatch() {
     const iterationsLeft = MAX_TRAINING_ITERATION - currentTrainIterations;
     if (iterationsLeft <= 0 || points.length === 0) {
-        setTimeout(trainBatch, MAX_ITERATION_TIME);
         return;
     }
 
@@ -111,7 +110,11 @@ function runTrainingPass() {
     try {
         trainBatch()
     } finally {
-        setTimeout(runTrainingPass, 3);
+        if (currentTrainIterations < MAX_TRAINING_ITERATION && points.length > 0) {
+            setTimeout(runTrainingPass, 3);
+        } else {
+            setTimeout(runTrainingPass, 1000);
+        }
     }
 }
 
