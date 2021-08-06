@@ -1,18 +1,18 @@
 <div class="container" (window:keydown)="onKeyEvent($event)" (window:keyup)="onKeyEvent($event)">
-    <div class="row mt-4 mb-4">
-        <div class="col-auto">
+    <div class="row mt-2 mb-2">
+        <div class="col-md-3 col-sm-4 m-2">
             <div class="input-group">
                 <span class="input-group-text">Layers</span>
                 <input [(ngModel)]="layersConfig" class="form-control" type="text">
             </div>
         </div>
-        <div class="col-auto">
+        <div class="col-md-3 col-sm-4 m-2">
             <div class="input-group">
-                <span class="input-group-text">Learn. Rate</span>
+                <span class="input-group-text">L. Rate</span>
                 <input [(ngModel)]="learningRate" class="form-control" min="0.0001" step="0.01" type="number">
             </div>
         </div>
-        <div class="col-auto">
+        <div class="col-auto m-2">
             <div class="btn-group" role="group" aria-label="Point type">
                 <input type="radio" class="btn-check" checked name="type_checker" id="type_checker_0" autocomplete="false"
                        [(ngModel)]="defaultPointType" [value]="0">
@@ -23,16 +23,12 @@
                 <label class="btn btn-outline-green" for="type_checker_1">T2</label>
             </div>
         </div>
-        <div class="col-auto">
-            <button (click)="refresh()" class="btn btn-primary fa fa-ignore-lh fa-sync" title="Restart training"></button>
-        </div>
-        <div class="col-auto">
+        <div class="col-auto m-2">
+            <button (click)="refresh()" class="btn btn-primary fa fa-ignore-lh fa-sync me-2" title="Restart training"></button>
             <button (click)="removePoints()" class="btn btn-danger fa fa-ignore-lh fa-trash" title="Clear points"></button>
         </div>
-        <div class="col-auto">
-            <button (click)="savePoints()" class="btn btn-secondary fa fa-ignore-lh fa-file-download" title="Save points"></button>
-        </div>
-        <div class="col-auto">
+        <div class="col-auto m-2">
+            <button (click)="savePoints()" class="btn btn-secondary fa fa-ignore-lh fa-file-download me-2" title="Save points"></button>
             <button (click)="loadPoints()" class="btn btn-secondary fa fa-ignore-lh fa-file-upload" title="Load points"></button>
         </div>
     </div>
