@@ -1,6 +1,7 @@
 import * as matrix from "../utils/matrix";
 import * as utils from "./utils";
 
+export type NeuralNetworkSnapshot = { weights: matrix.Matrix2D[], biases: matrix.Matrix1D[] };
 
 class Layer {
     neuronCnt: number;
@@ -17,11 +18,12 @@ class Layer {
         const prevLayerNeuronsCnt = this.prevLayer?.neuronCnt || 0;
 
         this.values = matrix.zero(this.neuronCnt);
-        this.biases = matrix.random(this.neuronCnt, -1, 1);
 
         if (prevLayerNeuronsCnt > 0) {
+            this.biases = matrix.random(this.neuronCnt, -1, 1);
             this.backWeights = matrix.random_2d(this.neuronCnt, prevLayerNeuronsCnt);
         } else {
+            this.biases = [];
             this.backWeights = [];
         }
     }
@@ -94,5 +96,12 @@ export class NeuralNetwork {
         }
 
         return this.layers[this.layers.length - 1].values;
+    }
+
+    getSnapshot(): NeuralNetworkSnapshot {
+        return {
+            weights: this.layers.slice(1).map(l => l.backWeights.map(w => matrix.copy(w))),
+            biases: this.layers.slice(1).map(l => matrix.copy(l.biases))
+        };
     }
 }

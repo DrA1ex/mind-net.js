@@ -91,12 +91,12 @@ function sendCurrentState() {
         }
     }
 
-    console.log(`*** Computing ${(performance.now() - t).toFixed(2)}ms`);
 
     const message = {
         type: "training_data",
         iteration: currentTrainIterations,
         state: state.buffer,
+        nnSnapshot: neuralNetwork.getSnapshot(),
         width: xSteps,
         height: ySteps,
         t: performance.now()
@@ -104,6 +104,8 @@ function sendCurrentState() {
 
     lastDraw = t;
     postMessage(message, [state.buffer]);
+
+    console.log(`*** Computing ${(performance.now() - t).toFixed(2)}ms`);
 }
 
 function runTrainingPass() {

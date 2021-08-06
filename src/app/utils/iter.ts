@@ -12,6 +12,17 @@ export function* map<T, R>(input: Iterable<T>, map: (arg: T, i?: number) => R): 
     }
 }
 
+export function* reverse<T>(input: Iterable<T>): Iterable<T> {
+    const cache = [];
+    for (const e of input) {
+        cache.push(e);
+    }
+
+    for (let i = cache.length - 1; i >= 0; i--) {
+        yield cache[i];
+    }
+}
+
 
 export function shuffle<T>(array: Array<T>): Array<T> {
     let currentIndex = array.length, randomIndex;

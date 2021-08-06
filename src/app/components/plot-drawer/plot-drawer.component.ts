@@ -1,6 +1,8 @@
 import {Component, ElementRef, Input, OnChanges, Output, SimpleChanges, ViewChild} from '@angular/core';
 import {COLOR_PATTERN_RGB, Point} from "../../workers/nn.worker.consts";
 
+import * as canvasUtils from '../../utils/canvas';
+
 @Component({
     selector: 'plot-drawer',
     templateUrl: './plot-drawer.component.html',
@@ -59,20 +61,10 @@ export class PlotDrawerComponent implements OnChanges {
             return;
         }
 
-        ctx.strokeStyle = "solid";
-        ctx.lineWidth = this.lineWidth;
-        ctx.fillStyle = PlotDrawerComponent.getColorByPointType(point.type);
-
         const x = point.x * canvas.clientWidth,
             y = point.y * canvas.clientHeight;
 
-        ctx.beginPath();
-        ctx.arc(x - this.pointRadius / 2, y - this.pointRadius / 2, this.pointRadius,
-            0, 2 * Math.PI, false);
-        ctx.closePath();
-
-        ctx.fill();
-        ctx.stroke();
+        canvasUtils.drawNeuron(ctx, x, y, this.pointRadius, this.lineWidth, PlotDrawerComponent.getColorByPointType(point.type));
     }
 
     private repaint(snapshot: Uint8ClampedArray, width: number, height: number) {

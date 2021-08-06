@@ -38,9 +38,12 @@
     </div>
 
     <div class="row">
-        <div class="col-12" oncontextmenu="return false" #drawerParent>
-            <plot-drawer [canvasWidth]="drawerParent.clientWidth - 24" [canvasHeight]="480"
+        <div class="col-lg-6 col-md-12 mb-2" oncontextmenu="return false" #plotDrawerParent>
+            <plot-drawer [canvasWidth]="plotDrawerParent.clientWidth - 24" [canvasHeight]="480"
                          #plotDrawer (mouseup)="handleMouseEvent($event)"></plot-drawer>
+        </div>
+        <div class="col-lg-6 col-md-12" #nnDrawerParent>
+            <nn-drawer [canvasWidth]="nnDrawerParent.clientWidth - 24" [canvasHeight]="480" #nnDrawer></nn-drawer>
         </div>
     </div>
 

@@ -3,6 +3,7 @@ import {DEFAULT_LEARNING_RATE, DEFAULT_NN_LAYERS, MAX_TRAINING_ITERATION, Point}
 
 import * as fileInteraction from './utils/file-interaction';
 import {PlotDrawerComponent} from "./components/plot-drawer/plot-drawer.component";
+import {NeuralNetworkDrawerComponent} from "./components/neural-network-drawer/neural-network-drawer.component";
 
 
 @Component({
@@ -13,6 +14,9 @@ import {PlotDrawerComponent} from "./components/plot-drawer/plot-drawer.componen
 export class AppComponent {
     @ViewChild('plotDrawer')
     plotDrawer!: PlotDrawerComponent;
+
+    @ViewChild('nnDrawer')
+    nnDrawer!: NeuralNetworkDrawerComponent;
 
     private nnWorker!: Worker;
 
@@ -38,6 +42,7 @@ export class AppComponent {
                     this.training = this.currentIteration < this.maxIterations && this.points.length > 0;
 
                     this.plotDrawer.drawSnapshot(data.state, data.width, data.height);
+                    this.nnDrawer.drawSnapshot(data.nnSnapshot);
                     break;
             }
         }
