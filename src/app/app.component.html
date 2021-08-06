@@ -12,7 +12,7 @@
                 <input [(ngModel)]="learningRate" class="form-control" min="0.0001" step="0.01" type="number">
             </div>
         </div>
-        <div class="col-auto m-2">
+        <div class="col-auto m-2 me-0">
             <div class="btn-group" role="group" aria-label="Point type">
                 <input type="radio" class="btn-check" checked name="type_checker" id="type_checker_0" autocomplete="false"
                        [(ngModel)]="defaultPointType" [value]="0">
@@ -23,13 +23,13 @@
                 <label class="btn btn-outline-green" for="type_checker_1">T2</label>
             </div>
         </div>
-        <div class="col-auto m-2">
+        <div class="col-auto m-2 me-0">
             <button class="btn btn-primary fa fa-ignore-lh fa-sync me-2" title="Restart training"
                     (click)="refresh()"></button>
             <button class="btn btn-danger fa fa-ignore-lh fa-trash" title="Clear points"
                     (click)="removePoints()" [disabled]="points.length === 0"></button>
         </div>
-        <div class="col-auto m-2">
+        <div class="col-auto m-2 me-0">
             <button class="btn btn-secondary fa fa-ignore-lh fa-file-download me-2" title="Save points"
                     (click)="savePoints()" [disabled]="points.length === 0"></button>
             <button class="btn btn-secondary fa fa-ignore-lh fa-file-upload" title="Load points"
