@@ -3,10 +3,12 @@ import {BrowserModule} from '@angular/platform-browser';
 
 import {AppComponent} from './app.component';
 import {FormsModule} from "@angular/forms";
+import { PlotDrawerComponent } from './components/plot-drawer/plot-drawer.component';
 
 @NgModule({
     declarations: [
-        AppComponent
+        AppComponent,
+        PlotDrawerComponent
     ],
     imports: [
         BrowserModule,

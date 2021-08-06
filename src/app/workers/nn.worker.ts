@@ -1,9 +1,19 @@
 /// <reference lib="webworker" />
 
-import {NeuralNetwork} from "../nn/neural_network";
-import * as nnUtils from "../nn/utils";
-import {DEFAULT_LEARNING_RATE, DEFAULT_NN_LAYERS, DRAWING_DELAY, MAX_ITERATION_TIME, MAX_TRAINING_ITERATION, Point, X_STEP, Y_STEP} from "./nn.worker.consts"
+import {NeuralNetwork} from "../neural-network/neural_network";
+import * as nnUtils from "../neural-network/utils";
 import {Matrix1D} from "../utils/matrix";
+import {
+    COLOR_PATTERN_BIN,
+    DEFAULT_LEARNING_RATE,
+    DEFAULT_NN_LAYERS,
+    DRAWING_DELAY,
+    MAX_ITERATION_TIME,
+    MAX_TRAINING_ITERATION,
+    Point,
+    X_STEP,
+    Y_STEP
+} from "./nn.worker.consts"
 
 let neuralNetwork = new NeuralNetwork(2, ...DEFAULT_NN_LAYERS, 1);
 neuralNetwork.learningRate = DEFAULT_LEARNING_RATE;
@@ -78,7 +88,7 @@ function sendCurrentState() {
     for (let x = 0; x < xSteps; x++) {
         for (let y = 0; y < ySteps; y++) {
             const result = neuralNetwork.compute([x * X_STEP, y * Y_STEP]);
-            state[y * xSteps + x] = 0xff5800ce | ((result[0] * 0xff & 0xff) << 8);
+            state[y * xSteps + x] = COLOR_PATTERN_BIN | ((result[0] * 0xff & 0xff) << 8);
         }
     }
 

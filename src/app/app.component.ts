@@ -1,7 +1,8 @@
-import {AfterViewInit, Component, ElementRef, ViewChild} from '@angular/core';
+import {Component, ViewChild} from '@angular/core';
 import {DEFAULT_LEARNING_RATE, DEFAULT_NN_LAYERS, MAX_TRAINING_ITERATION, Point} from "./workers/nn.worker.consts";
 
 import * as fileInteraction from './utils/file-interaction';
+import {PlotDrawerComponent} from "./components/plot-drawer/plot-drawer.component";
 
 
 @Component({
@@ -9,11 +10,9 @@ import * as fileInteraction from './utils/file-interaction';
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.css']
 })
-export class AppComponent implements AfterViewInit {
-    @ViewChild('canvasBg', {static: false})
-    canvasBg!: ElementRef;
-    @ViewChild('canvasPoints', {static: false})
-    canvasPoints!: ElementRef;
+export class AppComponent {
+    @ViewChild('plotDrawer')
+    plotDrawer!: PlotDrawerComponent;
 
     private nnWorker!: Worker;
 
@@ -38,60 +37,28 @@ export class AppComponent implements AfterViewInit {
                     this.currentIteration = data.iteration;
                     this.training = this.currentIteration < this.maxIterations && this.points.length > 0;
 
-                    this.repaint(new Uint8ClampedArray(data.state), data.width, data.height);
+                    this.plotDrawer.drawSnapshot(data.state, data.width, data.height);
                     break;
             }
         }
     }
 
-    ngAfterViewInit(): void {
-        const rect = this.canvasBg.nativeElement.getBoundingClientRect();
 
-        this.canvasBg.nativeElement.width = rect.width;
-        this.canvasBg.nativeElement.height = rect.height;
-
-        this.canvasPoints.nativeElement.width = rect.width;
-        this.canvasPoints.nativeElement.height = rect.height;
-    }
-
-    onMouseDown($event: MouseEvent) {
-        const canvas = this.canvasPoints.nativeElement as HTMLCanvasElement;
-        const rect = canvas.getBoundingClientRect();
+    handleMouseEvent($event: MouseEvent) {
+        const element = $event.target as Element;
+        const rect = element.getBoundingClientRect();
         const x = $event.clientX - rect.left, y = $event.clientY - rect.top;
 
         const pointType = +($event.button > 0 || $event.altKey) || this.defaultPointType;
         const point = {
-            x: x / this.canvasBg.nativeElement.clientWidth,
-            y: y / this.canvasBg.nativeElement.clientHeight,
+            x: x / element.clientWidth,
+            y: y / element.clientHeight,
             type: pointType
         }
 
-        this.drawPoint(point);
+        this.plotDrawer.addPoint(point);
         this.points.push(point);
-
         this.nnWorker.postMessage({type: 'add_point', point: point});
-    }
-
-    drawPoint(point: Point) {
-        const canvas = this.canvasPoints.nativeElement as HTMLCanvasElement;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-            return;
-        }
-
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = "solid";
-        ctx.fillStyle = this.getColorByPointType(point.type);
-
-        const radius = 5;
-        const x = point.x * canvas.clientWidth,
-            y = point.y * canvas.clientHeight;
-
-        ctx.beginPath()
-        ctx.arc(x - radius / 2, y - radius / 2, radius, 0, 2 * Math.PI, false);
-        ctx.closePath();
-        ctx.fill()
-        ctx.stroke()
     }
 
     refresh() {
@@ -124,37 +91,14 @@ export class AppComponent implements AfterViewInit {
 
     setPoints(points: Point[]) {
         this.points = points;
-
-        const canvas = this.canvasPoints.nativeElement as HTMLCanvasElement;
-        const ctx = canvas.getContext('2d');
-        ctx?.clearRect(0, 0, canvas.width, canvas.height);
+        this.plotDrawer.clearPoints();
 
         for (const point of this.points) {
-            this.drawPoint(point);
+            this.plotDrawer.addPoint(point);
         }
 
         this.training = this.currentIteration < this.maxIterations && this.points.length > 0;
         this.nnWorker.postMessage({type: "set_points", points: this.points});
-    }
-
-    private repaint(snapshot: Uint8ClampedArray, width: number, height: number) {
-        const canvas = this.canvasBg.nativeElement as HTMLCanvasElement;
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-            return;
-        }
-
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'low';
-
-        const imageData = new ImageData(snapshot, width, height);
-        ctx.putImageData(imageData, 0, 0);
-    }
-
-    private getColorByPointType(pointType: number) {
-        return `rgb(206, ${Math.min(1, Math.max(0, pointType)) * 255}, 88)`;
     }
 
     onKeyEvent($event: KeyboardEvent) {
