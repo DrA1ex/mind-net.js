@@ -7,12 +7,13 @@ import {
     COLOR_PATTERN_BIN,
     DEFAULT_LEARNING_RATE,
     DEFAULT_NN_LAYERS,
+    DESIRED_RESOLUTION_X,
+    DESIRED_RESOLUTION_Y,
     DRAWING_DELAY,
     MAX_ITERATION_TIME,
     MAX_TRAINING_ITERATION,
     Point,
-    X_STEP,
-    Y_STEP
+    RESOLUTION_SCALE
 } from "./nn.worker.consts"
 
 let neuralNetwork = new NeuralNetwork(2, ...DEFAULT_NN_LAYERS, 1);
@@ -69,24 +70,29 @@ function trainBatch() {
         lastDraw = 0;
         console.log('*** DATA SET TRAINING FINISHED ***');
         nnUtils.print(neuralNetwork, trainingData)
-    }
 
-    sendCurrentState()
+        sendCurrentState(2);
+    } else {
+        sendCurrentState();
+    }
 }
 
-function sendCurrentState() {
+function sendCurrentState(scale: number = RESOLUTION_SCALE) {
     const t = performance.now();
     if (t - lastDraw < DRAWING_DELAY) {
         return;
     }
 
-    const xSteps = Math.ceil(1 / X_STEP),
-        ySteps = Math.ceil(1 / Y_STEP);
+    const xStep = 1 / DESIRED_RESOLUTION_X / scale;
+    const yStep = 1 / DESIRED_RESOLUTION_Y / scale;
+
+    const xSteps = Math.ceil(1 / xStep),
+        ySteps = Math.ceil(1 / yStep);
 
     const state = new Uint32Array(xSteps * ySteps);
     for (let x = 0; x < xSteps; x++) {
         for (let y = 0; y < ySteps; y++) {
-            const result = neuralNetwork.compute([x * X_STEP, y * Y_STEP]);
+            const result = neuralNetwork.compute([x * xStep, y * yStep]);
             state[y * xSteps + x] = COLOR_PATTERN_BIN | ((result[0] * 0xff & 0xff) << 8);
         }
     }

@@ -17,13 +17,15 @@ export class NeuralNetworkDrawerComponent {
     canvasWidth: number = 640;
     @Input("canvasHeight")
     canvasHeight: number = 640;
+    @Input("canvasScale")
+    canvasScale: number = 2;
 
     @Input("neuronRadius")
     neuronRadius: number = 5;
     @Input("neuronLineWidth")
     neuronLineWidth: number = 1;
     @Input("neuronColor")
-    neuronColorPattern: string = "rgb($value,206,100)";
+    neuronColorPattern: string = "rgba($value,206,100)";
 
 
     @Input("weightMinLineWidth")
@@ -37,7 +39,7 @@ export class NeuralNetworkDrawerComponent {
     weightNegativeColor: string = "rgb(6,52,121)";
 
     @Input("padding")
-    padding: number = 40;
+    padding: number = 30;
 
 
     public drawSnapshot(nnSnapshot: NeuralNetworkSnapshot) {
@@ -69,13 +71,13 @@ export class NeuralNetworkDrawerComponent {
     }
 
     private getNeuronPositionX(layerIndex: number, length: number) {
-        return this.padding + layerIndex * ((this.canvasWidth - this.padding * 2) / (length - 1)) + this.neuronRadius / 2;
+        return this.canvasScale * (this.padding + layerIndex * ((this.canvasWidth - this.padding * 2) / (length - 1)) + this.neuronRadius / 2);
     }
 
     private getNeuronPositionY(index: number, length: number) {
         const totalHeight = this.canvasHeight - this.padding * 2;
         const spacesOffset = totalHeight / (2 * length + 1);
-        return this.padding + (index * 2 + 1) * spacesOffset + this.neuronRadius / 2 + spacesOffset / 2;
+        return this.canvasScale * (this.padding + (index * 2 + 1) * spacesOffset + this.neuronRadius / 2 + spacesOffset / 2);
     }
 
     private drawLayerWeights(ctx: CanvasRenderingContext2D, backWeights: matrix.Matrix2D, layerIndex: number, layerCnt: number) {
@@ -113,7 +115,7 @@ export class NeuralNetworkDrawerComponent {
         ctx.fillStyle = this.neuronColorPattern.replace("$value", colorValue.toString());
 
         ctx.beginPath();
-        ctx.arc(x - this.neuronRadius / 2, y - this.neuronRadius / 2, this.neuronRadius, 0, 2 * Math.PI, false);
+        ctx.arc(x, y, this.neuronRadius, 0, 2 * Math.PI, false);
         ctx.closePath();
 
         ctx.fill();

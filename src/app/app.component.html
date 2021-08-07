@@ -43,7 +43,8 @@
                          #plotDrawer (mouseup)="handleMouseEvent($event)"></plot-drawer>
         </div>
         <div class="col-lg-6 col-md-12" #nnDrawerParent>
-            <nn-drawer [canvasWidth]="nnDrawerParent.clientWidth - 24" [canvasHeight]="480" #nnDrawer></nn-drawer>
+            <nn-drawer [canvasWidth]="nnDrawerParent.clientWidth - 24" [canvasHeight]="480" [canvasScale]="4" [neuronRadius]="10"
+                       [weightMinLineWidth]="0.5" [weightMaxLineWidth]="2"  #nnDrawer></nn-drawer>
         </div>
     </div>
 

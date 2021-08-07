@@ -23,6 +23,8 @@ export class PlotDrawerComponent implements OnChanges {
     canvasWidth: number = 640;
     @Input("canvasHeight")
     canvasHeight: number = 640;
+    @Input("canvasScale")
+    canvasScale: number = 2;
 
     @Output("points")
     points: Point[] = [];
@@ -61,10 +63,10 @@ export class PlotDrawerComponent implements OnChanges {
             return;
         }
 
-        const x = point.x * canvas.clientWidth,
-            y = point.y * canvas.clientHeight;
+        const x = point.x * canvas.clientWidth * this.canvasScale,
+            y = point.y * canvas.clientHeight * this.canvasScale;
 
-        canvasUtils.drawNeuron(ctx, x, y, this.pointRadius, this.lineWidth, PlotDrawerComponent.getColorByPointType(point.type));
+        canvasUtils.drawNeuron(ctx, x, y, this.pointRadius * this.canvasScale, this.lineWidth, PlotDrawerComponent.getColorByPointType(point.type));
     }
 
     private repaint(snapshot: Uint8ClampedArray, width: number, height: number) {

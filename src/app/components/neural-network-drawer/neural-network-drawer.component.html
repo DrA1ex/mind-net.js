@@ -1,4 +1,4 @@
 <div class="position-relative border border-2" [style]="{'height': canvasHeight + 'px', 'width': canvasWidth + 'px'}">
     <canvas #canvas class="col position-absolute top-0 start-0 p-0 h-100 w-100"
-            [height]="canvasHeight" [width]="canvasWidth"></canvas>
+            [height]="canvasScale*canvasHeight" [width]="canvasScale*canvasWidth"></canvas>
 </div>

@@ -9,8 +9,9 @@ export const MAX_ITERATION_TIME = DRAWING_DELAY / 4;
 
 export const MAX_TRAINING_ITERATION = 5e6;
 
-export const X_STEP = 1 / 640 * 4;
-export const Y_STEP = 1 / 480 * 4;
+export const DESIRED_RESOLUTION_X = 640;
+export const DESIRED_RESOLUTION_Y = 480;
+export const RESOLUTION_SCALE = 1 / 4;
 
 
 export const DEFAULT_NN_LAYERS = [13, 7, 5];
