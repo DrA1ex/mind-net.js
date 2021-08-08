@@ -3,7 +3,7 @@
 Repository contains simple neural network implementation for educational or pet-project uses.
 
 ## Code
-- Seuential Network @ [implementation](src/app/neural-network/sequential.ts)
+- Seuqential Network @ [implementation](src/app/neural-network/sequential.ts)
 
 - Generative-adversarial Network @ [implementation](src/app/neural-network/generative-adversarial.ts)
 
