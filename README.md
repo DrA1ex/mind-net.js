@@ -1,6 +1,5 @@
-# Sequental Neural Network Engine
+# Neural Network Engine
 
-Simple Sequental Deep Neural Network Implementation
-
-## [Demo 1](https://dra1ex.github.io/neural-network/demo1/)
+## [Sequential demo](https://dra1ex.github.io/neural-network/demo1/)
+### Classification of 2D space from set of points with different type
 ![image](https://user-images.githubusercontent.com/1194059/128631442-0a0350df-d5b1-4ac2-b3d0-030e341f68a3.png)
