@@ -18,3 +18,5 @@ Repository contains simple neural network implementation for educational or pet-
 - To retrain model from scratch click refresh button
 - To clear points click delete button
 - To Export/Import point set click export/import button 
+
+**Source code**: https://github.com/DrA1ex/neural-network/tree/demo_1
