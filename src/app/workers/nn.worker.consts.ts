@@ -1,3 +1,5 @@
+import * as color from "../utils/color"
+
 export interface Point {
     type: number;
     x: number;
@@ -18,5 +20,7 @@ export const DEFAULT_NN_LAYERS = [13, 7, 5];
 export const DEFAULT_LEARNING_RATE = 0.01;
 
 
-export const COLOR_PATTERN_BIN = 0xff5800ce;
-export const COLOR_PATTERN_RGB = "rgb(206,$value,88)";
+export const COLOR_A_HEX = "#e72525";
+export const COLOR_A_BIN = color.getBinFromHex(COLOR_A_HEX);
+export const COLOR_B_HEX = "#2562e7";
+export const COLOR_B_BIN = color.getBinFromHex(COLOR_B_HEX);

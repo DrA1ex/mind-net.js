@@ -1,7 +1,9 @@
 import {Component, ElementRef, Input, OnChanges, Output, SimpleChanges, ViewChild} from '@angular/core';
-import {COLOR_PATTERN_RGB, Point} from "../../workers/nn.worker.consts";
+import {COLOR_A_HEX, COLOR_B_HEX, Point} from "../../workers/nn.worker.consts";
+import * as color from "../../utils/color";
 
 import * as canvasUtils from '../../utils/canvas';
+import {getLinearColorHex} from "../../utils/color";
 
 @Component({
     selector: 'plot-drawer',
@@ -88,7 +90,6 @@ export class PlotDrawerComponent implements OnChanges {
     }
 
     private static getColorByPointType(pointType: number) {
-        const value = Math.max(0, Math.min(255, Math.floor(pointType * 255)));
-        return COLOR_PATTERN_RGB.replace('$value', value.toString());
+        return color.getLinearColorHex(COLOR_A_HEX, COLOR_B_HEX, pointType)
     }
 }

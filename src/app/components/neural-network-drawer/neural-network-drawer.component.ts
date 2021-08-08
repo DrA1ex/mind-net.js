@@ -1,6 +1,6 @@
 import {Component, ElementRef, Input, ViewChild} from '@angular/core';
 
-import {NeuralNetworkSnapshot} from "../../neural-network/neural_network";
+import {NeuralNetworkSnapshot} from "../../neural-network/sequential";
 import * as iter from "../../utils/iter";
 import * as matrix from "../../utils/matrix";
 

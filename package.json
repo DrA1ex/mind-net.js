@@ -19,7 +19,6 @@
     "@angular/router": "~12.1.0",
     "@fortawesome/fontawesome-free": "^5.15.4",
     "bootstrap": "^5.0.2",
-    "brain.js": "^1.4.10",
     "rxjs": "~6.6.0",
     "tslib": "^2.2.0",
     "zone.js": "~0.11.4"

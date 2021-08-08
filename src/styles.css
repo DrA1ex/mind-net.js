@@ -3,8 +3,8 @@
 }
 
 .btn.btn-outline-pink {
-    --pink-color: #ce0058;
-    --pink-color-shadow: #ce00587f;
+    --pink-color: #e72525;
+    --pink-color-shadow: #e725257f;
 
     color: var(--pink-color);
     border-color: var(--pink-color);
@@ -37,8 +37,8 @@
 
 
 .btn.btn-outline-green {
-    --green-color: #92c717;
-    --green-color-shadow: #92c7177f;
+    --green-color: #2562e7;
+    --green-color-shadow: #2562e77f;
 
     color: var(--green-color);
     border-color: var(--green-color);

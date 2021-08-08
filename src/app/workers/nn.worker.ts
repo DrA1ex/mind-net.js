@@ -1,10 +1,12 @@
 /// <reference lib="webworker" />
 
-import {NeuralNetwork} from "../neural-network/neural_network";
+import {SequentialNetwork} from "../neural-network/sequential";
 import * as nnUtils from "../neural-network/utils";
+import * as color from "../utils/color";
 import {Matrix1D} from "../utils/matrix";
 import {
-    COLOR_PATTERN_BIN,
+    COLOR_A_BIN,
+    COLOR_B_BIN,
     DEFAULT_LEARNING_RATE,
     DEFAULT_NN_LAYERS,
     DESIRED_RESOLUTION_X,
@@ -13,10 +15,10 @@ import {
     MAX_ITERATION_TIME,
     MAX_TRAINING_ITERATION,
     Point,
-    RESOLUTION_SCALE
+    RESOLUTION_SCALE,
 } from "./nn.worker.consts"
 
-let neuralNetwork = new NeuralNetwork(2, ...DEFAULT_NN_LAYERS, 1);
+let neuralNetwork = new SequentialNetwork(2, ...DEFAULT_NN_LAYERS, 1);
 neuralNetwork.learningRate = DEFAULT_LEARNING_RATE;
 
 let points: Point[] = [];
@@ -40,7 +42,7 @@ addEventListener('message', ({data}) => {
             const newLayersConfig = data.config?.layers || DEFAULT_NN_LAYERS;
             const newLearningRateConfig = data.config?.learningRate || DEFAULT_LEARNING_RATE;
 
-            neuralNetwork = new NeuralNetwork(2, ...newLayersConfig, 1);
+            neuralNetwork = new SequentialNetwork(2, ...newLayersConfig, 1);
             neuralNetwork.learningRate = newLearningRateConfig;
             currentTrainIterations = 0;
     }
@@ -93,7 +95,7 @@ function sendCurrentState(scale: number = RESOLUTION_SCALE) {
     for (let x = 0; x < xSteps; x++) {
         for (let y = 0; y < ySteps; y++) {
             const result = neuralNetwork.compute([x * xStep, y * yStep]);
-            state[y * xSteps + x] = COLOR_PATTERN_BIN | ((result[0] * 0xff & 0xff) << 8);
+            state[y * xSteps + x] = color.getLinearColorBin(COLOR_A_BIN, COLOR_B_BIN, result[0]);
         }
     }
 

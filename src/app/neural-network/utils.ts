@@ -1,7 +1,7 @@
 import * as iter from "../utils/iter";
 import * as matrix from "../utils/matrix";
 // @ts-ignore
-import * as nn from "./neural_network";
+import * as nn from "./sequential";
 
 export function sig(x: number): number {
     return 1 / (1 + Math.exp(-x));
@@ -12,7 +12,7 @@ export function vector_sig_der(v: matrix.Matrix1D): matrix.Matrix1D {
     return matrix.matrix1d_unary_op(v, a => a * (1 - a));
 }
 
-export function print(nn: nn.NeuralNetwork, training_data: [matrix.Matrix1D, matrix.Matrix1D][]) {
+export function print(nn: nn.SequentialNetwork, training_data: [matrix.Matrix1D, matrix.Matrix1D][]) {
     if (training_data.length === 0) {
         return;
     }

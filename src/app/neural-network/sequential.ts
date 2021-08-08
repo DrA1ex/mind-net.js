@@ -29,9 +29,9 @@ class Layer {
     }
 }
 
-export class NeuralNetwork {
+export class SequentialNetwork {
     public learningRate: number;
-    private readonly layers: Layer[];
+    public readonly layers: Layer[];
 
     constructor(...sizes: number[]) {
         /** @type {Layer[]} */
@@ -43,10 +43,14 @@ export class NeuralNetwork {
         }
     }
 
-    train(train_input: matrix.Matrix1D, train_output: matrix.Matrix1D) {
+    train(train_input: matrix.Matrix1D, train_output: matrix.Matrix1D): matrix.Matrix1D {
         const out = this.compute(train_input);
         let errors = matrix.sub(train_output, out);
 
+        return this.trainByError(errors);
+    }
+
+    trainByError(errors: matrix.Matrix1D): matrix.Matrix1D {
         for (let k = this.layers.length - 2; k >= 0; k--) {
             const layer = this.layers[k + 1];
             const prevLayer = this.layers[k];
@@ -78,6 +82,8 @@ export class NeuralNetwork {
                 errors = matrix.dot_2d_translated(layer.backWeights, errors);
             }
         }
+
+        return errors;
     }
 
     compute(input: matrix.Matrix1D) {
