@@ -56,7 +56,7 @@
                   "with": "src/environments/environment.prod.ts"
                 }
               ],
-              "baseHref": "/neural-network",
+              "baseHref": "/neural-network/",
               "outputHashing": "all"
             },
             "development": {
