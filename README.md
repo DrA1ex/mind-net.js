@@ -19,4 +19,4 @@ Repository contains simple neural network implementation for educational or pet-
 - To clear points click delete button
 - To Export/Import point set click export/import button 
 
-**Source code**: https://github.com/DrA1ex/neural-network/tree/demo_1
+**Source code**: [src/app/pages/demo1](https://github.com/DrA1ex/neural-network/tree/main/src/app/pages/demo1)
