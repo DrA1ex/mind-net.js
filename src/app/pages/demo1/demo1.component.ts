@@ -1,5 +1,5 @@
 import {Component, ViewChild} from '@angular/core';
-import {DEFAULT_LEARNING_RATE, DEFAULT_NN_LAYERS, MAX_TRAINING_ITERATION, Point} from "../../workers/nn.worker.consts";
+import {DEFAULT_LEARNING_RATE, DEFAULT_NN_LAYERS, MAX_TRAINING_ITERATION, Point} from "../../workers/demo1/nn.worker.consts";
 
 import * as fileInteraction from '../../utils/file-interaction';
 import {PlotDrawerComponent} from "../../components/plot-drawer/plot-drawer.component";
@@ -31,7 +31,7 @@ export class Demo1Component {
     points: any[] = [];
 
     constructor() {
-        this.nnWorker = new Worker(new URL('../../workers/nn.worker', import.meta.url));
+        this.nnWorker = new Worker(new URL('../../workers/demo1/nn.worker', import.meta.url));
 
         this.nnWorker.onmessage = ({data}) => {
             switch (data.type) {

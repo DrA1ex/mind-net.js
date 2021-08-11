@@ -1,0 +1,58 @@
+<div class="container">
+    <div class="row mt-2 mb-2">
+        <div class="col-xl-3 col-lg-3 col-md-3 col-6 mb-2">
+            <div class="input-group">
+                <span class="input-group-text">Layers</span>
+                <input [(ngModel)]="layersConfig" class="form-control" type="text">
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-3 col-6 mb-2">
+            <div class="input-group">
+                <span class="input-group-text">L. Rate</span>
+                <input [(ngModel)]="learningRate" class="form-control" min="0.0001" step="0.01" type="number">
+            </div>
+        </div>
+
+        <div class="col-lg-auto col-md-2 col-4 mb-2">
+            <button class="btn btn-primary fa fa-ignore-lh fa-sync me-2" title="Restart training"
+                    (click)="refresh()"></button>
+            <button class="btn btn-secondary fa fa-ignore-lh fa-file-upload" title="Load training data"
+                    [disabled]="fileLoading" (click)="loadData()"></button>
+        </div>
+    </div>
+
+
+    <div class="row">
+        <div class="col" #biParent1>
+            <h4>Training data</h4>
+            <div class="border border-2">
+                <binary-image-drawer #trainingImage [canvasWidth]="biParent1.clientWidth - 24"></binary-image-drawer>
+            </div>
+        </div>
+        <div class="col" #biParent2>
+            <h4>Generated</h4>
+            <div class="border border-2">
+                <binary-image-drawer #generatedImage [canvasWidth]="biParent2.clientWidth - 24"></binary-image-drawer>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-6" #nnDrawerParent1>
+            <h4>Generator</h4>
+            <nn-drawer #generatorNn [canvasWidth]="nnDrawerParent1.clientWidth - 24"></nn-drawer>
+        </div>
+        <div class="col-6" #nnDrawerParent2>
+            <h4>Discriminator</h4>
+            <nn-drawer #discriminatorNn [canvasWidth]="nnDrawerParent2.clientWidth - 24"></nn-drawer>
+        </div>
+    </div>
+</div>
+
+<div class="position-absolute top-0 start-0 h-100 w-100" style="background: rgba(0,0,0,0.4)" *ngIf="fileLoading">
+    <div class="position-absolute top-50 start-50">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+</div>

@@ -1,4 +1,4 @@
-import * as color from "../utils/color"
+import * as color from "../../utils/color"
 
 export interface Point {
     type: number;
@@ -9,6 +9,7 @@ export interface Point {
 export const DRAWING_DELAY = 1000 / 24;
 export const MAX_ITERATION_TIME = DRAWING_DELAY / 4;
 
+export const TRAINING_BATCH_SIZE = 10000;
 export const MAX_TRAINING_ITERATION = 5e6;
 
 export const DESIRED_RESOLUTION_X = 640;

@@ -2,8 +2,8 @@ import {SequentialNetwork} from "./sequential";
 import * as matrix from "../utils/matrix";
 
 export class GenerativeAdversarialNetwork {
-    private generator: SequentialNetwork;
-    private discriminator: SequentialNetwork;
+    public readonly generator: SequentialNetwork;
+    public readonly discriminator: SequentialNetwork;
 
     constructor(inputSize: number, generatorSizes: number[], outputSize: number, discriminatorSizes: number[]) {
         this.generator = new SequentialNetwork(inputSize, ...generatorSizes, outputSize);
@@ -24,7 +24,7 @@ export class GenerativeAdversarialNetwork {
         const errors = this.discriminator.train(out, [0]);
 
         // Train generator through discriminator inverted error
-        const nextErrors = matrix.dot_2d_translated(this.generator.layers[this.generator.layers.length - 1].backWeights, errors.map(c => -c));
+        const nextErrors = matrix.dot_2d(this.generator.layers[this.generator.layers.length - 1].backWeights, errors.map(c => -c));
         this.generator.trainByError(nextErrors);
     }
 }

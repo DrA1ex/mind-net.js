@@ -1,8 +1,9 @@
-import {Component, ElementRef, Input, ViewChild} from '@angular/core';
+import {Component, ElementRef, Input, SimpleChanges, ViewChild} from '@angular/core';
 
 import {NeuralNetworkSnapshot} from "../../neural-network/sequential";
 import * as iter from "../../utils/iter";
 import * as matrix from "../../utils/matrix";
+import {DelayedChangesProcessor} from "../base/delayed-changes-processor";
 
 @Component({
     selector: 'nn-drawer',
@@ -16,22 +17,22 @@ export class NeuralNetworkDrawerComponent {
     @Input("canvasWidth")
     canvasWidth: number = 640;
     @Input("canvasHeight")
-    canvasHeight: number = 640;
+    canvasHeight: number = 480;
     @Input("canvasScale")
-    canvasScale: number = 2;
+    canvasScale: number = 4;
 
     @Input("neuronRadius")
-    neuronRadius: number = 5;
+    neuronRadius: number = 10;
     @Input("neuronLineWidth")
-    neuronLineWidth: number = 1;
+    neuronLineWidth: number = 2;
     @Input("neuronColor")
     neuronColorPattern: string = "rgba($value,206,100)";
 
 
     @Input("weightMinLineWidth")
-    weightMinLineWidth: number = 0.1;
+    weightMinLineWidth: number = 0;
     @Input("weightMaxLineWidth")
-    weightMaxLineWidth: number = 1;
+    weightMaxLineWidth: number = 3;
 
     @Input("weightPositiveColor")
     weightPositiveColor: string = "rgb(101,7,7)";
@@ -41,8 +42,24 @@ export class NeuralNetworkDrawerComponent {
     @Input("padding")
     padding: number = 30;
 
+    private refreshHandler = new DelayedChangesProcessor(["canvasWidth", "canvasHeight"], 100, () => this.drawSnapshotImpl());
+    private lastSnapshot?: NeuralNetworkSnapshot;
+
+    ngOnChanges(changes: SimpleChanges): void {
+        this.refreshHandler.processChanges(changes);
+    }
 
     public drawSnapshot(nnSnapshot: NeuralNetworkSnapshot) {
+        this.lastSnapshot = nnSnapshot;
+        this.drawSnapshotImpl();
+    }
+
+    private drawSnapshotImpl() {
+        if (!this.lastSnapshot) {
+            return;
+        }
+
+        const nnSnapshot = this.lastSnapshot;
         const canvas = this.canvas.nativeElement as HTMLCanvasElement;
         const ctx = canvas.getContext('2d');
         if (!ctx) {

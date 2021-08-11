@@ -39,12 +39,11 @@
 
     <div class="row">
         <div class="col-lg-6 col-md-12 mb-2" oncontextmenu="return false" #plotDrawerParent>
-            <plot-drawer [canvasWidth]="plotDrawerParent.clientWidth - 24" [canvasHeight]="480"
+            <plot-drawer [canvasWidth]="plotDrawerParent.offsetWidth - 24"
                          #plotDrawer (mouseup)="handleMouseEvent($event)"></plot-drawer>
         </div>
         <div class="col-lg-6 col-md-12" #nnDrawerParent>
-            <nn-drawer [canvasWidth]="nnDrawerParent.clientWidth - 24" [canvasHeight]="480" [canvasScale]="4" [neuronRadius]="10"
-                       [weightMinLineWidth]="0" [weightMaxLineWidth]="3" #nnDrawer></nn-drawer>
+            <nn-drawer [canvasWidth]="nnDrawerParent.offsetWidth - 24" #nnDrawer></nn-drawer>
         </div>
     </div>
 

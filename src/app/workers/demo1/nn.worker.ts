@@ -1,9 +1,9 @@
 /// <reference lib="webworker" />
 
-import {SequentialNetwork} from "../neural-network/sequential";
-import * as nnUtils from "../neural-network/utils";
-import * as color from "../utils/color";
-import {Matrix1D} from "../utils/matrix";
+import {SequentialNetwork} from "../../neural-network/sequential";
+import * as nnUtils from "../../neural-network/utils";
+import * as color from "../../utils/color";
+import {Matrix1D} from "../../utils/matrix";
 import {
     COLOR_A_BIN,
     COLOR_B_BIN,
@@ -16,6 +16,7 @@ import {
     MAX_TRAINING_ITERATION,
     Point,
     RESOLUTION_SCALE,
+    TRAINING_BATCH_SIZE,
 } from "./nn.worker.consts"
 
 let neuralNetwork = new SequentialNetwork(2, ...DEFAULT_NN_LAYERS, 1);
@@ -62,7 +63,7 @@ function trainBatch() {
         const data = trainingData[Math.floor(Math.random() * trainingData.length)];
         neuralNetwork.train(data[0], data[1]);
 
-        if (iterationCnt % 10000 == 0 && performance.now() - startTime > MAX_ITERATION_TIME) {
+        if (iterationCnt % TRAINING_BATCH_SIZE == 0 && performance.now() - startTime > MAX_ITERATION_TIME) {
             break;
         }
     }
@@ -98,7 +99,6 @@ function sendCurrentState(scale: number = RESOLUTION_SCALE) {
             state[y * xSteps + x] = color.getLinearColorBin(COLOR_A_BIN, COLOR_B_BIN, result[0]);
         }
     }
-
 
     const message = {
         type: "training_data",

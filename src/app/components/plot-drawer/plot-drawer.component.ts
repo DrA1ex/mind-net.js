@@ -1,9 +1,10 @@
 import {Component, ElementRef, Input, OnChanges, Output, SimpleChanges, ViewChild} from '@angular/core';
-import {COLOR_A_HEX, COLOR_B_HEX, Point} from "../../workers/nn.worker.consts";
+import {COLOR_A_HEX, COLOR_B_HEX, Point} from "../../workers/demo1/nn.worker.consts";
 import * as color from "../../utils/color";
 
 import * as canvasUtils from '../../utils/canvas';
-import {getLinearColorHex} from "../../utils/color";
+import {BinaryImageDrawerComponent} from "../binary-image-drawer/binary-image-drawer.component";
+import {DelayedChangesProcessor} from "../base/delayed-changes-processor";
 
 @Component({
     selector: 'plot-drawer',
@@ -11,8 +12,8 @@ import {getLinearColorHex} from "../../utils/color";
     styleUrls: ['./plot-drawer.component.css']
 })
 export class PlotDrawerComponent implements OnChanges {
-    @ViewChild('canvasBg', {static: false})
-    canvasBg!: ElementRef;
+    @ViewChild('imageDrawer', {static: false})
+    imageDrawer!: BinaryImageDrawerComponent;
     @ViewChild('canvasPoints', {static: false})
     canvasPoints!: ElementRef;
 
@@ -24,25 +25,23 @@ export class PlotDrawerComponent implements OnChanges {
     @Input("canvasWidth")
     canvasWidth: number = 640;
     @Input("canvasHeight")
-    canvasHeight: number = 640;
+    canvasHeight: number = 480;
     @Input("canvasScale")
     canvasScale: number = 2;
 
     @Output("points")
     points: Point[] = [];
 
+    private refreshHandler = new DelayedChangesProcessor(["canvasWidth", "canvasHeight"], 100, () => {
+        this.repaint()
+    });
+
     ngOnChanges(changes: SimpleChanges): void {
-        if (changes.hasOwnProperty('canvasWidth') || changes.hasOwnProperty("canvasHeight")) {
-            setTimeout(() => {
-                for (const point of this.points) {
-                    this.drawPoint(point);
-                }
-            }, 100);
-        }
+        this.refreshHandler.processChanges(changes);
     }
 
     public drawSnapshot(data: ArrayBuffer, width: number, height: number) {
-        this.repaint(new Uint8ClampedArray(data), width, height);
+        this.imageDrawer.draw(data, width, height);
     }
 
     public addPoint(point: Point) {
@@ -58,6 +57,16 @@ export class PlotDrawerComponent implements OnChanges {
         ctx?.clearRect(0, 0, canvas.width, canvas.height);
     }
 
+    private repaint() {
+        const canvas = this.canvasPoints.nativeElement as HTMLCanvasElement;
+        const ctx = canvas.getContext('2d');
+        ctx?.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (const point of this.points) {
+            this.drawPoint(point);
+        }
+    }
+
     private drawPoint(point: Point) {
         const canvas = this.canvasPoints.nativeElement as HTMLCanvasElement;
         const ctx = canvas.getContext('2d');
@@ -71,23 +80,6 @@ export class PlotDrawerComponent implements OnChanges {
         canvasUtils.drawNeuron(ctx, x, y, this.pointRadius * this.canvasScale, this.lineWidth, PlotDrawerComponent.getColorByPointType(point.type));
     }
 
-    private repaint(snapshot: Uint8ClampedArray, width: number, height: number) {
-        const canvas = this.canvasBg.nativeElement as HTMLCanvasElement;
-        if (canvas.width !== width) {
-            canvas.width = width;
-        }
-        if (canvas.height !== height) {
-            canvas.height = height;
-        }
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-            return;
-        }
-
-        const imageData = new ImageData(snapshot, width, height);
-        ctx.putImageData(imageData, 0, 0);
-    }
 
     private static getColorByPointType(pointType: number) {
         return color.getLinearColorHex(COLOR_A_HEX, COLOR_B_HEX, pointType)
