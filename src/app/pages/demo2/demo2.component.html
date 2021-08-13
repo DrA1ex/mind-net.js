@@ -36,23 +36,18 @@
             </div>
         </div>
     </div>
-
-    <div class="row">
-        <div class="col-6" #nnDrawerParent1>
-            <h4>Generator</h4>
-            <nn-drawer #generatorNn [canvasWidth]="nnDrawerParent1.clientWidth - 24"></nn-drawer>
-        </div>
-        <div class="col-6" #nnDrawerParent2>
-            <h4>Discriminator</h4>
-            <nn-drawer #discriminatorNn [canvasWidth]="nnDrawerParent2.clientWidth - 24"></nn-drawer>
-        </div>
+    <div class="row" *ngIf="currentIteration > 0">
+        <p>Training iteration {{currentIteration}}</p>
     </div>
 </div>
 
 <div class="position-absolute top-0 start-0 h-100 w-100" style="background: rgba(0,0,0,0.4)" *ngIf="fileLoading">
-    <div class="position-absolute top-50 start-50">
-        <div class="spinner-border" role="status">
-            <span class="visually-hidden">Loading...</span>
+    <div class="position-absolute top-50 start-50 translate-middle">
+        <h3 class="">Loading training data...</h3>
+        <div class="progress" style="height: 20px">
+            <div class="progress-bar" role="progressbar" [style]="{'width': (fileProcessingCurrent / fileProcessingTotal) * 100 + '%'}">
+                {{fileProcessingCurrent}}/{{fileProcessingTotal}}
+            </div>
         </div>
     </div>
 </div>

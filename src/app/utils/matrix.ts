@@ -106,6 +106,10 @@ export function copy(a: Matrix1D): Matrix1D {
     return [...a];
 }
 
+export function copy_2d(a: Matrix2D): Matrix2D {
+    return a.map(copy);
+}
+
 export function max(a: Matrix1D, abs = false): number {
     let max = Number.MIN_VALUE;
     for (let value of a) {

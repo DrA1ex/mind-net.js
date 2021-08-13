@@ -4,12 +4,13 @@ import * as matrix from "../../utils/matrix";
 import * as color from "../../utils/color";
 
 import {GenerativeAdversarialNetwork} from "../../neural-network/generative-adversarial";
-import {COLOR_A_BIN, COLOR_B_BIN, DRAWING_DELAY, MAX_ITERATION_TIME, NetworkParams, TRAINING_BATCH_SIZE, TrainingData} from "./gan.worker.consts"
+import {COLOR_A_BIN, COLOR_B_BIN, DRAWING_DELAY, MAX_ITERATION_TIME, NetworkParams, TRAINING_BATCH_SIZE} from "./gan.worker.consts"
 
 
 let lastDrawTime = 0;
-let trainingData: TrainingData[];
-let nnParams: NetworkParams = [10, [16, 32, 64], 28 * 28, [16, 16]];
+let trainingIterations = 0;
+let trainingData: matrix.Matrix1D[];
+let nnParams: NetworkParams = [1, [16, 16], 28 * 28, [16, 16]];
 let neuralNetwork = new GenerativeAdversarialNetwork(...nnParams);
 
 addEventListener('message', ({data}) => {
@@ -19,6 +20,10 @@ addEventListener('message', ({data}) => {
         }
 
         neuralNetwork = new GenerativeAdversarialNetwork(...nnParams);
+        trainingIterations = 0;
+        if (trainingData && trainingData.length > 0) {
+            draw();
+        }
     }
 
     switch (data.type) {
@@ -42,25 +47,33 @@ function trainBatch() {
     let i = 0;
     while (++i) {
         const data = trainingData[Math.floor(Math.random() * trainingData.length)];
-        neuralNetwork.train(data.data, data.input ?? matrix.random(data.inputSize));
+        neuralNetwork.train(data, matrix.random(1));
 
         if (i % TRAINING_BATCH_SIZE === 0 && (performance.now() - beginTime) > MAX_ITERATION_TIME) {
             break;
         }
     }
 
-    if (performance.now() - lastDrawTime > DRAWING_DELAY) {
+    trainingIterations += i;
+
+    console.log(`*** BATCH TRAINING finished with ${i} iterations, took ${(performance.now() - beginTime).toFixed(2)}ms`)
+
+    const t = performance.now();
+    if (t - lastDrawTime > DRAWING_DELAY) {
         draw();
+
+        lastDrawTime = t;
+        console.log(`*** DRAW took ${(performance.now() - t).toFixed(2)}ms`)
     }
 }
 
 function draw() {
     const data = trainingData[Math.floor(Math.random() * trainingData.length)];
 
-    const size = Math.floor(Math.sqrt(data.data.length))
-    const dataBuffer = dataToImageBuffer(data.data);
+    const size = Math.floor(Math.sqrt(data.length))
+    const dataBuffer = dataToImageBuffer(data);
 
-    const genBuffer = dataToImageBuffer(neuralNetwork.generate(data.input ?? matrix.random(data.inputSize)));
+    const genBuffer = dataToImageBuffer(neuralNetwork.generate(matrix.random(1)));
 
     postMessage({
         type: "training_data",
@@ -68,8 +81,7 @@ function draw() {
         height: size,
         trainingData: dataBuffer,
         generatedData: genBuffer,
-        gSnapshot: neuralNetwork.generator.getSnapshot(),
-        dSnapshot: neuralNetwork.discriminator.getSnapshot()
+        currentIteration: trainingIterations
     }, [dataBuffer, genBuffer])
 }
 

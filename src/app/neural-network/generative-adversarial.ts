@@ -14,17 +14,17 @@ export class GenerativeAdversarialNetwork {
         return this.generator.compute(input);
     }
 
-    train(sample: matrix.Matrix1D, input: matrix.Matrix1D) {
+    train(realSample: matrix.Matrix1D, input: matrix.Matrix1D) {
         //  Train discriminator on real sample
-        this.discriminator.train(sample, [1]);
+        this.discriminator.train(realSample, [1]);
 
         //  Generate fake sample
-        const out = this.generator.compute(input);
+        const fakeSample = this.generator.compute(input);
         //  Train discriminator on fake sample
-        const errors = this.discriminator.train(out, [0]);
+        this.discriminator.train(fakeSample, [0]);
 
-        // Train generator through discriminator inverted error
-        const nextErrors = matrix.dot_2d(this.generator.layers[this.generator.layers.length - 1].backWeights, errors.map(c => -c));
-        this.generator.trainByError(nextErrors);
+        // Train generator through discriminator
+        const errors = this.discriminator.train(fakeSample, [1], false);
+        this.generator.trainByError(errors);
     }
 }

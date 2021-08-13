@@ -43,14 +43,14 @@ export class SequentialNetwork {
         }
     }
 
-    train(train_input: matrix.Matrix1D, train_output: matrix.Matrix1D): matrix.Matrix1D {
+    train(train_input: matrix.Matrix1D, train_output: matrix.Matrix1D, updateWeights = true): matrix.Matrix1D {
         const out = this.compute(train_input);
         let errors = matrix.sub(train_output, out);
 
-        return this.trainByError(errors);
+        return this.trainByError(errors, updateWeights);
     }
 
-    trainByError(errors: matrix.Matrix1D): matrix.Matrix1D {
+    trainByError(errors: matrix.Matrix1D, updateWeights = true): matrix.Matrix1D {
         for (let k = this.layers.length - 2; k >= 0; k--) {
             const layer = this.layers[k + 1];
             const prevLayer = this.layers[k];
@@ -60,6 +60,14 @@ export class SequentialNetwork {
             *   to minimize neuron error amount.
             */
             const gradient = matrix.mul_scalar(matrix.mul(errors, utils.vector_sig_der(layer.values)), this.learningRate);
+
+            let weights!: matrix.Matrix2D;
+            if (updateWeights) {
+                weights = layer.backWeights;
+                matrix.add_to(layer.biases, gradient);
+            } else {
+                weights = matrix.copy_2d(layer.backWeights);
+            }
 
             /*
             *   Change all corresponding neuron weight coefficients according to error size.
@@ -73,13 +81,11 @@ export class SequentialNetwork {
             *   x₃ ──── w₃ ─────╯
             */
             for (let i = 0; i < layer.neuronCnt; i++) {
-                matrix.add_to(layer.backWeights[i], matrix.mul_scalar(prevLayer.values, gradient[i]));
+                matrix.add_to(weights[i], matrix.mul_scalar(prevLayer.values, gradient[i]));
             }
 
-            matrix.add_to(layer.biases, gradient);
-
             if (prevLayer.prevLayer !== null) {
-                errors = matrix.dot_2d_translated(layer.backWeights, errors);
+                errors = matrix.dot_2d_translated(weights, errors);
             }
         }
 

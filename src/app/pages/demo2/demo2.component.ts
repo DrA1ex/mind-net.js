@@ -1,11 +1,8 @@
 import {Component, ViewChild} from '@angular/core';
 
 import * as JSZip from "jszip";
-
-import {NeuralNetworkDrawerComponent} from "../../components/neural-network-drawer/neural-network-drawer.component";
 import {BinaryImageDrawerComponent} from "../../components/binary-image-drawer/binary-image-drawer.component";
 import {DEFAULT_LEARNING_RATE, DEFAULT_NN_LAYERS} from "../../workers/demo1/nn.worker.consts";
-import {TrainingData} from "../../workers/demo2/gan.worker.consts";
 
 import * as fileInteraction from "../../utils/file-interaction";
 import * as image from "../../utils/image";
@@ -17,11 +14,6 @@ import * as matrix from "../../utils/matrix";
     styleUrls: ['./demo2.component.css']
 })
 export class Demo2Component {
-    @ViewChild("generatorNn")
-    generatorNn!: NeuralNetworkDrawerComponent;
-    @ViewChild("discriminatorNn")
-    discriminatorNn!: NeuralNetworkDrawerComponent;
-
     @ViewChild("generatedImage")
     generatedImage!: BinaryImageDrawerComponent;
     @ViewChild("trainingImage")
@@ -32,7 +24,11 @@ export class Demo2Component {
     layersConfig: string = DEFAULT_NN_LAYERS.join(" ");
     learningRate: number = DEFAULT_LEARNING_RATE;
 
+    currentIteration: number = 0;
+
     fileLoading = false;
+    fileProcessingCurrent: number = 0;
+    fileProcessingTotal: number = 0;
 
     constructor() {
         this.nnWorker = new Worker(new URL('../../workers/demo2/gan.worker', import.meta.url));
@@ -43,8 +39,7 @@ export class Demo2Component {
                     this.generatedImage.draw(data.generatedData, data.width, data.height);
                     this.trainingImage.draw(data.trainingData, data.width, data.height);
 
-                    this.generatorNn.drawSnapshot(data.gSnapshot);
-                    this.discriminatorNn.drawSnapshot(data.dSnapshot);
+                    this.currentIteration = data.currentIteration;
                     break;
             }
         }
@@ -66,34 +61,19 @@ export class Demo2Component {
             const zip = new JSZip();
             const loaded = await zip.loadAsync(file);
 
-            const files = Object.values(loaded.files)
-                .map(f => ({match: f.name.match(/^(\d+)-?(\d+)?\.png$/), f}))
-                .filter(p => p.match && p.match.length > 1)
-                .map(p => {
-                    return {
-                        // @ts-ignore: Already filtered!
-                        index: p.match[1],
-                        // @ts-ignore
-                        input: p.match[2] || null,
-                        file: p.f
-                    }
-                });
+            const items = Object.values(loaded.files)
+                .map(f => ({match: f.name.match(/.*.png$/), file: f}))
+                .filter(p => p.match);
 
-            const result: TrainingData[] = new Array(files.length);
-            for (let i = 0; i < files.length; i++) {
-                const f = files[i];
-                const trainingData = await image.getTrainingDataFromImage(await f.file.async("arraybuffer"))
+            const result: matrix.Matrix1D[] = new Array(items.length);
+            this.fileProcessingTotal = items.length;
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                result[i] = await image.getTrainingDataFromImage(await item.file.async("arraybuffer"))
 
-
-                const input = matrix.zero(10);
-                input[f.input ? Number.parseInt(f.input) : 0] = 1.0;
-
-                //TODO: get proper metadata
-                result[i] = {
-                    inputSize: 10,
-                    input: input,
-                    data: trainingData
-                };
+                if (i % 30 === 0) {
+                    this.fileProcessingCurrent = i;
+                }
             }
 
             this.nnWorker.postMessage({type: "set_data", data: result});
