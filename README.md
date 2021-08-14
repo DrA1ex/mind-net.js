@@ -1,6 +1,6 @@
 # Neural Network Engine
 
-Repository contains simple neural network implementation for educational or pet-project uses.
+Repository contains simple neural network implementation in pure TypeScript/JavaScript for educational or pet-project uses.
 
 ## Code
 - Seuqential Network @ [implementation](src/app/neural-network/sequential.ts)
