@@ -4,13 +4,13 @@ import * as matrix from "../../utils/matrix";
 import * as color from "../../utils/color";
 
 import {GenerativeAdversarialNetwork} from "../../neural-network/generative-adversarial";
-import {COLOR_A_BIN, COLOR_B_BIN, DRAWING_DELAY, MAX_ITERATION_TIME, NetworkParams, TRAINING_BATCH_SIZE} from "./gan.worker.consts"
+import {COLOR_A_BIN, COLOR_B_BIN, DEFAULT_NN_PARAMS, DRAWING_DELAY, MAX_ITERATION_TIME, NetworkParams, TRAINING_BATCH_SIZE} from "./gan.worker.consts"
 
 
 let lastDrawTime = 0;
 let trainingIterations = 0;
-let trainingData: matrix.Matrix1D[];
-let nnParams: NetworkParams = [1, [16, 16], 28 * 28, [16, 16]];
+let trainingData: number[][];
+let nnParams: NetworkParams = DEFAULT_NN_PARAMS;
 let neuralNetwork = new GenerativeAdversarialNetwork(...nnParams);
 
 addEventListener('message', ({data}) => {
@@ -47,7 +47,7 @@ function trainBatch() {
     let i = 0;
     while (++i) {
         const data = trainingData[Math.floor(Math.random() * trainingData.length)];
-        neuralNetwork.train(data, matrix.random(1));
+        neuralNetwork.train(data, matrix.random(neuralNetwork.generator.layers[0].neuronCnt));
 
         if (i % TRAINING_BATCH_SIZE === 0 && (performance.now() - beginTime) > MAX_ITERATION_TIME) {
             break;
@@ -73,7 +73,7 @@ function draw() {
     const size = Math.floor(Math.sqrt(data.length))
     const dataBuffer = dataToImageBuffer(data);
 
-    const genBuffer = dataToImageBuffer(neuralNetwork.generate(matrix.random(1)));
+    const genBuffer = dataToImageBuffer(neuralNetwork.generate(matrix.random(neuralNetwork.generator.layers[0].neuronCnt)));
 
     postMessage({
         type: "training_data",
