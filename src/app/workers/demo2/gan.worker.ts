@@ -4,14 +4,26 @@ import * as matrix from "../../utils/matrix";
 import * as color from "../../utils/color";
 
 import {GenerativeAdversarialNetwork} from "../../neural-network/generative-adversarial";
-import {COLOR_A_BIN, COLOR_B_BIN, DEFAULT_NN_PARAMS, DRAWING_DELAY, MAX_ITERATION_TIME, NetworkParams, TRAINING_BATCH_SIZE} from "./gan.worker.consts"
+import {
+    COLOR_A_BIN,
+    COLOR_B_BIN,
+    DEFAULT_LEARNING_RATE,
+    DEFAULT_NN_PARAMS,
+    DRAWING_DELAY,
+    MAX_ITERATION_TIME,
+    NetworkParams,
+    TRAINING_BATCH_SIZE
+} from "./gan.worker.consts"
 
 
 let lastDrawTime = 0;
 let trainingIterations = 0;
 let trainingData: number[][];
 let nnParams: NetworkParams = DEFAULT_NN_PARAMS;
+let learningRate = DEFAULT_LEARNING_RATE;
+
 let neuralNetwork = new GenerativeAdversarialNetwork(...nnParams);
+neuralNetwork.learningRate = DEFAULT_LEARNING_RATE;
 
 addEventListener('message', ({data}) => {
     function _refresh() {
@@ -20,6 +32,8 @@ addEventListener('message', ({data}) => {
         }
 
         neuralNetwork = new GenerativeAdversarialNetwork(...nnParams);
+        neuralNetwork.learningRate = learningRate;
+
         trainingIterations = 0;
         if (trainingData && trainingData.length > 0) {
             draw();
@@ -28,6 +42,13 @@ addEventListener('message', ({data}) => {
 
     switch (data.type) {
         case "refresh":
+            if (data.learningRate) {
+                learningRate = data.learningRate;
+            }
+            if (data?.layers?.length === 4) {
+                nnParams = data.layers;
+            }
+
             _refresh();
             break;
 

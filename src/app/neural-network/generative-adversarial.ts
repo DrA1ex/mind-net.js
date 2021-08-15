@@ -5,6 +5,15 @@ export class GenerativeAdversarialNetwork {
     public readonly generator: SequentialNetwork;
     public readonly discriminator: SequentialNetwork;
 
+    get learningRate(): number {
+        return this.generator.learningRate;
+    }
+
+    set learningRate(value: number) {
+        this.generator.learningRate = value;
+        this.discriminator.learningRate = value;
+    }
+
     constructor(inputSize: number, generatorSizes: number[], outputSize: number, discriminatorSizes: number[]) {
         this.generator = new SequentialNetwork(inputSize, ...generatorSizes, outputSize);
         this.discriminator = new SequentialNetwork(outputSize, ...discriminatorSizes, 1);

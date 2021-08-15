@@ -2,7 +2,7 @@ import {Component, ViewChild} from '@angular/core';
 
 import * as JSZip from "jszip";
 import {BinaryImageDrawerComponent} from "../../components/binary-image-drawer/binary-image-drawer.component";
-import {DEFAULT_LEARNING_RATE, DEFAULT_NN_LAYERS} from "../../workers/demo1/nn.worker.consts";
+import {DEFAULT_LEARNING_RATE, DEFAULT_NN_PARAMS} from "../../workers/demo2/gan.worker.consts";
 
 import * as fileInteraction from "../../utils/file-interaction";
 import * as image from "../../utils/image";
@@ -21,7 +21,10 @@ export class Demo2Component {
 
     private nnWorker!: Worker;
 
-    layersConfig: string = DEFAULT_NN_LAYERS.join(" ");
+    nnInputSize: number = DEFAULT_NN_PARAMS[0];
+    nnGenLayers: string = DEFAULT_NN_PARAMS[1].join(" ");
+    nnGenOutSize: number = DEFAULT_NN_PARAMS[2]
+    nnDisLayers: string = DEFAULT_NN_PARAMS[3].join(" ");
     learningRate: number = DEFAULT_LEARNING_RATE;
 
     currentIteration: number = 0;
@@ -46,7 +49,12 @@ export class Demo2Component {
     }
 
     refresh() {
+        const config = [
+            this.nnInputSize, this.nnGenLayers.split(" ").map(v => Number.parseInt(v)),
+            this.nnGenOutSize, this.nnDisLayers.split(" ").map(v => Number.parseInt(v))
+        ];
 
+        this.nnWorker.postMessage({type: "refresh", learningRate: this.learningRate, layers: config});
     }
 
     async loadData() {
