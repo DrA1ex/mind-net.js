@@ -2,6 +2,8 @@ import * as matrix from "../utils/matrix";
 import * as utils from "./utils";
 
 export type NeuralNetworkSnapshot = { weights: matrix.Matrix2D[], biases: matrix.Matrix1D[] };
+export type ActivationFn = (x: number) => number;
+export type ActivationDerFn = (m: matrix.Matrix1D) => matrix.Matrix1D;
 
 class Layer {
     neuronCnt: number;
@@ -33,6 +35,9 @@ export class SequentialNetwork {
     public learningRate: number;
     public readonly layers: Layer[];
 
+    public activationFn: ActivationFn = utils.sigmoid;
+    public activationDerivativeFn: ActivationDerFn = utils.der_sigmoid;
+
     constructor(...sizes: number[]) {
         /** @type {Layer[]} */
         this.layers = new Array(sizes.length);
@@ -59,7 +64,7 @@ export class SequentialNetwork {
             *   Compute corresponding direction and size of desired change
             *   to minimize neuron error amount.
             */
-            const gradient = matrix.mul_scalar(matrix.mul(errors, utils.vector_sig_der(layer.values)), this.learningRate);
+            const gradient = matrix.mul_scalar(matrix.mul(errors, this.activationDerivativeFn(layer.values)), this.learningRate);
 
             let weights!: matrix.Matrix2D;
             if (updateWeights) {
@@ -101,7 +106,7 @@ export class SequentialNetwork {
 
             for (let j = 0; j < layer.backWeights.length; j++) {
                 const neuronWeights = layer.backWeights[j];
-                layer.values[j] = utils.sig(matrix.dot(neuronWeights, prevLayer.values) + layer.biases[j]);
+                layer.values[j] = this.activationFn(matrix.dot(neuronWeights, prevLayer.values) + layer.biases[j]);
             }
 
             prevLayer = layer;

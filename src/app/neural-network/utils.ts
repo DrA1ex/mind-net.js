@@ -3,13 +3,20 @@ import * as matrix from "../utils/matrix";
 // @ts-ignore
 import * as nn from "./sequential";
 
-export function sig(x: number): number {
+export function sigmoid(x: number): number {
     return 1 / (1 + Math.exp(-x));
 }
 
-export function vector_sig_der(v: matrix.Matrix1D): matrix.Matrix1D {
-    // x * (1 - x)
+export function der_sigmoid(v: matrix.Matrix1D): matrix.Matrix1D {
     return matrix.matrix1d_unary_op(v, a => a * (1 - a));
+}
+
+export function leakyReLU(x: number, alpha: number = 0.01) {
+    return x > 0 ? x : x * alpha;
+}
+
+export function der_leakyReLU(v: matrix.Matrix1D, alpha = 0.01) {
+    return matrix.matrix1d_unary_op(v, x => x >= 0 ? 1 : alpha);
 }
 
 export function print(nn: nn.SequentialNetwork, training_data: [matrix.Matrix1D, matrix.Matrix1D][]) {

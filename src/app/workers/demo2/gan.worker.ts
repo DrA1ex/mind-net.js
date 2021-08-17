@@ -2,6 +2,7 @@
 
 import * as matrix from "../../utils/matrix";
 import * as color from "../../utils/color";
+import * as nnUtils from "../../neural-network/utils";
 
 import {GenerativeAdversarialNetwork} from "../../neural-network/generative-adversarial";
 import {
@@ -19,11 +20,31 @@ import {
 let lastDrawTime = 0;
 let trainingIterations = 0;
 let trainingData: number[][];
+
 let nnParams: NetworkParams = DEFAULT_NN_PARAMS;
 let learningRate = DEFAULT_LEARNING_RATE;
 
-let neuralNetwork = new GenerativeAdversarialNetwork(...nnParams);
-neuralNetwork.learningRate = DEFAULT_LEARNING_RATE;
+let activation = nnUtils.sigmoid;
+let activationDer = nnUtils.der_sigmoid;
+
+// TODO:
+//let activation = (v: number) => nnUtils.leakyReLU(v, 0.2);
+//let activationDer = (v: matrix.Matrix1D) => nnUtils.der_leakyReLU(v, 0.2);
+
+let neuralNetwork = createNn();
+
+function createNn() {
+    const nn = new GenerativeAdversarialNetwork(...nnParams);
+    nn.learningRate = learningRate;
+
+    nn.generator.activationFn = activation;
+    nn.generator.activationDerivativeFn = activationDer;
+
+    nn.discriminator.activationFn = activation;
+    nn.discriminator.activationDerivativeFn = activationDer;
+
+    return nn;
+}
 
 addEventListener('message', ({data}) => {
     function _refresh() {
@@ -31,8 +52,7 @@ addEventListener('message', ({data}) => {
             nnParams = data.params;
         }
 
-        neuralNetwork = new GenerativeAdversarialNetwork(...nnParams);
-        neuralNetwork.learningRate = learningRate;
+        neuralNetwork = createNn();
 
         trainingIterations = 0;
         if (trainingData && trainingData.length > 0) {
