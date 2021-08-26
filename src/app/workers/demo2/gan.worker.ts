@@ -1,8 +1,6 @@
 /// <reference lib="webworker" />
 
-import * as matrix from "../../neural-network/engine/matrix";
 import * as color from "../../utils/color";
-import * as nnUtils from "../../neural-network/utils";
 
 import {GenerativeAdversarialNetwork} from "../../neural-network/generative-adversarial";
 import {
@@ -24,24 +22,17 @@ let trainingData: number[][];
 let nnParams: NetworkParams = DEFAULT_NN_PARAMS;
 let learningRate = DEFAULT_LEARNING_RATE;
 
-let activation = nnUtils.sigmoid;
-let activationDer = nnUtils.der_sigmoid;
-
-// TODO:
-//let activation = (v: number) => nnUtils.leakyReLU(v, 0.2);
-//let activationDer = (v: matrix.Matrix1D) => nnUtils.der_leakyReLU(v, 0.2);
-
 let neuralNetwork = createNn();
 
 function createNn() {
     const nn = new GenerativeAdversarialNetwork(...nnParams);
-    nn.learningRate = learningRate;
-
-    nn.generator.activationFn = activation;
-    nn.generator.activationDerivativeFn = activationDer;
-
-    nn.discriminator.activationFn = activation;
-    nn.discriminator.activationDerivativeFn = activationDer;
+    // nn.learningRate = learningRate;
+    //
+    // nn.generator.activationFn = activation;
+    // nn.generator.activationDerivativeFn = activationDer;
+    //
+    // nn.discriminator.activationFn = activation;
+    // nn.discriminator.activationDerivativeFn = activationDer;
 
     return nn;
 }
@@ -88,7 +79,7 @@ function trainBatch() {
     let i = 0;
     while (++i) {
         const data = trainingData[Math.floor(Math.random() * trainingData.length)];
-        neuralNetwork.train(data, matrix.random(neuralNetwork.generator.layers[0].neuronCnt));
+        //neuralNetwork.train(Float32Array.from(data), matrix.random(neuralNetwork.generator.layers[0].neuronCnt));
 
         if (i % TRAINING_BATCH_SIZE === 0 && (performance.now() - beginTime) > MAX_ITERATION_TIME) {
             break;
@@ -114,7 +105,8 @@ function draw() {
     const size = Math.floor(Math.sqrt(data.length))
     const dataBuffer = dataToImageBuffer(data);
 
-    const genBuffer = dataToImageBuffer(neuralNetwork.generate(matrix.random(neuralNetwork.generator.layers[0].neuronCnt)));
+    //const genBuffer = dataToImageBuffer(neuralNetwork.generate(matrix.random(neuralNetwork.generator.layers[0].neuronCnt)));
+    const genBuffer = new ArrayBuffer(0);
 
     postMessage({
         type: "training_data",

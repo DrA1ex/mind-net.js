@@ -1,6 +1,6 @@
 import {Component, ElementRef, Input, SimpleChanges, ViewChild} from '@angular/core';
 
-import {NeuralNetworkSnapshot} from "../../neural-network/sequential";
+import {NeuralNetworkSnapshot} from "../../neural-network/engine/models";
 import * as iter from "../../neural-network/engine/iter";
 import * as matrix from "../../neural-network/engine/matrix";
 import {DelayedChangesProcessor} from "../base/delayed-changes-processor";
@@ -110,7 +110,7 @@ export class NeuralNetworkDrawerComponent {
 
             const max = matrix.max(neuronBackWeights, true);
             for (let j = 0; j < neuronBackWeights.length; j++) {
-                this.drawWeight(ctx, neuronBackWeights[j] / max,
+                this.drawWeight(ctx, neuronBackWeights.data[j] / max,
                     xPos, this.getNeuronPositionY(i, backWeights.length),
                     xPosPrev, this.getNeuronPositionY(j, neuronBackWeights.length)
                 );
@@ -123,7 +123,7 @@ export class NeuralNetworkDrawerComponent {
         const max = matrix.max(biases, true);
 
         for (let i = 0; i < biases.length; i++) {
-            this.drawNeuron(ctx, xPos, this.getNeuronPositionY(i, biases.length), biases[i] / max);
+            this.drawNeuron(ctx, xPos, this.getNeuronPositionY(i, biases.length), biases.data[i] / max);
         }
     }
 

@@ -1,6 +1,8 @@
 import * as matrix from "./matrix";
+import * as iter from "./iter";
 
 import {ILayer, IOptimizer} from "./base";
+import {GlobalPool, MemorySlice} from "./memory";
 
 class SgdOptimizer implements IOptimizer {
     readonly description: string;
@@ -11,9 +13,15 @@ class SgdOptimizer implements IOptimizer {
         this.description = `sgd(lr: ${this.lr})`;
     }
 
-    step(layer: ILayer, activations: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D {
-        const gradient = matrix.mul(error, layer.activation.moment(activations));
-        return matrix.matrix1d_unary_op(gradient, g => g * this.lr);
+    step(layer: ILayer, activations: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.ManagedMatrix1D {
+        const derivatives = layer.activation.moment(activations);
+        const gradient = matrix.mul(error, derivatives);
+        const result = matrix.matrix1d_unary_op(gradient, g => g * this.lr);
+
+        derivatives.free();
+        gradient.free();
+
+        return result;
     }
 }
 
@@ -22,7 +30,7 @@ class SgdNesterovOptimizer implements IOptimizer {
     readonly lr: number;
     readonly beta: number;
 
-    private cache = new WeakMap<ILayer, matrix.Matrix1D>();
+    private cache = new WeakMap<ILayer, matrix.ManagedMatrix1D>();
 
     constructor(beta = 0.9, lr = 0.01) {
         this.lr = lr;
@@ -31,21 +39,28 @@ class SgdNesterovOptimizer implements IOptimizer {
         this.description = `nesterov(beta: ${this.beta}, lr: ${this.lr})`;
     }
 
-    step(layer: ILayer, activations: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D {
+    step(layer: ILayer, activations: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.ManagedMatrix1D {
         if (!this.cache.has(layer)) {
             this.cache.set(layer, matrix.zero(layer.size))
         }
 
         const moment = this.cache.get(layer)!;
+        const nextValue = matrix.add(activations, moment);
+        const derivatives = layer.activation.moment(nextValue);
 
-        const gradient = matrix.mul(error, layer.activation.moment(matrix.add(activations, moment)));
+
+        const gradient = matrix.mul(error, layer.activation.moment(derivatives));
         matrix.matrix1d_binary_in_place_op(moment, gradient, (m, g) => this.beta * m + this.lr * g);
+
+        nextValue.free();
+        derivatives.free();
+        gradient.free();
 
         return moment;
     }
 }
 
-type AdamCacheT = { moments: matrix.Matrix1D, velocities: matrix.Matrix1D, mHats: matrix.Matrix1D, vHats: matrix.Matrix1D };
+type AdamCacheT = { moments: matrix.Matrix1D, velocities: matrix.Matrix1D };
 
 class AdamOptimizer implements IOptimizer {
     readonly description: string;
@@ -65,29 +80,37 @@ class AdamOptimizer implements IOptimizer {
         this.description = `adam(beta1: ${beta1}, beta2: ${beta2}, lr: ${this.lr}, eps: ${eps.toExponential()})`;
     }
 
-    step(layer: ILayer, activations: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D {
+    step(layer: ILayer, activations: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.ManagedMatrix1D {
         if (!this.cache.has(layer)) {
             this.cache.set(layer, {
-                moments: matrix.zero(layer.size),
-                velocities: matrix.zero(layer.size),
-                mHats: matrix.zero(layer.size),
-                vHats: matrix.zero(layer.size)
+                moments: MemorySlice.from(iter.fill_value(0, layer.size)),
+                velocities: MemorySlice.from(iter.fill_value(0, layer.size))
             })
         }
 
         const s = this.cache.get(layer)!;
 
-        const gradient = matrix.mul(error, layer.activation.moment(activations));
+        const derivatives = layer.activation.moment(activations);
+        const gradient = matrix.mul(error, derivatives);
 
         matrix.matrix1d_binary_in_place_op(s.moments, gradient, (m, g) => m * this.beta1 + (1 - this.beta1) * g);
         matrix.matrix1d_binary_in_place_op(s.velocities, gradient, (m, g) => m * this.beta2 + (1 - this.beta2) * g * g);
 
-        matrix.matrix1d_binary_in_place_op(s.mHats, s.moments, (_, m) => m / (1 - Math.pow(this.beta1, epoch + 1)));
-        matrix.matrix1d_binary_in_place_op(s.vHats, s.velocities, (_, v) => v / (1 - Math.pow(this.beta2, epoch + 1)));
+        const mHats = GlobalPool.alloc(layer.size);
+        const vHats = GlobalPool.alloc(layer.size);
 
-        matrix.matrix1d_binary_in_place_op(s.mHats, s.vHats, (m, v) => (m * this.lr) / (Math.sqrt(v) + this.eps));
+        // @ts-ignore
+        matrix.matrix1d_binary_in_place_op(mHats, s.moments, (_, m) => m / (1 - Math.pow(this.beta1, epoch + 1)));
+        // @ts-ignore
+        matrix.matrix1d_binary_in_place_op(vHats, s.velocities, (_, v) => v / (1 - Math.pow(this.beta2, epoch + 1)));
+        // @ts-ignore
+        matrix.matrix1d_binary_in_place_op(mHats, vHats, (m, v) => (m * this.lr) / (Math.sqrt(v) + this.eps));
 
-        return s.mHats;
+        derivatives.free();
+        gradient.free();
+        vHats.free();
+
+        return mHats;
     }
 
 }

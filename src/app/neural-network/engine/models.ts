@@ -1,7 +1,9 @@
 import * as matrix from "./matrix";
+import * as iter from "./iter";
 
 import {ILayer, IOptimizer} from "./base";
 import {Optimizers, OptimizerT} from "./optimizers";
+import {GlobalPool, MemorySlice} from "./memory";
 
 export type NeuralNetworkSnapshot = { weights: matrix.Matrix2D[], biases: matrix.Matrix1D[] };
 
@@ -46,13 +48,21 @@ export class SequentialModel {
             throw new Error("Model should be compiled before usage");
         }
 
-        let result = input;
+        let result = GlobalPool.allocFrom(input);
         for (let i = 1; i < this.layers.length; i++) {
             const layer = this.layers[i];
-            result = layer.activation.value(layer.step(result));
+
+            const newValue = layer.step(result);
+            result.free();
+
+            result = layer.activation.value(newValue);
+            newValue.free();
         }
 
-        return result;
+        const unmanagedResult = MemorySlice.from(result.data);
+        result.free();
+
+        return unmanagedResult;
     }
 
     train(input: matrix.Matrix1D, expected: matrix.Matrix1D) {
@@ -60,9 +70,10 @@ export class SequentialModel {
             throw new Error("Model should be compiled before usage");
         }
 
-        const activations = new Array(this.layers.length);
-        const primes = new Array(this.layers.length);
+        const activations: matrix.Matrix1D[] = new Array(this.layers.length);
+        const primes: matrix.Matrix1D[] = new Array(this.layers.length);
         activations[0] = input;
+        primes[0] = input;
         for (let i = 1; i < this.layers.length; i++) {
             primes[i] = this.layers[i].step(activations[i - 1]);
             activations[i] = this.layers[i].activation.value(primes[i]);
@@ -74,13 +85,22 @@ export class SequentialModel {
 
             const change = this.optimizer.step(layer, primes[i], errors, this.epoch);
             for (let j = 0; j < layer.size; j++) {
-                matrix.matrix1d_binary_in_place_op(layer.weights[j], activations[i - 1], (w, a) => w + a * change[j]);
+                matrix.matrix1d_binary_in_place_op(layer.weights[j], activations[i - 1], (w, a) => w + a * change.data[j]);
             }
             matrix.matrix1d_binary_in_place_op(layer.biases, change, (b, c) => b + c);
 
+            change.free()
             if (i > 1) {
-                errors = matrix.dot_2d_translated(layer.weights, errors);
+                const newErrors = matrix.dot_2d_translated(layer.weights, errors);
+                errors.free();
+                errors = newErrors;
             }
+        }
+
+        errors.free();
+
+        for (const item of iter.chain(activations.slice(1), primes.slice(1))) {
+            item.free();
         }
 
         this.epoch += 1;
@@ -88,8 +108,8 @@ export class SequentialModel {
 
     getSnapshot(): NeuralNetworkSnapshot {
         return {
-            weights: this.layers.slice(1).map(l => l.weights.map(w => matrix.copy(w))),
-            biases: this.layers.slice(1).map(l => matrix.copy(l.biases))
+            weights: this.layers.slice(1).map(l => l.weights.map(w => MemorySlice.from(w.data))),
+            biases: this.layers.slice(1).map(l => MemorySlice.from(l.biases.data))
         };
     }
 }

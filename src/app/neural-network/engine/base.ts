@@ -1,8 +1,8 @@
 import * as matrix from "./matrix";
 
 export interface IActivation {
-    value(m: matrix.Matrix1D): matrix.Matrix1D;
-    moment(m: matrix.Matrix1D): matrix.Matrix1D;
+    value(m: matrix.Matrix1D): matrix.ManagedMatrix1D;
+    moment(m: matrix.Matrix1D): matrix.ManagedMatrix1D;
 }
 
 export interface ILayer {
@@ -15,11 +15,11 @@ export interface ILayer {
     readonly activation: IActivation;
 
     build(index: number, prevSize: number): void;
-    step(input: matrix.Matrix1D): matrix.Matrix1D;
+    step(input: matrix.Matrix1D): matrix.ManagedMatrix1D;
 }
 
 export interface IOptimizer {
-    step(layer: ILayer, activations: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D
+    step(layer: ILayer, activations: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.ManagedMatrix1D
     readonly description: string
 }
 

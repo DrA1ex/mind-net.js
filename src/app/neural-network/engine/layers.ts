@@ -1,8 +1,10 @@
+import * as iter from "./iter";
 import * as matrix from "./matrix";
 
 import {IActivation, ILayer, InitializerFn} from "./base";
 import {Activations, ActivationT} from "./activations";
 import {Initializers, InitializerT} from "./initializers";
+import {GlobalPool, MemorySlice} from "./memory";
 
 export class Dense implements ILayer {
     readonly size: number;
@@ -48,21 +50,24 @@ export class Dense implements ILayer {
         this.prevSize = prevSize;
 
         if (index > 0) {
-            this.weights = matrix.fill(() => this.weight_initializer(this.prevSize, this.size), this.size);
+            this.weights = iter.fill(() => this.weight_initializer(this.prevSize, this.size), this.size);
             this.biases = this.bias_initializer(this.size, this.prevSize);
         } else {
             this.weights = [];
-            this.biases = [];
+            this.biases = MemorySlice.empty();
         }
     }
 
-    step(input: matrix.Matrix1D): matrix.Matrix1D {
-        let value = input;
+    step(input: matrix.Matrix1D): matrix.ManagedMatrix1D {
         if (this.weights.length > 0) {
-            value = matrix.add(matrix.dot_2d(this.weights, value), this.biases);
+            const dotProduct = matrix.dot_2d(this.weights, input)
+            const result = matrix.add(dotProduct, this.biases);
+            
+            dotProduct.free();
+            return result;
         }
 
-        return value;
+        return GlobalPool.allocFrom(input);
     }
 }
 

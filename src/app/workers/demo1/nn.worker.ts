@@ -1,8 +1,11 @@
 /// <reference lib="webworker" />
 
-import * as nnUtils from "../../neural-network/utils";
 import * as color from "../../utils/color";
+import * as nnUtils from "../../neural-network/utils";
 import {Matrix1D} from "../../neural-network/engine/matrix";
+import {GlobalPool, MemorySlice} from "../../neural-network/engine/memory";
+import NN from "../../neural-network/neural-network";
+
 import {
     COLOR_A_BIN,
     COLOR_B_BIN,
@@ -18,16 +21,15 @@ import {
     TRAINING_BATCH_SIZE,
 } from "./nn.worker.consts"
 
-import NN from "../../neural-network/neural-network";
-
 let neuralNetwork = create_nn(DEFAULT_NN_LAYERS, DEFAULT_LEARNING_RATE);
 let points: Point[] = [];
+let trainingData: [Matrix1D, Matrix1D][] = [];
 
 let currentTrainIterations = 0;
 let lastDraw = 0;
 
 function create_nn(sizes: number[], lr: number) {
-    const nn = new NN.Models.Sequential(new NN.Optimizers.nesterov(0.05, lr));
+    const nn = new NN.Models.Sequential(new NN.Optimizers.sgd(lr));
     nn.addLayer(new NN.Layers.Dense(2));
     for (const size of sizes) {
         nn.addLayer(new NN.Layers.Dense(size));
@@ -39,15 +41,21 @@ function create_nn(sizes: number[], lr: number) {
     return nn;
 }
 
+function pointToTrainingData(point: Point): [Matrix1D, Matrix1D] {
+    return [MemorySlice.from([point.x, point.y]), MemorySlice.from([point.type])]
+}
+
 addEventListener('message', ({data}) => {
     switch (data.type) {
         case "add_point":
             points.push(data.point as Point);
+            trainingData.push(pointToTrainingData(data.point));
             currentTrainIterations = 0;
             break;
 
         case "set_points":
             points = data.points as Point[];
+            trainingData = points.map(pointToTrainingData);
             currentTrainIterations = 0;
             break;
 
@@ -67,7 +75,6 @@ function trainBatch() {
     }
 
     const startTime = performance.now();
-    const trainingData: [Matrix1D, Matrix1D][] = points.map(p => ([[p.x, p.y], [p.type]]));
 
     let iterationCnt;
     for (iterationCnt = 0; iterationCnt < iterationsLeft; iterationCnt++) {
@@ -78,6 +85,9 @@ function trainBatch() {
             break;
         }
     }
+
+    console.log(`*** BATCH FINISHED with iterations ${iterationCnt} (${(iterationCnt / (performance.now() - startTime)).toFixed(2)} it/ms)`);
+    console.log(`*** CACHE STATE used: ${(GlobalPool.usedSize / 1000).toFixed(2)}K with ${GlobalPool.allocatedSlices} chunks / total: ${(GlobalPool.totalSize / 1000).toFixed(2)}K / max available: ${(GlobalPool.maxAvailableSize / 1000).toFixed(2)}K`);
 
     currentTrainIterations += iterationCnt;
     if (currentTrainIterations >= MAX_TRAINING_ITERATION) {
@@ -106,8 +116,8 @@ function sendCurrentState(scale: number = RESOLUTION_SCALE) {
     const state = new Uint32Array(xSteps * ySteps);
     for (let x = 0; x < xSteps; x++) {
         for (let y = 0; y < ySteps; y++) {
-            const result = neuralNetwork.compute([x * xStep, y * yStep]);
-            state[y * xSteps + x] = color.getLinearColorBin(COLOR_A_BIN, COLOR_B_BIN, result[0]);
+            const result = neuralNetwork.compute(MemorySlice.from([x * xStep, y * yStep]));
+            state[y * xSteps + x] = color.getLinearColorBin(COLOR_A_BIN, COLOR_B_BIN, result.data[0]);
         }
     }
 
