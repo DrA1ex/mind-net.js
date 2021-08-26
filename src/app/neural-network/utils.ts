@@ -19,7 +19,7 @@ export function der_leakyReLU(v: matrix.Matrix1D, alpha = 0.01) {
     return matrix.matrix1d_unary_op(v, x => x >= 0 ? 1 : alpha);
 }
 
-export function print(nn: nn.SequentialNetwork, training_data: [matrix.Matrix1D, matrix.Matrix1D][]) {
+export function print(nn: any, training_data: [matrix.Matrix1D, matrix.Matrix1D][]) {
     if (training_data.length === 0) {
         return;
     }

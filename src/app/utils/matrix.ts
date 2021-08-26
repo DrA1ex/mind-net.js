@@ -31,12 +31,12 @@ export function matrix1d_binary_op(a: Matrix1D, b: Matrix1D, op: (x1: number, x2
     return result;
 }
 
-export function matrix1d_unary_op(a: Matrix1D, op: (x1: number) => number): Matrix1D {
+export function matrix1d_unary_op(a: Matrix1D, op: (x1: number, i: number) => number): Matrix1D {
     const length = a.length;
     const result = new Array(length);
 
     for (let i = 0; i < length; ++i) {
-        result[i] = op(a[i]);
+        result[i] = op(a[i], i);
     }
 
     return result;
@@ -93,7 +93,7 @@ export function zero_2d(rows: number, cols: number): Matrix2D {
     return fill(() => zero(cols), rows);
 }
 
-export function identity(length: number): Matrix1D {
+export function one(length: number): Matrix1D {
     return fill_value(1, length);
 }
 

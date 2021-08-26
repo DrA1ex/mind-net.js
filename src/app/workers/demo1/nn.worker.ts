@@ -1,6 +1,5 @@
 /// <reference lib="webworker" />
 
-import {SequentialNetwork} from "../../neural-network/sequential";
 import * as nnUtils from "../../neural-network/utils";
 import * as color from "../../utils/color";
 import {Matrix1D} from "../../utils/matrix";
@@ -19,13 +18,28 @@ import {
     TRAINING_BATCH_SIZE,
 } from "./nn.worker.consts"
 
-let neuralNetwork = new SequentialNetwork(2, ...DEFAULT_NN_LAYERS, 1);
-neuralNetwork.learningRate = DEFAULT_LEARNING_RATE;
+import {SequentialModel} from "../../neural-network/neural-network";
+import {Optimizers} from "../../neural-network/engine/optimizers";
+import {Layers} from "../../neural-network/engine/layers";
 
+let neuralNetwork = create_nn(DEFAULT_NN_LAYERS, DEFAULT_LEARNING_RATE);
 let points: Point[] = [];
 
 let currentTrainIterations = 0;
 let lastDraw = 0;
+
+function create_nn(sizes: number[], lr: number) {
+    const nn = new SequentialModel(new Optimizers.nesterov(0.05, lr));
+    nn.addLayer(new Layers.Dense(2));
+    for (const size of sizes) {
+        nn.addLayer(new Layers.Dense(size));
+    }
+
+    nn.addLayer(new Layers.Dense(1));
+    nn.compile();
+
+    return nn;
+}
 
 addEventListener('message', ({data}) => {
     switch (data.type) {
@@ -43,8 +57,7 @@ addEventListener('message', ({data}) => {
             const newLayersConfig = data.config?.layers || DEFAULT_NN_LAYERS;
             const newLearningRateConfig = data.config?.learningRate || DEFAULT_LEARNING_RATE;
 
-            neuralNetwork = new SequentialNetwork(2, ...newLayersConfig, 1);
-            neuralNetwork.learningRate = newLearningRateConfig;
+            neuralNetwork = create_nn(newLayersConfig, newLearningRateConfig);
             currentTrainIterations = 0;
     }
 });
