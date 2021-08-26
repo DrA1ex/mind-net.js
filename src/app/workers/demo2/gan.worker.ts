@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-import * as matrix from "../../utils/matrix";
+import * as matrix from "../../neural-network/engine/matrix";
 import * as color from "../../utils/color";
 import * as nnUtils from "../../neural-network/utils";
 

@@ -1,4 +1,4 @@
-import * as matrix from "../../utils/matrix";
+import * as matrix from "./matrix";
 
 function zeroInitializer(size: number, _: number): matrix.Matrix1D {
     return matrix.zero(size);

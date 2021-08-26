@@ -2,7 +2,7 @@
 
 import * as nnUtils from "../../neural-network/utils";
 import * as color from "../../utils/color";
-import {Matrix1D} from "../../utils/matrix";
+import {Matrix1D} from "../../neural-network/engine/matrix";
 import {
     COLOR_A_BIN,
     COLOR_B_BIN,
@@ -18,9 +18,7 @@ import {
     TRAINING_BATCH_SIZE,
 } from "./nn.worker.consts"
 
-import {SequentialModel} from "../../neural-network/neural-network";
-import {Optimizers} from "../../neural-network/engine/optimizers";
-import {Layers} from "../../neural-network/engine/layers";
+import NN from "../../neural-network/neural-network";
 
 let neuralNetwork = create_nn(DEFAULT_NN_LAYERS, DEFAULT_LEARNING_RATE);
 let points: Point[] = [];
@@ -29,13 +27,13 @@ let currentTrainIterations = 0;
 let lastDraw = 0;
 
 function create_nn(sizes: number[], lr: number) {
-    const nn = new SequentialModel(new Optimizers.nesterov(0.05, lr));
-    nn.addLayer(new Layers.Dense(2));
+    const nn = new NN.Models.Sequential(new NN.Optimizers.nesterov(0.05, lr));
+    nn.addLayer(new NN.Layers.Dense(2));
     for (const size of sizes) {
-        nn.addLayer(new Layers.Dense(size));
+        nn.addLayer(new NN.Layers.Dense(size));
     }
 
-    nn.addLayer(new Layers.Dense(1));
+    nn.addLayer(new NN.Layers.Dense(1));
     nn.compile();
 
     return nn;

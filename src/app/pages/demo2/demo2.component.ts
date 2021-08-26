@@ -6,7 +6,7 @@ import {DEFAULT_LEARNING_RATE, DEFAULT_NN_PARAMS} from "../../workers/demo2/gan.
 
 import * as fileInteraction from "../../utils/file-interaction";
 import * as image from "../../utils/image";
-import * as matrix from "../../utils/matrix";
+import * as matrix from "../../neural-network/engine/matrix";
 
 @Component({
     selector: 'app-demo2',

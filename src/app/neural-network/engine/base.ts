@@ -1,4 +1,4 @@
-import * as matrix from "../../utils/matrix";
+import * as matrix from "./matrix";
 
 export interface IActivation {
     value(m: matrix.Matrix1D): matrix.Matrix1D;

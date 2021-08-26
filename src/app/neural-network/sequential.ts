@@ -1,4 +1,4 @@
-import * as matrix from "../utils/matrix";
+import * as matrix from "./engine/matrix";
 import * as utils from "./utils";
 
 export type NeuralNetworkSnapshot = { weights: matrix.Matrix2D[], biases: matrix.Matrix1D[] };

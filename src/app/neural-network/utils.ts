@@ -1,7 +1,5 @@
-import * as iter from "../utils/iter";
-import * as matrix from "../utils/matrix";
-// @ts-ignore
-import * as nn from "./sequential";
+import * as iter from "./engine/iter";
+import * as matrix from "./engine/matrix";
 
 export function sigmoid(x: number): number {
     return 1 / (1 + Math.exp(-x));

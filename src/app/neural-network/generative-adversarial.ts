@@ -1,5 +1,5 @@
 import {SequentialNetwork} from "./sequential";
-import * as matrix from "../utils/matrix";
+import * as matrix from "./engine/matrix";
 
 export class GenerativeAdversarialNetwork {
     public readonly generator: SequentialNetwork;

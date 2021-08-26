@@ -1,4 +1,4 @@
-import * as matrix from "../../utils/matrix";
+import * as matrix from "./matrix";
 
 import {IActivation, ILayer, InitializerFn} from "./base";
 import {Activations, ActivationT} from "./activations";

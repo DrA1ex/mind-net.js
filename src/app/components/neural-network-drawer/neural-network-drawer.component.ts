@@ -1,8 +1,8 @@
 import {Component, ElementRef, Input, SimpleChanges, ViewChild} from '@angular/core';
 
 import {NeuralNetworkSnapshot} from "../../neural-network/sequential";
-import * as iter from "../../utils/iter";
-import * as matrix from "../../utils/matrix";
+import * as iter from "../../neural-network/engine/iter";
+import * as matrix from "../../neural-network/engine/matrix";
 import {DelayedChangesProcessor} from "../base/delayed-changes-processor";
 
 @Component({
