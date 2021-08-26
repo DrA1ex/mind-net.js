@@ -4,13 +4,17 @@ import {OptMatrix1D} from "./matrix";
 import {IActivation} from "./base";
 
 class SigmoidActivation implements IActivation {
-    value(m: matrix.Matrix1D, dst: OptMatrix1D = undefined): matrix.Matrix1D {
-        return matrix.matrix1d_unary_op(m, x => 1 / (1 + Math.exp(-x)), dst);
+    value(x: number): number {
+        return 1 / (1 + Math.exp(-x));
     }
 
-    moment(m: matrix.Matrix1D, dst: OptMatrix1D = undefined): matrix.Matrix1D {
-        const sig = this.value(m, dst);
-        return matrix.matrix1d_unary_op(sig, x => x * (1 - x), sig);
+    value_matrix(m: matrix.Matrix1D, dst: OptMatrix1D = undefined): matrix.Matrix1D {
+        return matrix.matrix1d_unary_op(m, this.value, dst);
+    }
+
+    moment(x: number): number {
+        const s = this.value(x);
+        return s * (1 - s);
     }
 }
 
@@ -21,24 +25,32 @@ class LeakyReluActivation implements IActivation {
         this.alpha = alpha
     }
 
-    value(m: matrix.Matrix1D, dst: OptMatrix1D = undefined): matrix.Matrix1D {
-        return matrix.matrix1d_unary_op(m, x => x > 0 ? x : x * this.alpha, dst);
+    value(x: number): number {
+        return x > 0 ? x : x * this.alpha;
     }
 
-    moment(m: matrix.Matrix1D, dst: OptMatrix1D = undefined): matrix.Matrix1D {
-        return matrix.matrix1d_unary_op(m, x => x > 0 ? 1 : this.alpha, dst);
+    value_matrix(m: matrix.Matrix1D, dst: OptMatrix1D = undefined): matrix.Matrix1D {
+        return matrix.matrix1d_unary_op(m, (x) => this.value(x), dst);
+    }
+
+    moment(x: number): number {
+        return x > 0 ? 1 : this.alpha;
     }
 }
 
 class ReluActivation implements IActivation {
     private leakyRelu = new LeakyReluActivation(0);
 
-    value(m: matrix.Matrix1D, dst: OptMatrix1D = undefined): matrix.Matrix1D {
-        return this.leakyRelu.value(m, dst);
+    value(x: number): number {
+        return this.leakyRelu.value(x);
     }
 
-    moment(m: matrix.Matrix1D, dst: OptMatrix1D = undefined): matrix.Matrix1D {
-        return this.leakyRelu.moment(m, dst);
+    value_matrix(m: matrix.Matrix1D, dst: OptMatrix1D = undefined): matrix.Matrix1D {
+        return this.leakyRelu.value_matrix(m, dst);
+    }
+
+    moment(x: number): number {
+        return this.leakyRelu.moment(x);
     }
 }
 

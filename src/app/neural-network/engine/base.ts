@@ -2,8 +2,9 @@ import * as matrix from "./matrix";
 import {Matrix1D} from "./matrix";
 
 export interface IActivation {
-    value(m: matrix.Matrix1D, dst?: Matrix1D): matrix.Matrix1D;
-    moment(m: matrix.Matrix1D, dst?: Matrix1D): matrix.Matrix1D;
+    value(x: number): number
+    value_matrix(m: matrix.Matrix1D, dst?: Matrix1D): matrix.Matrix1D;
+    moment(x: number): number;
 }
 
 export interface ILayer {

@@ -28,12 +28,12 @@ let lastDraw = 0;
 
 function create_nn(sizes: number[], lr: number) {
     const nn = new NN.Models.Sequential(new NN.Optimizers.nesterov(0.25, lr));
-    nn.addLayer(new NN.Layers.Dense(2, "sigmoid", "xavier"));
+    nn.addLayer(new NN.Layers.Dense(2));
     for (const size of sizes) {
         nn.addLayer(new NN.Layers.Dense(size, "sigmoid", "xavier"));
     }
 
-    nn.addLayer(new NN.Layers.Dense(1, "sigmoid", "xavier"));
+    nn.addLayer(new NN.Layers.Dense(1));
     nn.compile();
 
     return nn;

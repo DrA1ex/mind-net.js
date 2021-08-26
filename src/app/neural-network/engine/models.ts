@@ -52,7 +52,7 @@ export class SequentialModel {
         let result = input;
         for (let i = 1; i < this.layers.length; i++) {
             const layer = this.layers[i];
-            result = layer.activation.value(layer.step(result), this.cache.get(layer));
+            result = layer.activation.value_matrix(layer.step(result), this.cache.get(layer));
         }
 
         return result;
@@ -70,7 +70,7 @@ export class SequentialModel {
             const layer = this.layers[i];
 
             primes[i] = layer.step(activations[i - 1]);
-            activations[i] = layer.activation.value(primes[i], this.cache.get(layer));
+            activations[i] = layer.activation.value_matrix(primes[i], this.cache.get(layer));
         }
 
         let errors = matrix.sub(expected, activations[activations.length - 1]);

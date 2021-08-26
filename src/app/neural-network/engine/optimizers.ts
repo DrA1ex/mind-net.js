@@ -12,20 +12,18 @@ class SgdOptimizer implements IOptimizer {
     }
 
     step(layer: ILayer, activations: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D {
-        const dst = layer.activation.moment(activations);
-        matrix.mul_to(dst, error);
-        matrix.matrix1d_unary_in_place_op(dst, g => g * this.lr);
-
-        return dst;
+        return matrix.matrix1d_binary_op(activations, error, (a, e) => layer.activation.moment(a) * e * this.lr);
     }
 }
+
+type NesterovCacheT = { moments: matrix.Matrix1D, tmp1: matrix.Matrix1D };
 
 class SgdNesterovOptimizer implements IOptimizer {
     readonly description: string;
     readonly lr: number;
     readonly beta: number;
 
-    private cache = new Map<ILayer, matrix.Matrix1D>();
+    private cache = new Map<ILayer, NesterovCacheT>();
 
     constructor(beta = 0.9, lr = 0.01) {
         this.lr = lr;
@@ -36,18 +34,59 @@ class SgdNesterovOptimizer implements IOptimizer {
 
     step(layer: ILayer, activations: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D {
         if (!this.cache.has(layer)) {
-            this.cache.set(layer, matrix.zero(layer.size))
+            this.cache.set(layer, {
+                moments: matrix.zero(layer.size),
+                tmp1: matrix.zero(layer.size)
+            })
         }
 
-        const moment = this.cache.get(layer)!;
+        const s = this.cache.get(layer)!;
 
-        let dst = matrix.add(activations, moment);
-        layer.activation.moment(dst, dst)
-        matrix.mul_to(dst, error);
+        // next gradient
+        matrix.matrix1d_binary_op(activations, s.moments, (a, m) => layer.activation.moment(a + m), s.tmp1);
+        matrix.mul_to(s.tmp1, error);
 
-        matrix.matrix1d_binary_in_place_op(moment, dst, (m, g) => this.beta * m + this.lr * g);
+        matrix.matrix1d_binary_in_place_op(s.moments, s.tmp1, (m, g) => this.beta * m + this.lr * g);
 
-        return moment;
+        return s.moments;
+    }
+}
+
+
+type RMSPropCacheT = { velocities: matrix.Matrix1D, tmp1: matrix.Matrix1D };
+
+class RMSPropOptimizer implements IOptimizer {
+    readonly description: string;
+    readonly beta: number;
+    readonly lr: number;
+    readonly eps: number
+
+    private cache = new Map<ILayer, RMSPropCacheT>();
+
+    constructor(beta = 0.9, lr = 0.005, eps = 1e-8) {
+        this.beta = beta;
+        this.lr = lr;
+        this.eps = eps;
+        this.description = `rmsprop(beta: ${beta}, lr: ${this.lr}, eps: ${this.eps})`;
+    }
+
+    step(layer: ILayer, activations: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D {
+        if (!this.cache.has(layer)) {
+            this.cache.set(layer, {
+                velocities: matrix.zero(layer.size),
+                tmp1: matrix.zero(layer.size)
+            })
+        }
+
+        const s = this.cache.get(layer)!;
+
+        // next gradient
+        matrix.matrix1d_binary_op(activations, error, (a, e) => e * layer.activation.moment(a), s.tmp1);
+
+        matrix.matrix1d_binary_in_place_op(s.velocities, s.tmp1, (m, g) => this.beta * m + (1 - this.beta) * g * g);
+        matrix.matrix1d_binary_in_place_op(s.tmp1, s.velocities, (g, m) => (this.lr / Math.sqrt(m + this.eps) * g));
+
+        return s.tmp1;
     }
 }
 
@@ -83,12 +122,14 @@ class AdamOptimizer implements IOptimizer {
 
         const s = this.cache.get(layer)!;
 
-        layer.activation.moment(activations, s.tmp1);
-        const gradient = matrix.mul_to(s.tmp1, error);
+        // gradient
+        matrix.matrix1d_binary_op(activations, error, (a, e) => layer.activation.moment(a) * e, s.tmp1);
 
-        matrix.matrix1d_binary_in_place_op(s.moments, gradient, (m, g) => m * this.beta1 + (1 - this.beta1) * g);
-        matrix.matrix1d_binary_in_place_op(s.velocities, gradient, (m, g) => m * this.beta2 + (1 - this.beta2) * g * g);
+        // moving smooth moment and velocity
+        matrix.matrix1d_binary_in_place_op(s.moments, s.tmp1, (m, g) => m * this.beta1 + (1 - this.beta1) * g);
+        matrix.matrix1d_binary_in_place_op(s.velocities, s.tmp1, (m, g) => m * this.beta2 + (1 - this.beta2) * g * g);
 
+        // boost moment and velocity for first epochs
         matrix.matrix1d_binary_in_place_op(s.tmp1, s.moments, (_, m) => m / (1 - Math.pow(this.beta1, epoch + 1)));
         matrix.matrix1d_binary_in_place_op(s.tmp2, s.velocities, (_, v) => v / (1 - Math.pow(this.beta2, epoch + 1)));
 
@@ -99,10 +140,11 @@ class AdamOptimizer implements IOptimizer {
 
 }
 
-export type OptimizerT = "sgd" | "nesterov" | "adam";
+export type OptimizerT = "sgd" | "nesterov" | "adam" | "rmsprop";
 
 export const Optimizers = {
     sgd: SgdOptimizer,
     nesterov: SgdNesterovOptimizer,
-    adam: AdamOptimizer
+    adam: AdamOptimizer,
+    rmsprop: RMSPropOptimizer
 }
