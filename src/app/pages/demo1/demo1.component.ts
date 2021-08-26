@@ -36,7 +36,7 @@ export class Demo1Component {
         this.nnWorker.onmessage = ({data}) => {
             switch (data.type) {
                 case "training_data":
-                    console.log(`*** Transfer took ${performance.now() - data.t}ms`);
+                    console.log(`*** Transfer took ${(performance.now() - data.t).toFixed(2)}ms`);
 
                     this.currentIteration = data.iteration;
                     this.training = this.currentIteration < this.maxIterations && this.points.length > 0;

@@ -13,6 +13,7 @@ export class Dense implements ILayer {
 
     biases!: matrix.Matrix1D;
     weights!: matrix.Matrix2D;
+    values!: matrix.Matrix1D;
 
     readonly activation: IActivation;
 
@@ -50,19 +51,22 @@ export class Dense implements ILayer {
         if (index > 0) {
             this.weights = matrix.fill(() => this.weight_initializer(this.prevSize, this.size), this.size);
             this.biases = this.bias_initializer(this.size, this.prevSize);
+            this.values = matrix.zero(this.size);
         } else {
             this.weights = [];
             this.biases = [];
+            this.values = [];
         }
     }
 
     step(input: matrix.Matrix1D): matrix.Matrix1D {
-        let value = input;
         if (this.weights.length > 0) {
-            value = matrix.add(matrix.dot_2d(this.weights, value), this.biases);
+            matrix.dot_2d(this.weights, input, this.values);
+            matrix.add_to(this.values, this.biases);
+            return this.values
         }
 
-        return value;
+        return input;
     }
 }
 

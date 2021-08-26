@@ -3,6 +3,8 @@ import * as iter from './iter';
 export type Matrix1D = number[];
 export type Matrix2D = number[][];
 
+export type OptMatrix1D = number[] | undefined;
+
 export function fill<T>(value_fn: (i: number) => T, length: number): T[] {
     return Array.from(iter.map(iter.range(0, length), value_fn));
 }
@@ -11,18 +13,17 @@ export function fill_value<T>(value: T, length: number): T[] {
     return fill(() => value, length);
 }
 
-export function matrix1d_binary_in_place_op(a: Matrix1D, b: Matrix1D, op: (x1: number, x2: number) => number) {
-    const length = Math.min(a.length, b.length);
+export function matrix1d_binary_in_place_op(dst: Matrix1D, b: Matrix1D, op: (x1: number, x2: number) => number) {
+    const length = Math.min(dst.length, b.length);
 
     for (let i = 0; i < length; ++i) {
-        a[i] = op(a[i], b[i]);
+        dst[i] = op(dst[i], b[i]);
     }
 }
 
-
-export function matrix1d_binary_op(a: Matrix1D, b: Matrix1D, op: (x1: number, x2: number) => number): Matrix1D {
+export function matrix1d_binary_op(a: Matrix1D, b: Matrix1D, op: (x1: number, x2: number) => number, dst: OptMatrix1D = undefined): Matrix1D {
     const length = Math.min(a.length, b.length);
-    const result = new Array(length);
+    const result = dst || new Array(length);
 
     for (let i = 0; i < length; ++i) {
         result[i] = op(a[i], b[i]);
@@ -31,9 +32,9 @@ export function matrix1d_binary_op(a: Matrix1D, b: Matrix1D, op: (x1: number, x2
     return result;
 }
 
-export function matrix1d_unary_op(a: Matrix1D, op: (x1: number, i: number) => number): Matrix1D {
+export function matrix1d_unary_op(a: Matrix1D, op: (x1: number, i: number) => number, dst: OptMatrix1D = undefined): Matrix1D {
     const length = a.length;
-    const result = new Array(length);
+    const result = dst || new Array(length);
 
     for (let i = 0; i < length; ++i) {
         result[i] = op(a[i], i);
@@ -42,32 +43,45 @@ export function matrix1d_unary_op(a: Matrix1D, op: (x1: number, i: number) => nu
     return result;
 }
 
-export function sub(a: Matrix1D, b: Matrix1D): Matrix1D {
-    return matrix1d_binary_op(a, b, (x1, x2) => x1 - x2);
+export function matrix1d_unary_in_place_op(a: Matrix1D, op: (x1: number, i: number) => number): Matrix1D {
+    const length = a.length;
+    for (let i = 0; i < length; ++i) {
+        a[i] = op(a[i], i);
+    }
+
+    return a;
 }
 
-export function add(a: Matrix1D, b: Matrix1D): Matrix1D {
-    return matrix1d_binary_op(a, b, (x1, x2) => x1 + x2);
+export function sub(a: Matrix1D, b: Matrix1D, dst: OptMatrix1D = undefined): Matrix1D {
+    return matrix1d_binary_op(a, b, (x1, x2) => x1 - x2, dst);
+}
+
+export function add(a: Matrix1D, b: Matrix1D, dst: OptMatrix1D = undefined): Matrix1D {
+    return matrix1d_binary_op(a, b, (x1, x2) => x1 + x2, dst);
 }
 
 export function add_to(dst: Matrix1D, b: Matrix1D) {
     matrix1d_binary_in_place_op(dst, b, (x1, x2) => x1 + x2);
 }
 
-export function add_scalar(a: Matrix1D, value: number): Matrix1D {
-    return matrix1d_unary_op(a, x1 => x1 + value);
+export function add_scalar(a: Matrix1D, value: number, dst: OptMatrix1D = undefined): Matrix1D {
+    return matrix1d_unary_op(a, x1 => x1 + value, dst);
 }
 
-export function mul(a: Matrix1D, b: Matrix1D): Matrix1D {
-    return matrix1d_binary_op(a, b, (x1, x2) => x1 * x2);
+export function mul(a: Matrix1D, b: Matrix1D, dst: OptMatrix1D = undefined): Matrix1D {
+    return matrix1d_binary_op(a, b, (x1, x2) => x1 * x2, dst);
 }
 
-export function mul_scalar(a: Matrix1D, value: number): Matrix1D {
-    return matrix1d_unary_op(a, x1 => x1 * value);
+export function mul_to(dst: Matrix1D, b: Matrix1D): Matrix1D {
+    return matrix1d_binary_op(dst, b, (x1, x2) => x1 * x2, dst);
 }
 
-export function div(a: Matrix1D, b: Matrix1D): Matrix1D {
-    return matrix1d_binary_op(a, b, (x1, x2) => x1 / x2);
+export function mul_scalar(a: Matrix1D, value: number, dst: OptMatrix1D = undefined): Matrix1D {
+    return matrix1d_unary_op(a, x1 => x1 * value, dst);
+}
+
+export function div(a: Matrix1D, b: Matrix1D, dst: OptMatrix1D = undefined): Matrix1D {
+    return matrix1d_binary_op(a, b, (x1, x2) => x1 / x2, dst);
 }
 
 export function dot(a: Matrix1D, b: Matrix1D): number {
@@ -152,8 +166,14 @@ export function random_2d(rows: number, cols: number, from: number = 0, to: numb
 }
 
 
-export function dot_2d(x1: Matrix2D, x2: Matrix1D): Matrix1D {
-    return fill(i => dot(x1[i], x2), x1.length);
+export function dot_2d(x1: Matrix2D, x2: Matrix1D, dst: OptMatrix1D = undefined): Matrix1D {
+    const length = x1.length;
+    const result = dst || new Array(length);
+    for (let i = 0; i < length; i++) {
+        result[i] = dot(x1[i], x2);
+    }
+
+    return result;
 }
 
 export function dot_2d_translated(x1: Matrix2D, x2: Matrix1D): Matrix1D {

@@ -12,6 +12,8 @@ export class SequentialModel {
     readonly layers: ILayer[] = [];
     readonly optimizer: IOptimizer;
 
+    private cache = new Map<ILayer, matrix.Matrix1D>();
+
     constructor(optimizer: OptimizerT | IOptimizer = 'sgd',) {
         const optimizer_param = typeof optimizer === "string" ? Optimizers[optimizer] : optimizer
         if (!optimizer_param) {
@@ -36,6 +38,7 @@ export class SequentialModel {
 
             const prevSize = i > 0 ? this.layers[i - 1].size : 0;
             layer.build(i, prevSize);
+            this.cache.set(layer, new Array(layer.size));
         }
 
         this.compiled = true;
@@ -49,7 +52,7 @@ export class SequentialModel {
         let result = input;
         for (let i = 1; i < this.layers.length; i++) {
             const layer = this.layers[i];
-            result = layer.activation.value(layer.step(result));
+            result = layer.activation.value(layer.step(result), this.cache.get(layer));
         }
 
         return result;
@@ -64,8 +67,10 @@ export class SequentialModel {
         const primes = new Array(this.layers.length);
         activations[0] = input;
         for (let i = 1; i < this.layers.length; i++) {
-            primes[i] = this.layers[i].step(activations[i - 1]);
-            activations[i] = this.layers[i].activation.value(primes[i]);
+            const layer = this.layers[i];
+
+            primes[i] = layer.step(activations[i - 1]);
+            activations[i] = layer.activation.value(primes[i], this.cache.get(layer));
         }
 
         let errors = matrix.sub(expected, activations[activations.length - 1]);

@@ -27,13 +27,13 @@ let currentTrainIterations = 0;
 let lastDraw = 0;
 
 function create_nn(sizes: number[], lr: number) {
-    const nn = new NN.Models.Sequential(new NN.Optimizers.nesterov(0.05, lr));
-    nn.addLayer(new NN.Layers.Dense(2));
+    const nn = new NN.Models.Sequential(new NN.Optimizers.nesterov(0.25, lr));
+    nn.addLayer(new NN.Layers.Dense(2, "sigmoid", "xavier"));
     for (const size of sizes) {
-        nn.addLayer(new NN.Layers.Dense(size));
+        nn.addLayer(new NN.Layers.Dense(size, "sigmoid", "xavier"));
     }
 
-    nn.addLayer(new NN.Layers.Dense(1));
+    nn.addLayer(new NN.Layers.Dense(1, "sigmoid", "xavier"));
     nn.compile();
 
     return nn;
@@ -78,6 +78,9 @@ function trainBatch() {
             break;
         }
     }
+
+    const batchTime = performance.now() - startTime;
+    console.log(`*** BATCH FINISHED with ${iterationCnt} in ${batchTime.toFixed(2)}ms (${(iterationCnt / batchTime).toFixed(2)} op/ms)`)
 
     currentTrainIterations += iterationCnt;
     if (currentTrainIterations >= MAX_TRAINING_ITERATION) {
