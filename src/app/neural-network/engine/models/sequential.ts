@@ -1,9 +1,7 @@
-import * as matrix from "./matrix";
+import * as matrix from "../matrix";
 
-import {ILayer, IOptimizer} from "./base";
-import {Optimizers, OptimizerT} from "./optimizers";
-
-export type NeuralNetworkSnapshot = { weights: matrix.Matrix2D[], biases: matrix.Matrix1D[] };
+import {ILayer, IOptimizer, NeuralNetworkSnapshot} from "../base";
+import {Optimizers, OptimizerT} from "../optimizers";
 
 export class SequentialModel {
     private compiled: boolean = false;
@@ -97,8 +95,4 @@ export class SequentialModel {
             biases: this.layers.slice(1).map(l => matrix.copy(l.biases))
         };
     }
-}
-
-export const Models = {
-    Sequential: SequentialModel
 }

@@ -26,3 +26,5 @@ export interface IOptimizer {
 }
 
 export type InitializerFn = (size: number, prevSize: number) => matrix.Matrix1D;
+
+export type NeuralNetworkSnapshot = { weights: matrix.Matrix2D[], biases: matrix.Matrix1D[] };
