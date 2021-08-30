@@ -31,6 +31,10 @@ export class SequentialModel {
     }
 
     compile() {
+        if (this.compiled) {
+            return;
+        }
+
         for (let i = 0; i < this.layers.length; i++) {
             const layer = this.layers[i];
 
@@ -47,10 +51,14 @@ export class SequentialModel {
             throw new Error("Model should be compiled before usage");
         }
 
+        if (input.length !== this.layers[0].size) {
+            throw new Error(`Input matrix has different size. Expected size ${this.layers[0].size}, got ${input.length}`);
+        }
+
         let result = input;
         for (let i = 1; i < this.layers.length; i++) {
             const layer = this.layers[i];
-            result = layer.activation.value_matrix(layer.step(result), this.cache.get(layer));
+            result = matrix.matrix1d_unary_op(layer.step(result), x => layer.activation.value(x), this.cache.get(layer));
         }
 
         return result;
@@ -61,6 +69,15 @@ export class SequentialModel {
             throw new Error("Model should be compiled before usage");
         }
 
+        if (input.length !== this.layers[0].size) {
+            throw new Error(`Input matrix has different size. Expected size ${this.layers[0].size}, got ${input.length}`);
+        }
+
+        const outSize = this.layers[this.layers.length - 1].size;
+        if (expected.length !== outSize) {
+            throw new Error(`Output matrix has different size. Expected size ${outSize}, got ${expected.length}`);
+        }
+
         const activations = new Array(this.layers.length);
         const primes = new Array(this.layers.length);
         activations[0] = input;
@@ -68,7 +85,7 @@ export class SequentialModel {
             const layer = this.layers[i];
 
             primes[i] = layer.step(activations[i - 1]);
-            activations[i] = layer.activation.value_matrix(primes[i], this.cache.get(layer));
+            activations[i] = matrix.matrix1d_unary_op(primes[i], x => layer.activation.value(x), this.cache.get(layer));
         }
 
         let errors = matrix.sub(expected, activations[activations.length - 1]);

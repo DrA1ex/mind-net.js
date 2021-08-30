@@ -22,9 +22,8 @@ export class Demo2Component {
     private nnWorker!: Worker;
 
     nnInputSize: number = DEFAULT_NN_PARAMS[0];
-    nnGenLayers: string = DEFAULT_NN_PARAMS[1].join(" ");
+    nnHiddenLayers: string = DEFAULT_NN_PARAMS[1].join(" ");
     nnGenOutSize: number = DEFAULT_NN_PARAMS[2]
-    nnDisLayers: string = DEFAULT_NN_PARAMS[3].join(" ");
     learningRate: number = DEFAULT_LEARNING_RATE;
 
     currentIteration: number = 0;
@@ -39,7 +38,7 @@ export class Demo2Component {
         this.nnWorker.onmessage = ({data}) => {
             switch (data.type) {
                 case "training_data":
-                    this.generatedImage.draw(data.generatedData, data.width, data.height);
+                    this.generatedImage.draw(data.generatedData, data.genWidth, data.genHeight);
                     this.trainingImage.draw(data.trainingData, data.width, data.height);
 
                     this.currentIteration = data.currentIteration;
@@ -50,8 +49,9 @@ export class Demo2Component {
 
     refresh() {
         const config = [
-            this.nnInputSize, this.nnGenLayers.split(" ").map(v => Number.parseInt(v)),
-            this.nnGenOutSize, this.nnDisLayers.split(" ").map(v => Number.parseInt(v))
+            +this.nnInputSize,
+            this.nnHiddenLayers.split(" ").map(v => Number.parseInt(v)),
+            +this.nnGenOutSize
         ];
 
         this.nnWorker.postMessage({type: "refresh", learningRate: this.learningRate, layers: config});

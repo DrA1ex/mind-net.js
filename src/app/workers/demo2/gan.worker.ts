@@ -1,15 +1,16 @@
 /// <reference lib="webworker" />
 
-import * as matrix from "../../neural-network/engine/matrix";
+import * as iter from "../../neural-network/engine/iter";
 import * as color from "../../utils/color";
 import * as nnUtils from "../../neural-network/utils";
+import NN from "../../neural-network/neural-network";
 
-import {GenerativeAdversarialNetwork} from "../../neural-network/generative-adversarial";
 import {
     COLOR_A_BIN,
     COLOR_B_BIN,
     DEFAULT_LEARNING_RATE,
     DEFAULT_NN_PARAMS,
+    DRAW_SAMPLES_DIMENSION,
     DRAWING_DELAY,
     MAX_ITERATION_TIME,
     NetworkParams,
@@ -24,26 +25,28 @@ let trainingData: number[][];
 let nnParams: NetworkParams = DEFAULT_NN_PARAMS;
 let learningRate = DEFAULT_LEARNING_RATE;
 
-let activation = nnUtils.sigmoid;
-let activationDer = nnUtils.der_sigmoid;
-
-// TODO:
-//let activation = (v: number) => nnUtils.leakyReLU(v, 0.2);
-//let activationDer = (v: matrix.Matrix1D) => nnUtils.der_leakyReLU(v, 0.2);
-
 let neuralNetwork = createNn();
 
 function createNn() {
-    const nn = new GenerativeAdversarialNetwork(...nnParams);
-    nn.learningRate = learningRate;
+    const [input, genSizes, output] = nnParams;
 
-    nn.generator.activationFn = activation;
-    nn.generator.activationDerivativeFn = activationDer;
+    const generator = new NN.Models.Sequential(new NN.Optimizers.sgd(learningRate));
+    generator.addLayer(new NN.Layers.Dense(input));
+    for (const size of genSizes) {
+        generator.addLayer(new NN.Layers.Dense(size));
+    }
+    generator.addLayer(new NN.Layers.Dense(output));
+    generator.compile();
 
-    nn.discriminator.activationFn = activation;
-    nn.discriminator.activationDerivativeFn = activationDer;
+    const discriminator = new NN.Models.Sequential(new NN.Optimizers.sgd(learningRate));
+    discriminator.addLayer(new NN.Layers.Dense(output));
+    for (const size of iter.reverse(genSizes)) {
+        discriminator.addLayer(new NN.Layers.Dense(size));
+    }
+    discriminator.addLayer(new NN.Layers.Dense(1));
+    discriminator.compile();
 
-    return nn;
+    return new NN.Models.GAN(generator, discriminator);
 }
 
 addEventListener('message', ({data}) => {
@@ -65,7 +68,7 @@ addEventListener('message', ({data}) => {
             if (data.learningRate) {
                 learningRate = data.learningRate;
             }
-            if (data?.layers?.length === 4) {
+            if (data?.layers?.length === 3) {
                 nnParams = data.layers;
             }
 
@@ -84,20 +87,31 @@ function trainBatch() {
         return
     }
 
-    const beginTime = performance.now();
+    iter.shuffle(trainingData);
+
+    const startTime = performance.now();
     let i = 0;
     while (++i) {
-        const data = trainingData[Math.floor(Math.random() * trainingData.length)];
-        neuralNetwork.train(data, matrix.random(neuralNetwork.generator.layers[0].neuronCnt));
+        const data = trainingData[i % trainingData.length];
+        neuralNetwork.train(data, [1], nnUtils.generateInputNoise(nnParams[0]), [0]);
 
-        if (i % TRAINING_BATCH_SIZE === 0 && (performance.now() - beginTime) > MAX_ITERATION_TIME) {
+        if (i % TRAINING_BATCH_SIZE === 0 && (performance.now() - startTime) > MAX_ITERATION_TIME) {
             break;
         }
     }
 
     trainingIterations += i;
 
-    console.log(`*** BATCH TRAINING finished with ${i} iterations, took ${(performance.now() - beginTime).toFixed(2)}ms`)
+    const batchTime = performance.now() - startTime;
+    console.log(`*** BATCH FINISHED with ${i} in ${batchTime.toFixed(2)}ms (${(i / batchTime * 1000).toFixed(2)} op/s)`)
+
+    const disRealErr = nnUtils.mse(
+        neuralNetwork.discriminator.compute(nnUtils.pickRandomItem(trainingData)), [1]);
+    const disFakeErr = nnUtils.mse(
+        neuralNetwork.discriminator.compute(
+            neuralNetwork.generator.compute(nnUtils.generateInputNoise(nnParams[0]))), [0]);
+
+    console.log(`*** DISCRIMINATOR real loss ${disRealErr.toFixed(2)}, fake loss ${disFakeErr.toFixed(2)}`);
 
     const t = performance.now();
     if (t - lastDrawTime > DRAWING_DELAY) {
@@ -109,30 +123,50 @@ function trainBatch() {
 }
 
 function draw() {
-    const data = trainingData[Math.floor(Math.random() * trainingData.length)];
+    const data = nnUtils.pickRandomItem(trainingData);
 
     const size = Math.floor(Math.sqrt(data.length))
-    const dataBuffer = dataToImageBuffer(data);
+    const dataBuffer = dataToImageBuffer(data).buffer;
 
-    const genBuffer = dataToImageBuffer(neuralNetwork.generate(matrix.random(neuralNetwork.generator.layers[0].neuronCnt)));
+    const resultDim = size * DRAW_SAMPLES_DIMENSION;
+    const result = new Uint32Array(resultDim * resultDim);
+    for (let i = 0; i < DRAW_SAMPLES_DIMENSION; i++) {
+        for (let j = 0; j < DRAW_SAMPLES_DIMENSION; j++) {
+            const inputNoise = nnUtils.generateInputNoise(nnParams[0]);
+            const fake = neuralNetwork.compute(inputNoise);
+            const img = dataToImageBuffer(fake);
+
+            const startRow = i * size, startCol = j * size;
+            for (let k = 0; k < img.length; k++) {
+                const col = k % size;
+                const row = (k - col) / size;
+
+                result[(startRow + row) * resultDim + startCol + col] = img[k];
+            }
+        }
+    }
+
+    const resultBuffer = result.buffer;
 
     postMessage({
         type: "training_data",
         width: size,
         height: size,
+        genWidth: resultDim,
+        genHeight: resultDim,
         trainingData: dataBuffer,
-        generatedData: genBuffer,
+        generatedData: resultBuffer,
         currentIteration: trainingIterations
-    }, [dataBuffer, genBuffer])
+    }, [dataBuffer, resultBuffer])
 }
 
-function dataToImageBuffer(data: number[]): ArrayBuffer {
-    const state = new Uint32Array(data.length);
+function dataToImageBuffer(data: number[]): Uint32Array {
+    const state = new Uint32Array(data.length)
     for (let i = 0; i < data.length; i++) {
         state[i] = color.getLinearColorBin(COLOR_A_BIN, COLOR_B_BIN, data[i]);
     }
 
-    return state.buffer;
+    return state;
 }
 
 function runTrainingPass() {

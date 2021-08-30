@@ -2,7 +2,7 @@
 import {PNG} from 'pngjs/browser';
 
 export function getTrainingDataFromImage(buffer: ArrayBuffer): Promise<number[]> {
-    return new Promise(((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         try {
             new PNG().parse(buffer, (error: any, data: any) => {
                 if (error) {
@@ -16,7 +16,7 @@ export function getTrainingDataFromImage(buffer: ArrayBuffer): Promise<number[]>
 
                 for (let i = 0; i < size; i++) {
                     // get only Red channel value
-                    result[i] = data.data[i * bytesPerPixel] / 255.0
+                    result[i] = data.data[i * bytesPerPixel] / 255;
                 }
 
                 resolve(result);
@@ -24,5 +24,5 @@ export function getTrainingDataFromImage(buffer: ArrayBuffer): Promise<number[]>
         } catch (err) {
             reject(err);
         }
-    }));
+    });
 }

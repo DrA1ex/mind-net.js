@@ -1,20 +1,20 @@
-import * as iter from "./engine/iter";
 import * as matrix from "./engine/matrix";
 
-export function sigmoid(x: number): number {
-    return 1 / (1 + Math.exp(-x));
+export function mse(actual: matrix.Matrix1D, expected: matrix.Matrix1D) {
+    let sum = 0
+    for (let i = 0; i < actual.length; i++) {
+        sum += Math.abs(Math.pow(expected[i], 2) - Math.pow(actual[i], 2));
+    }
+
+    return sum / actual.length;
 }
 
-export function der_sigmoid(v: matrix.Matrix1D): matrix.Matrix1D {
-    return matrix.matrix1d_unary_op(v, a => a * (1 - a));
+export function generateInputNoise(size: number, from = 0, to = 1): matrix.Matrix1D {
+    return matrix.random(size, from, to);
 }
 
-export function leakyReLU(x: number, alpha: number = 0.01) {
-    return x > 0 ? x : x * alpha;
-}
-
-export function der_leakyReLU(v: matrix.Matrix1D, alpha = 0.01) {
-    return matrix.matrix1d_unary_op(v, x => x >= 0 ? 1 : alpha);
+export function pickRandomItem(trainingData: matrix.Matrix1D[]) {
+    return trainingData[Math.floor(Math.random() * trainingData.length)]
 }
 
 export function print(nn: any, training_data: [matrix.Matrix1D, matrix.Matrix1D][]) {
@@ -31,14 +31,13 @@ export function print(nn: any, training_data: [matrix.Matrix1D, matrix.Matrix1D]
 
         const outValue = out.map(n => n.toFixed(2));
         const tOutValue = t_output.map(n => n.toFixed(2));
-        const accuracy = iter.zip(t_output, out).map(([a, b]) => (100 - Math.abs(a - b) * 100))
-        const accuracyValue = accuracy.map(v => v.toFixed(1));
+        const accuracy = mse(t_output, out)
 
-        console.log(`INPUT ${t_input} OUTPUT ${outValue} EXPECTED ${tOutValue} (accuracy ${accuracyValue}%)`);
+        console.log(`INPUT ${t_input} OUTPUT ${outValue} EXPECTED ${tOutValue} (accuracy ${(accuracy * 100).toFixed(2)}%)`);
 
-        accuracySum += matrix.sum(accuracy);
+        accuracySum += accuracy;
     }
 
-    console.log(`TOTAL ACCURACY: ${(accuracySum / training_data.length / training_data[0][1].length).toFixed(2)}%`);
+    console.log(`TOTAL ACCURACY: ${(accuracySum / training_data.length).toFixed(2)}%`);
     console.log('***');
 }

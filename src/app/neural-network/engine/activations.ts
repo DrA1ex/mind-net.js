@@ -1,15 +1,8 @@
-import * as matrix from "./matrix";
-import {OptMatrix1D} from "./matrix";
-
 import {IActivation} from "./base";
 
 class SigmoidActivation implements IActivation {
     value(x: number): number {
         return 1 / (1 + Math.exp(-x));
-    }
-
-    value_matrix(m: matrix.Matrix1D, dst: OptMatrix1D = undefined): matrix.Matrix1D {
-        return matrix.matrix1d_unary_op(m, this.value, dst);
     }
 
     moment(x: number): number {
@@ -21,16 +14,12 @@ class SigmoidActivation implements IActivation {
 class LeakyReluActivation implements IActivation {
     alpha: number;
 
-    constructor(alpha = 0.1) {
+    constructor(alpha = 0.01) {
         this.alpha = alpha
     }
 
     value(x: number): number {
         return x > 0 ? x : x * this.alpha;
-    }
-
-    value_matrix(m: matrix.Matrix1D, dst: OptMatrix1D = undefined): matrix.Matrix1D {
-        return matrix.matrix1d_unary_op(m, (x) => this.value(x), dst);
     }
 
     moment(x: number): number {
@@ -45,19 +34,26 @@ class ReluActivation implements IActivation {
         return this.leakyRelu.value(x);
     }
 
-    value_matrix(m: matrix.Matrix1D, dst: OptMatrix1D = undefined): matrix.Matrix1D {
-        return this.leakyRelu.value_matrix(m, dst);
-    }
-
     moment(x: number): number {
         return this.leakyRelu.moment(x);
     }
 }
 
-export type ActivationT = "sigmoid" | "relu" | "leakyRelu";
+class TanhActivation implements IActivation {
+    value(x: number): number {
+        return Math.tanh(x);
+    }
+
+    moment(x: number): number {
+        return 1 - Math.pow(Math.tanh(x), 2);
+    }
+}
+
+export type ActivationT = "sigmoid" | "relu" | "leakyRelu" | "tanh";
 
 export const Activations = {
     sigmoid: SigmoidActivation,
     relu: ReluActivation,
-    leakyRelu: LeakyReluActivation
+    leakyRelu: LeakyReluActivation,
+    tanh: TanhActivation
 };
