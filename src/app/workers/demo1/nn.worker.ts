@@ -1,13 +1,14 @@
 /// <reference lib="webworker" />
 
+import * as matrix from "../../neural-network/engine/matrix";
 import * as nnUtils from "../../neural-network/utils";
 import * as color from "../../utils/color";
-import {Matrix1D} from "../../neural-network/engine/matrix";
 import {
     COLOR_A_BIN,
     COLOR_B_BIN,
     DEFAULT_LEARNING_RATE,
     DEFAULT_NN_LAYERS,
+    DESIRED_LOSS,
     DESIRED_RESOLUTION_X,
     DESIRED_RESOLUTION_Y,
     DRAWING_DELAY,
@@ -15,19 +16,27 @@ import {
     MAX_TRAINING_ITERATION,
     Point,
     RESOLUTION_SCALE,
-    TRAINING_BATCH_SIZE,
+    TRAINING_EPOCHS_PER_CALL,
+    UPDATE_METRICS_DELAY,
 } from "./nn.worker.consts"
 
 import NN from "../../neural-network/neural-network";
 
 let neuralNetwork = create_nn(DEFAULT_NN_LAYERS, DEFAULT_LEARNING_RATE);
 let points: Point[] = [];
+let trainingInputs: matrix.Matrix1D[] = []
+let trainingOutputs: matrix.Matrix1D[] = []
 
 let currentTrainIterations = 0;
+let isTraining = false;
+let loss = 1;
+let epochsFromLastMetricsUpdate = 0;
+
 let lastDraw = 0;
+let lastUpdateMetrics = 0;
 
 function create_nn(sizes: number[], lr: number) {
-    const nn = new NN.Models.Sequential(new NN.Optimizers.nesterov(0.25, lr));
+    const nn = new NN.Models.Sequential(new NN.Optimizers.nesterov(0.5, lr));
     nn.addLayer(new NN.Layers.Dense(2));
     for (const size of sizes) {
         nn.addLayer(new NN.Layers.Dense(size, "sigmoid", "xavier"));
@@ -42,13 +51,24 @@ function create_nn(sizes: number[], lr: number) {
 addEventListener('message', ({data}) => {
     switch (data.type) {
         case "add_point":
-            points.push(data.point as Point);
+            const point = data.point as Point;
+
+            points.push(point);
+            trainingInputs.push([point.x, point.y]);
+            trainingOutputs.push([point.type]);
+
             currentTrainIterations = 0;
+            epochsFromLastMetricsUpdate = 0;
+            isTraining = true;
             break;
 
         case "set_points":
             points = data.points as Point[];
+            trainingInputs = points.map(point => [point.x, point.y]);
+            trainingOutputs = points.map(point => [point.type]);
             currentTrainIterations = 0;
+            epochsFromLastMetricsUpdate = 0;
+            isTraining = true;
             break;
 
         case "refresh":
@@ -57,40 +77,62 @@ addEventListener('message', ({data}) => {
 
             neuralNetwork = create_nn(newLayersConfig, newLearningRateConfig);
             currentTrainIterations = 0;
+            epochsFromLastMetricsUpdate = 0;
+            isTraining = true;
     }
 });
 
 function trainBatch() {
-    const iterationsLeft = MAX_TRAINING_ITERATION - currentTrainIterations;
-    if (iterationsLeft <= 0 || points.length === 0) {
+    if (!isTraining) {
         return;
     }
 
+    const iterationsLeft = MAX_TRAINING_ITERATION - currentTrainIterations;
     const startTime = performance.now();
-    const trainingData: [Matrix1D, Matrix1D][] = points.map(p => ([[p.x, p.y], [p.type]]));
+    const batchSize = Math.max(1, Math.floor(points.length / 50))
 
-    let iterationCnt;
-    for (iterationCnt = 0; iterationCnt < iterationsLeft; iterationCnt++) {
-        const data = trainingData[Math.floor(Math.random() * trainingData.length)];
-        neuralNetwork.train(data[0], data[1]);
+    let iterationsPerCheck = TRAINING_EPOCHS_PER_CALL;
+    let epochs;
+    for (epochs = 0; epochs < iterationsLeft; epochs++) {
+        neuralNetwork.train(trainingInputs, trainingOutputs, batchSize);
 
-        if (iterationCnt % TRAINING_BATCH_SIZE == 0 && performance.now() - startTime > MAX_ITERATION_TIME) {
-            break;
+        if (epochs % iterationsPerCheck == 0) {
+            const trainingTime = performance.now() - startTime;
+            if (trainingTime >= MAX_ITERATION_TIME) {
+                break;
+            }
+
+            if (epochs > 0) {
+                // Adaptive calculate optimal iterations count
+                iterationsPerCheck = Math.min(1000, Math.max(1, Math.floor(epochs / trainingTime * (MAX_ITERATION_TIME - trainingTime) * 0.9)));
+            }
         }
     }
 
-    const batchTime = performance.now() - startTime;
-    console.log(`*** BATCH FINISHED with ${iterationCnt} in ${batchTime.toFixed(2)}ms (${(iterationCnt / batchTime).toFixed(2)} op/ms)`)
+    currentTrainIterations += epochs;
+    epochsFromLastMetricsUpdate += epochs;
+    const metricsTime = performance.now() - lastUpdateMetrics;
+    if (metricsTime >= UPDATE_METRICS_DELAY) {
+        loss = nnUtils.loss(neuralNetwork, trainingInputs, trainingOutputs);
+        isTraining = loss >= DESIRED_LOSS && currentTrainIterations < MAX_TRAINING_ITERATION;
 
-    currentTrainIterations += iterationCnt;
-    if (currentTrainIterations >= MAX_TRAINING_ITERATION) {
+        console.log(`*** METRICS ${epochsFromLastMetricsUpdate} `
+            + `epochs in ${metricsTime.toFixed(2)}ms `
+            + `(${(points.length * epochsFromLastMetricsUpdate / metricsTime).toFixed(2)} op/ms) `
+            + `loss: ${loss.toFixed(4)}`);
+
+        epochsFromLastMetricsUpdate = 0;
+        lastUpdateMetrics = performance.now();
+    }
+
+    if (isTraining) {
+        sendCurrentState();
+    } else {
         lastDraw = 0;
         console.log('*** DATA SET TRAINING FINISHED ***');
-        nnUtils.print(neuralNetwork, trainingData)
+        nnUtils.print(neuralNetwork, trainingInputs, trainingOutputs);
 
         sendCurrentState(2);
-    } else {
-        sendCurrentState();
     }
 }
 
@@ -116,18 +158,19 @@ function sendCurrentState(scale: number = RESOLUTION_SCALE) {
 
     const message = {
         type: "training_data",
-        iteration: currentTrainIterations,
+        epoch: neuralNetwork.epoch,
+        loss: loss,
+        isTraining: isTraining,
         state: state.buffer,
         nnSnapshot: neuralNetwork.getSnapshot(),
         width: xSteps,
-        height: ySteps,
-        t: performance.now()
+        height: ySteps
     };
 
     lastDraw = t;
     postMessage(message, [state.buffer]);
 
-    console.log(`*** Computing ${(performance.now() - t).toFixed(2)}ms`);
+    console.log(`*** DRAWING ${(performance.now() - t).toFixed(2)}ms`);
 }
 
 function runTrainingPass() {

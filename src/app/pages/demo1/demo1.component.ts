@@ -1,5 +1,5 @@
 import {Component, ViewChild} from '@angular/core';
-import {DEFAULT_LEARNING_RATE, DEFAULT_NN_LAYERS, MAX_TRAINING_ITERATION, Point} from "../../workers/demo1/nn.worker.consts";
+import {DEFAULT_LEARNING_RATE, DEFAULT_NN_LAYERS, Point} from "../../workers/demo1/nn.worker.consts";
 
 import * as fileInteraction from '../../utils/file-interaction';
 import {PlotDrawerComponent} from "../../components/plot-drawer/plot-drawer.component";
@@ -24,9 +24,9 @@ export class Demo1Component {
 
     layersConfig: string = DEFAULT_NN_LAYERS.join(" ");
     learningRate: number = DEFAULT_LEARNING_RATE;
-    maxIterations = MAX_TRAINING_ITERATION;
 
-    currentIteration: number = 0;
+    currentEpoch: number = 0;
+    currentLoss: number = 1;
     training: boolean = false;
     points: any[] = [];
 
@@ -36,10 +36,9 @@ export class Demo1Component {
         this.nnWorker.onmessage = ({data}) => {
             switch (data.type) {
                 case "training_data":
-                    console.log(`*** Transfer took ${(performance.now() - data.t).toFixed(2)}ms`);
-
-                    this.currentIteration = data.iteration;
-                    this.training = this.currentIteration < this.maxIterations && this.points.length > 0;
+                    this.currentEpoch = data.epoch;
+                    this.currentLoss = data.loss;
+                    this.training = data.isTraining;
 
                     this.plotDrawer.drawSnapshot(data.state, data.width, data.height);
                     this.nnDrawer.drawSnapshot(data.nnSnapshot);
@@ -102,7 +101,8 @@ export class Demo1Component {
             this.plotDrawer.addPoint(point);
         }
 
-        this.training = this.currentIteration < this.maxIterations && this.points.length > 0;
+        this.training = false;
+        this.currentEpoch = 0;
         this.nnWorker.postMessage({type: "set_points", points: this.points});
     }
 

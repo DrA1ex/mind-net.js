@@ -74,14 +74,14 @@ export class PlotDrawerComponent implements OnChanges {
             return;
         }
 
-        const x = point.x * canvas.clientWidth * this.canvasScale,
-            y = point.y * canvas.clientHeight * this.canvasScale;
+        const x = (point.x * canvas.clientWidth + this.pointRadius / 2) * this.canvasScale,
+            y = (point.y * canvas.clientHeight + this.pointRadius / 2) * this.canvasScale;
 
         canvasUtils.drawNeuron(ctx, x, y, this.pointRadius * this.canvasScale, this.lineWidth, PlotDrawerComponent.getColorByPointType(point.type));
     }
 
 
     private static getColorByPointType(pointType: number) {
-        return color.getLinearColorHex(COLOR_A_HEX, COLOR_B_HEX, pointType)
+        return color.getLinearColorHex(COLOR_A_HEX, COLOR_B_HEX, pointType);
     }
 }

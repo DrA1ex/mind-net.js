@@ -7,10 +7,13 @@ export interface Point {
 }
 
 export const DRAWING_DELAY = 1000 / 24;
+export const UPDATE_METRICS_DELAY = DRAWING_DELAY * 10;
 export const MAX_ITERATION_TIME = DRAWING_DELAY / 4;
 
-export const TRAINING_BATCH_SIZE = 10000;
-export const MAX_TRAINING_ITERATION = 5e6;
+export const TRAINING_EPOCHS_PER_CALL = 10;
+export const MAX_TRAINING_ITERATION = 1e6;
+
+export const DESIRED_LOSS = 1e-4;
 
 export const DESIRED_RESOLUTION_X = 640;
 export const DESIRED_RESOLUTION_Y = 480;

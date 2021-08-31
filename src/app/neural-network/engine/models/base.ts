@@ -1,16 +1,24 @@
+import * as iter from "../iter";
 import * as matrix from "../matrix";
+
 import {ILayer, IOptimizer} from "../base";
 import {buildOptimizer, OptimizerT} from "../optimizers";
 
 export type NeuralNetworkSnapshot = { weights: matrix.Matrix2D[], biases: matrix.Matrix1D[] };
 
-type BackpropData = { activations: matrix.Matrix1D[], primes: matrix.Matrix1D[] }
+export type BackpropData = { activations: matrix.Matrix1D[], primes: matrix.Matrix1D[] };
+export type LayerCache = { activation: matrix.Matrix1D, deltaBiases: matrix.Matrix1D, deltaWeights: matrix.Matrix2D };
 
 export abstract class ModelBase {
+    protected _epoch: number = 0;
+
     protected compiled: boolean = false;
-    protected epoch: number = 0;
-    protected cache = new Map<ILayer, matrix.Matrix1D>();
+    protected cache = new Map<ILayer, LayerCache>();
     protected readonly optimizer: IOptimizer;
+
+    public get epoch() {
+        return this._epoch;
+    }
 
     abstract readonly layers: ILayer[];
 
@@ -32,20 +40,31 @@ export abstract class ModelBase {
         let result = input;
         for (let i = 1; i < this.layers.length; i++) {
             const layer = this.layers[i];
-            result = matrix.matrix1d_unary_op(layer.step(result), x => layer.activation.value(x), this.cache.get(layer));
+            result = matrix.matrix1d_unary_op(layer.step(result), x => layer.activation.value(x), this.cache.get(layer)?.activation);
         }
 
         return result;
     }
 
-    train(input: matrix.Matrix1D, expected: matrix.Matrix1D) {
+    train(input: matrix.Matrix1D[], expected: matrix.Matrix1D[], batchSize: number = 32) {
         if (!this.compiled) {
             throw new Error("Model should be compiled before usage");
         }
 
-        const data = this._calculateBackpropData(input)
-        const loss = this._calculateLoss(data.activations[data.activations.length - 1], expected);
-        this._backprop(data, loss);
+        const shuffledTrainSet = iter.shuffled(Array.from(iter.zip(input, expected)));
+        for (const batch of iter.partition(shuffledTrainSet, batchSize)) {
+            this._clearDelta();
+
+            for (const [trainInput, trainExpected] of batch) {
+                const data = this._calculateBackpropData(trainInput);
+                const loss = this._calculateLoss(data.activations[data.activations.length - 1], trainExpected);
+                this._backprop(data, loss);
+            }
+
+            this._applyDelta(batch.length);
+        }
+
+        this._epoch += 1;
     }
 
     protected _calculateBackpropData(input: matrix.Matrix1D): BackpropData {
@@ -60,7 +79,7 @@ export abstract class ModelBase {
             const layer = this.layers[i];
 
             primes[i] = layer.step(activations[i - 1]);
-            activations[i] = matrix.matrix1d_unary_op(primes[i], x => layer.activation.value(x), this.cache.get(layer));
+            activations[i] = matrix.matrix1d_unary_op(primes[i], x => layer.activation.value(x), this.cache.get(layer)?.activation);
         }
 
         return {activations, primes};
@@ -80,20 +99,41 @@ export abstract class ModelBase {
 
         for (let i = this.layers.length - 1; i > 0; i--) {
             const layer = this.layers[i];
+            const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
 
             const change = this.optimizer.step(layer, primes[i], errors, this.epoch);
             for (let j = 0; j < layer.size; j++) {
-                matrix.matrix1d_binary_in_place_op(layer.weights[j], activations[i - 1], (w, a) => w + a * change[j]);
+                matrix.matrix1d_binary_in_place_op(deltaWeights[j], activations[i - 1], (w, a) => w + a * change[j]);
             }
 
-            matrix.matrix1d_binary_in_place_op(layer.biases, change, (b, c) => b + c);
+            matrix.add_to(deltaBiases, change);
 
             if (i > 1) {
                 errors = matrix.dot_2d_translated(layer.weights, errors);
             }
         }
+    }
 
-        this.epoch += 1;
+    protected _clearDelta(): void {
+        for (const layer of this.layers) {
+            const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
+
+            deltaBiases.fill(0);
+            deltaWeights.forEach(w => w.fill(0));
+        }
+    }
+
+    protected _applyDelta(batchSize: number): void {
+        for (let i = 1; i < this.layers.length; i++) {
+            const layer = this.layers[i];
+            const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
+
+            matrix.matrix1d_binary_in_place_op(layer.biases, deltaBiases, (b, d) => b + d / batchSize);
+
+            for (let j = 0; j < layer.size; j++) {
+                matrix.matrix1d_binary_in_place_op(layer.weights[j], deltaWeights[j], (w, d) => w + d / batchSize);
+            }
+        }
     }
 
     getSnapshot(): NeuralNetworkSnapshot {

@@ -1,5 +1,8 @@
+import * as matrix from "../matrix";
+import {zero, zero_2d} from "../matrix";
+
 import {ILayer} from "../base";
-import {ModelBase} from "./base";
+import {BackpropData, ModelBase} from "./base";
 
 export class ChainModel extends ModelBase {
     layers: ILayer[] = [];
@@ -43,12 +46,40 @@ export class ChainModel extends ModelBase {
 
             for (const layer of layers) {
                 this.modelByLayer.set(layer, [model, this.trainable[i]]);
-                this.cache.set(layer, new Array(layer.size));
+                this.cache.set(layer, {activation: zero(layer.size), deltaBiases: zero(layer.size), deltaWeights: zero_2d(layer.size, layer.prevSize)});
             }
 
             this.layers.push(...layers);
         }
 
         this.compiled = true;
+    }
+
+    protected override _backprop(data: BackpropData, loss: matrix.Matrix1D) {
+        const {activations, primes} = data;
+        let errors = loss;
+
+        for (let i = this.layers.length - 1; i > 0; i--) {
+            const layer = this.layers[i];
+            const [, trainable] = this.modelByLayer.get(layer)!;
+
+            const change = this.optimizer.step(layer, primes[i], errors, this.epoch);
+
+            let layerWeights: matrix.Matrix2D;
+            if (trainable) {
+                layerWeights = layer.weights;
+                matrix.matrix1d_binary_in_place_op(layer.biases, change, (b, c) => b + c);
+            } else {
+                layerWeights = matrix.copy_2d(layer.weights);
+            }
+
+            for (let j = 0; j < layer.size; j++) {
+                matrix.matrix1d_binary_in_place_op(layerWeights[j], activations[i - 1], (w, a) => w + a * change[j]);
+            }
+
+            if (i > 1) {
+                errors = matrix.dot_2d_translated(layerWeights, errors);
+            }
+        }
     }
 }

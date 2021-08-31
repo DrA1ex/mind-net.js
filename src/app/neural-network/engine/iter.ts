@@ -36,22 +36,50 @@ export function shuffle<T>(array: Array<T>): Array<T> {
     return array;
 }
 
-export function zip<T1, T2>(a: Array<T1>, b: Array<T2>): Array<[T1, T2]> {
-    const length = Math.max(a.length, b.length);
-    const result = new Array(length);
-
-    for (let i = 0; i < length; i++) {
-        result[i] = [a[i], b[i]];
+export function* shuffled<T>(array: Array<T>): Iterable<T> {
+    const shuffledIndices = shuffle(Array.from(range(0, array.length)));
+    for (const index of shuffledIndices) {
+        yield array[index];
     }
-
-    return result;
 }
 
-export function* partition<T>(data: T[], size: number): Iterable<T[]> {
-    let processed = 0;
-    while (processed < data.length) {
-        yield data.slice(processed, processed + size);
+export function* zip<T1, T2>(a: Array<T1>, b: Array<T2>): Iterable<[T1, T2]> {
+    const length = Math.max(a.length, b.length);
 
-        processed += size;
+    for (let i = 0; i < length; i++) {
+        yield [a[i], b[i]];
+    }
+}
+
+export function* partition<T>(data: Iterable<T>, partitionSize: number): Iterable<T[]> {
+    const iterated = iterate(data);
+    while (true) {
+        const partition = Array.from(take(iterated, partitionSize));
+        if (partition.length > 0) {
+            yield partition;
+        } else {
+            break;
+        }
+    }
+}
+
+export function* take<T>(data: Iterable<T>, size: number): Iterable<T> {
+    const iterator = data[Symbol.iterator]();
+    let current: IteratorResult<T>;
+    let cnt = 0;
+
+    while ((current = iterator.next()).done === false) {
+        yield current.value;
+        ++cnt;
+
+        if (cnt >= size) {
+            break;
+        }
+    }
+}
+
+export function* iterate<T>(data: Iterable<T>): Iterable<T> {
+    for (const item of data) {
+        yield item;
     }
 }

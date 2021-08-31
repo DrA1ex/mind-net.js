@@ -21,10 +21,10 @@ export class GenerativeAdversarialModel {
         return this.generator.compute(input);
     }
 
-    train(real: matrix.Matrix1D, realExpected: matrix.Matrix1D, input: matrix.Matrix1D, inputExpected: matrix.Matrix1D) {
+    train(real: matrix.Matrix1D[], realExpected: matrix.Matrix1D[], input: matrix.Matrix1D[], inputExpected: matrix.Matrix1D[]) {
         this.discriminator.train(real, realExpected);
 
-        const fake = this.generator.compute(input);
+        const fake = input.map(i => this.generator.compute(i));
         this.discriminator.train(fake, inputExpected);
 
         this.ganChain.train(input, realExpected);

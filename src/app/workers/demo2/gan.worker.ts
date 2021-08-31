@@ -28,7 +28,7 @@ let neuralNetwork = createNn();
 
 function createNn() {
     function _createOptimizer() {
-        return new NN.Optimizers.adam(0.9, 0.99, learningRate);
+        return new NN.Optimizers.nesterov(0.25, learningRate);
     }
 
     function _createHiddenLayer(size: number) {
@@ -100,7 +100,7 @@ function trainBatch() {
     let i = 0;
     while (++i) {
         const data = trainingData[shuffledIndices[i % trainingData.length]];
-        neuralNetwork.train(data, [1], nnUtils.generateInputNoise(nnParams[0]), [0]);
+        neuralNetwork.train([data], [[1]], [nnUtils.generateInputNoise(nnParams[0])], [[0]]);
 
         if (i % TRAINING_BATCH_SIZE === 0 && (performance.now() - startTime) > MAX_ITERATION_TIME) {
             break;

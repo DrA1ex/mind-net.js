@@ -49,8 +49,9 @@
 
     <div class="row">
         <div class="col">
-            <p *ngIf="training">Neural network is training. Iteration {{currentIteration}} from {{maxIterations}} with {{points.length}} points</p>
-            <p *ngIf="!training">Neural network is not training</p>
+            <p *ngIf="training">Neural network is training. Points: {{points.length}}. Epoch: {{currentEpoch}}. Loss: {{currentLoss.toFixed(4)}}.</p>
+            <p *ngIf="!training && currentEpoch > 0">Neural network has been trained. Epoch: {{currentEpoch}}. Loss: {{currentLoss.toFixed(8)}}</p>
+            <p *ngIf="!training && currentEpoch === 0">Neural network is not training</p>
         </div>
     </div>
 </div>
