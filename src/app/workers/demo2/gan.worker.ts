@@ -17,7 +17,6 @@ import {
     TRAINING_BATCH_SIZE
 } from "./gan.worker.consts"
 
-
 let lastDrawTime = 0;
 let trainingIterations = 0;
 let trainingData: number[][];
@@ -87,12 +86,12 @@ function trainBatch() {
         return
     }
 
-    iter.shuffle(trainingData);
+    const shuffledIndices = iter.shuffle(Array.from(iter.range(0, trainingData.length)));
 
     const startTime = performance.now();
     let i = 0;
     while (++i) {
-        const data = trainingData[i % trainingData.length];
+        const data = trainingData[shuffledIndices[i % trainingData.length]];
         neuralNetwork.train(data, [1], nnUtils.generateInputNoise(nnParams[0]), [0]);
 
         if (i % TRAINING_BATCH_SIZE === 0 && (performance.now() - startTime) > MAX_ITERATION_TIME) {

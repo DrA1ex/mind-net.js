@@ -9,6 +9,7 @@ import {RouterModule, Routes} from "@angular/router";
 import {Demo1Component} from './pages/demo1/demo1.component';
 import {Demo2Component} from './pages/demo2/demo2.component';
 import {BinaryImageDrawerComponent} from './components/binary-image-drawer/binary-image-drawer.component';
+import {HttpClientModule} from "@angular/common/http";
 
 const routes: Routes = [
     {path: 'demo1', component: Demo1Component},
@@ -30,6 +31,7 @@ const routes: Routes = [
         BrowserModule,
         FormsModule,
         RouterModule.forRoot(routes),
+        HttpClientModule,
     ],
     exports: [],
     providers: [],

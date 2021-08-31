@@ -7,6 +7,7 @@ import {DEFAULT_LEARNING_RATE, DEFAULT_NN_PARAMS} from "../../workers/demo2/gan.
 import * as fileInteraction from "../../utils/file-interaction";
 import * as image from "../../utils/image";
 import * as matrix from "../../neural-network/engine/matrix";
+import {HttpClient} from "@angular/common/http";
 
 @Component({
     selector: 'app-demo2',
@@ -32,7 +33,7 @@ export class Demo2Component {
     fileProcessingCurrent: number = 0;
     fileProcessingTotal: number = 0;
 
-    constructor() {
+    constructor(private http: HttpClient) {
         this.nnWorker = new Worker(new URL('../../workers/demo2/gan.worker', import.meta.url));
 
         this.nnWorker.onmessage = ({data}) => {
@@ -58,6 +59,10 @@ export class Demo2Component {
     }
 
     async loadData() {
+        if (this.fileLoading) {
+            return;
+        }
+
         try {
             const file = await fileInteraction.openFile('application/zip', false) as File;
             if (!file) {
@@ -85,6 +90,21 @@ export class Demo2Component {
             }
 
             this.nnWorker.postMessage({type: "set_data", data: result});
+        } finally {
+            this.fileLoading = false;
+        }
+    }
+
+    async loadPredefined(name: string) {
+        if (this.fileLoading) {
+            return;
+        }
+
+        try {
+            this.fileLoading = true;
+
+            const data = await this.http.get(`./assets/dataset/${name}`).toPromise();
+            this.nnWorker.postMessage({type: "set_data", data});
         } finally {
             this.fileLoading = false;
         }

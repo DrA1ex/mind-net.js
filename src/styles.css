@@ -1,3 +1,11 @@
 .fa-ignore-lh {
     line-height: inherit !important;
 }
+
+.pointer:hover {
+    cursor: pointer;
+}
+
+.pointer:disabled {
+    cursor: not-allowed;
+}

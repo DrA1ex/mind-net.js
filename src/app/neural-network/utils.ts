@@ -3,7 +3,7 @@ import * as matrix from "./engine/matrix";
 export function mse(actual: matrix.Matrix1D, expected: matrix.Matrix1D) {
     let sum = 0
     for (let i = 0; i < actual.length; i++) {
-        sum += Math.abs(Math.pow(expected[i], 2) - Math.pow(actual[i], 2));
+        sum += Math.pow(expected[i] - actual[i], 2);
     }
 
     return sum / actual.length;

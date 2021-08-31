@@ -21,8 +21,19 @@
         <div class="col-lg-auto col-md-2 col-4 mb-2">
             <button class="btn btn-primary fa fa-ignore-lh fa-sync me-2" title="Restart training"
                     (click)="refresh()"></button>
-            <button class="btn btn-secondary fa fa-ignore-lh fa-file-upload" title="Load training data"
-                    [disabled]="fileLoading" (click)="loadData()"></button>
+            <div class="btn-group">
+                <button class="btn btn-secondary fa fa-ignore-lh fa-file-upload dropdown-toggle" title="Load training data"
+                        data-bs-toggle="dropdown" aria-expanded="false" [disabled]="fileLoading">
+                    &nbsp;
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item pointer" (click)="loadData()">File...</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item pointer" (click)="loadPredefined('check-mark-10-16.json')">check-mark-10-16</a></li>
+                    <li><a class="dropdown-item pointer" (click)="loadPredefined('mnist-500-16.json')">mnist-500-16</a></li>
+                    <li><a class="dropdown-item pointer" (click)="loadPredefined('mnist-10000-16.json')">mnist-10000-16</a></li>
+                </ul>
+            </div>
         </div>
     </div>
 
