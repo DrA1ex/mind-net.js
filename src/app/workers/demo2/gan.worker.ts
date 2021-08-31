@@ -27,9 +27,13 @@ let learningRate = DEFAULT_LEARNING_RATE;
 let neuralNetwork = createNn();
 
 function createNn() {
+    function _optimizer() {
+        return new NN.Optimizers.sgd(learningRate);
+    }
+
     const [input, genSizes, output] = nnParams;
 
-    const generator = new NN.Models.Sequential(new NN.Optimizers.sgd(learningRate));
+    const generator = new NN.Models.Sequential(_optimizer());
     generator.addLayer(new NN.Layers.Dense(input));
     for (const size of genSizes) {
         generator.addLayer(new NN.Layers.Dense(size));
@@ -37,7 +41,7 @@ function createNn() {
     generator.addLayer(new NN.Layers.Dense(output));
     generator.compile();
 
-    const discriminator = new NN.Models.Sequential(new NN.Optimizers.sgd(learningRate));
+    const discriminator = new NN.Models.Sequential(_optimizer());
     discriminator.addLayer(new NN.Layers.Dense(output));
     for (const size of iter.reverse(genSizes)) {
         discriminator.addLayer(new NN.Layers.Dense(size));
@@ -45,7 +49,7 @@ function createNn() {
     discriminator.addLayer(new NN.Layers.Dense(1));
     discriminator.compile();
 
-    return new NN.Models.GAN(generator, discriminator);
+    return new NN.Models.GAN(generator, discriminator, _optimizer());
 }
 
 addEventListener('message', ({data}) => {

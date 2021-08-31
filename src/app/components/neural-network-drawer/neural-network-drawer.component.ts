@@ -2,7 +2,7 @@ import {Component, ElementRef, Input, SimpleChanges, ViewChild} from '@angular/c
 
 import * as iter from "../../neural-network/engine/iter";
 import * as matrix from "../../neural-network/engine/matrix";
-import {NeuralNetworkSnapshot} from "../../neural-network/engine/base";
+import {NeuralNetworkSnapshot} from "../../neural-network/engine/models/base";
 import {DelayedChangesProcessor} from "../base/delayed-changes-processor";
 
 @Component({

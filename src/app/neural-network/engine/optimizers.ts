@@ -142,6 +142,19 @@ class AdamOptimizer implements IOptimizer {
 
 export type OptimizerT = "sgd" | "nesterov" | "adam" | "rmsprop";
 
+export function buildOptimizer(optimizer: OptimizerT | IOptimizer = 'sgd') {
+    const optimizer_param = typeof optimizer === "string" ? Optimizers[optimizer] : optimizer
+    if (!optimizer_param) {
+        throw new Error(`Unknown optimizer type ${optimizer_param}`);
+    }
+
+    if (typeof optimizer_param === "object") {
+        return optimizer_param;
+    }
+
+    return new optimizer_param();
+}
+
 export const Optimizers = {
     sgd: SgdOptimizer,
     nesterov: SgdNesterovOptimizer,

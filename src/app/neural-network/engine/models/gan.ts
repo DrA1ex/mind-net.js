@@ -2,13 +2,15 @@ import * as matrix from "../matrix"
 
 import {SequentialModel} from "./sequential";
 import {ChainModel} from "./chain";
+import {OptimizerT} from "../optimizers";
+import {IOptimizer} from "../base";
 
 
 export class GenerativeAdversarialModel {
     ganChain: ChainModel;
 
-    constructor(public generator: SequentialModel, public discriminator: SequentialModel) {
-        this.ganChain = new ChainModel();
+    constructor(public generator: SequentialModel, public discriminator: SequentialModel, optimizer: OptimizerT | IOptimizer = 'sgd') {
+        this.ganChain = new ChainModel(optimizer);
         this.ganChain
             .addModel(generator)
             .addModel(discriminator, false)

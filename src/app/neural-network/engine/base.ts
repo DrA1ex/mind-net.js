@@ -1,5 +1,4 @@
 import * as matrix from "./matrix";
-import {Matrix1D} from "./matrix";
 
 export interface IActivation {
     value(x: number): number
@@ -25,5 +24,3 @@ export interface IOptimizer {
 }
 
 export type InitializerFn = (size: number, prevSize: number) => matrix.Matrix1D;
-
-export type NeuralNetworkSnapshot = { weights: matrix.Matrix2D[], biases: matrix.Matrix1D[] };
