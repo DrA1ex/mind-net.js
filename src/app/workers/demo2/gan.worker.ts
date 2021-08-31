@@ -10,7 +10,7 @@ import {
     COLOR_B_BIN,
     DEFAULT_LEARNING_RATE,
     DEFAULT_NN_PARAMS,
-    DRAW_SAMPLES_DIMENSION,
+    DRAW_GRID_DIMENSION,
     DRAWING_DELAY,
     MAX_ITERATION_TIME,
     NetworkParams,
@@ -123,41 +123,45 @@ function trainBatch() {
 }
 
 function draw() {
-    const data = nnUtils.pickRandomItem(trainingData);
+    const size = Math.floor(Math.sqrt(nnParams[2]))
+    const gridSize = size * DRAW_GRID_DIMENSION;
 
-    const size = Math.floor(Math.sqrt(data.length))
-    const dataBuffer = dataToImageBuffer(data).buffer;
+    const dataSamples = drawGridSample(DRAW_GRID_DIMENSION, size,
+        () => nnUtils.pickRandomItem(trainingData));
 
-    const resultDim = size * DRAW_SAMPLES_DIMENSION;
+    const genSamples = drawGridSample(DRAW_GRID_DIMENSION, size, () => {
+        const inputNoise = nnUtils.generateInputNoise(nnParams[0]);
+        return neuralNetwork.compute(inputNoise);
+    })
+
+    postMessage({
+        type: "training_data",
+        width: gridSize,
+        height: gridSize,
+        trainingData: dataSamples,
+        generatedData: genSamples,
+        currentIteration: trainingIterations
+    }, [dataSamples, genSamples])
+}
+
+function drawGridSample(gridDimension: number, sampleDimension: number, fn: (i: number, j: number) => number[]): ArrayBuffer {
+    const resultDim = sampleDimension * gridDimension;
     const result = new Uint32Array(resultDim * resultDim);
-    for (let i = 0; i < DRAW_SAMPLES_DIMENSION; i++) {
-        for (let j = 0; j < DRAW_SAMPLES_DIMENSION; j++) {
-            const inputNoise = nnUtils.generateInputNoise(nnParams[0]);
-            const fake = neuralNetwork.compute(inputNoise);
-            const img = dataToImageBuffer(fake);
+    for (let i = 0; i < gridDimension; i++) {
+        for (let j = 0; j < gridDimension; j++) {
+            const img = dataToImageBuffer(fn(i, j));
 
-            const startRow = i * size, startCol = j * size;
+            const startRow = i * sampleDimension, startCol = j * sampleDimension;
             for (let k = 0; k < img.length; k++) {
-                const col = k % size;
-                const row = (k - col) / size;
+                const col = k % sampleDimension;
+                const row = (k - col) / sampleDimension;
 
                 result[(startRow + row) * resultDim + startCol + col] = img[k];
             }
         }
     }
 
-    const resultBuffer = result.buffer;
-
-    postMessage({
-        type: "training_data",
-        width: size,
-        height: size,
-        genWidth: resultDim,
-        genHeight: resultDim,
-        trainingData: dataBuffer,
-        generatedData: resultBuffer,
-        currentIteration: trainingIterations
-    }, [dataBuffer, resultBuffer])
+    return result.buffer;
 }
 
 function dataToImageBuffer(data: number[]): Uint32Array {

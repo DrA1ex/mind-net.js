@@ -9,7 +9,7 @@ export const DRAWING_DELAY = 1000;
 export const MAX_ITERATION_TIME = DRAWING_DELAY / 2;
 export const TRAINING_BATCH_SIZE = 250;
 
-export const DRAW_SAMPLES_DIMENSION = 5;
+export const DRAW_GRID_DIMENSION = 5;
 
 export const COLOR_A_BIN = color.getBinFromHex("#000000");
 export const COLOR_B_BIN = color.getBinFromHex("#ffffff");

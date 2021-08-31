@@ -38,7 +38,7 @@ export class Demo2Component {
         this.nnWorker.onmessage = ({data}) => {
             switch (data.type) {
                 case "training_data":
-                    this.generatedImage.draw(data.generatedData, data.genWidth, data.genHeight);
+                    this.generatedImage.draw(data.generatedData, data.width, data.height);
                     this.trainingImage.draw(data.trainingData, data.width, data.height);
 
                     this.currentIteration = data.currentIteration;
