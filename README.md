@@ -3,9 +3,9 @@
 Repository contains simple neural network implementation in pure TypeScript/JavaScript for educational or pet-project uses.
 
 ## Code
-- Seuqential Network @ [implementation](src/app/neural-network/sequential.ts)
+- Seuqential Network @ [implementation](src/app/neural-network/engine/models/sequential.ts)
 
-- Generative-adversarial Network @ [implementation](src/app/neural-network/generative-adversarial.ts)
+- Generative-adversarial Network @ [implementation](src/app/neural-network/engine/models/gan.ts)
 
 # Examples
 ## [Sequential demo](https://dra1ex.github.io/neural-network/demo1/)
