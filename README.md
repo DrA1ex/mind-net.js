@@ -22,7 +22,7 @@ Repository contains simple neural network implementation in pure TypeScript/Java
 **Source code**: [src/app/pages/demo1](https://github.com/DrA1ex/neural-network/tree/main/src/app/pages/demo1)
 
 ## [Generative-adversarial Network demo](https://dra1ex.github.io/neural-network/demo2/)
-### Generating images by training data
+### Generating images by unlabeled sample data
 ![image](https://user-images.githubusercontent.com/1194059/131479119-84f7bd37-8d49-4f5f-981d-1dd7b64140e0.png)
 
 **Example training datasets**: 
