@@ -23,6 +23,16 @@ function zeroInitializer(size: number, _: number): matrix.Matrix1D {
     return matrix.zero(size);
 }
 
+function heInitializer(size: number, prevSize: number): matrix.Matrix1D {
+    const limit = Math.sqrt(2 / (prevSize + size));
+    return rndVector(uniformRandom, size, limit);
+}
+
+function heNormalInitializer(size: number, _: number): matrix.Matrix1D {
+    const limit = Math.sqrt(2 / size);
+    return rndVector(normalRandom, size, limit);
+}
+
 function xavierInitializer(size: number, prevSize: number): matrix.Matrix1D {
     const limit = Math.sqrt(6 / (size + prevSize));
     return rndVector(uniformRandom, size, limit);
@@ -41,9 +51,11 @@ function normalInitializer(size: number, _: number): matrix.Matrix1D {
     return rndVector(normalRandom, size, 1);
 }
 
-export type InitializerT = "xavier" | "xavier_normal" | "uniform" | "normal" | "zero";
+export type InitializerT = "he" | "he_normal" | "xavier" | "xavier_normal" | "uniform" | "normal" | "zero";
 
 export const Initializers = {
+    he: heInitializer,
+    he_normal: heNormalInitializer,
     zero: zeroInitializer,
     xavier: xavierInitializer,
     xavier_normal: xavierNormalInitializer,

@@ -26,7 +26,7 @@ class SgdNesterovOptimizer implements IOptimizer {
 
     private cache = new Map<ILayer, NesterovCacheT>();
 
-    constructor(beta = 0.9, lr = 0.01) {
+    constructor(lr = 0.01, beta = 0.9) {
         this.lr = lr;
         this.beta = beta;
 
@@ -64,9 +64,9 @@ class RMSPropOptimizer implements IOptimizer {
 
     private cache = new Map<ILayer, RMSPropCacheT>();
 
-    constructor(beta = 0.9, lr = 0.005, eps = 1e-8) {
-        this.beta = beta;
+    constructor(lr = 0.005, beta = 0.9, eps = 1e-8) {
         this.lr = lr;
+        this.beta = beta;
         this.eps = eps;
         this.description = `rmsprop(beta: ${beta}, lr: ${this.lr}, eps: ${this.eps})`;
     }
@@ -102,7 +102,7 @@ class AdamOptimizer implements IOptimizer {
 
     private cache = new Map<ILayer, AdamCacheT>();
 
-    constructor(beta1 = 0.9, beta2 = 0.999, lr = 0.005, eps = 1e-8) {
+    constructor(lr = 0.005, beta1 = 0.9, beta2 = 0.999, eps = 1e-8) {
         this.lr = lr;
         this.beta1 = beta1;
         this.beta2 = beta2;

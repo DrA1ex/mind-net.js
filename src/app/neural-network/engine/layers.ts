@@ -19,7 +19,7 @@ export class Dense implements ILayer {
 
     constructor(size: number,
                 activation: ActivationT | IActivation = "sigmoid",
-                weight_initializer: InitializerT | InitializerFn = "xavier",
+                weight_initializer: InitializerT | InitializerFn = "he",
                 bias_initializer: InitializerT | InitializerFn = "zero") {
         this.size = size;
 

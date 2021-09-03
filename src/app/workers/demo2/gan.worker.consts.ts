@@ -2,7 +2,7 @@ import * as color from "../../utils/color";
 
 export type NetworkParams = [number, number[], number];
 
-export const DEFAULT_LEARNING_RATE = 0.001;
+export const DEFAULT_LEARNING_RATE = 0.005;
 export const DEFAULT_NN_PARAMS: NetworkParams = [16, [32, 64], 16 * 16];
 
 export const DRAWING_DELAY = 1000;

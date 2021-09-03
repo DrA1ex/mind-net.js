@@ -37,7 +37,7 @@ export class GenerativeAdversarialModel {
             const fake = noise.map(input => this.generator.compute(input));
             this.discriminator.train(fake, zeros, batchSize);
 
-            this.ganChain.train(matrix.random_2d(batch.length, this.generator.layers[0].size), ones, batchSize);
+            this.ganChain.train(noise, ones, batchSize);
         }
     }
 }
