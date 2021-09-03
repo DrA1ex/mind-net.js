@@ -10,12 +10,16 @@ import {IOptimizer} from "../base";
 export class GenerativeAdversarialModel {
     ganChain: ChainModel;
 
-    constructor(public generator: SequentialModel, public discriminator: SequentialModel, optimizer: OptimizerT | IOptimizer = 'sgd') {
+    constructor(public generator: SequentialModel,
+                public discriminator: SequentialModel,
+                optimizer: OptimizerT | IOptimizer = 'sgd',
+                l1WeightRegularization: number = 0,
+                l2WeightRegularization: number = 0) {
         if (discriminator.layers[discriminator.layers.length - 1].size !== 1) {
             throw new Error("Size of discriminator's output should be 1");
         }
 
-        this.ganChain = new ChainModel(optimizer);
+        this.ganChain = new ChainModel(optimizer, l1WeightRegularization, l2WeightRegularization);
         this.ganChain
             .addModel(generator)
             .addModel(discriminator, false)

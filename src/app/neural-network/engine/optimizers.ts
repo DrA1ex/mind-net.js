@@ -17,7 +17,7 @@ class SgdOptimizer implements IOptimizer {
     }
 }
 
-type NesterovCacheT = { gradient: matrix.Matrix1D, weights: { moments: matrix.Matrix1D } };
+type NesterovCacheT = { tmp1: matrix.Matrix1D, weights: { moments: matrix.Matrix1D } };
 
 class SgdNesterovOptimizer implements IOptimizer {
     readonly description: string;
@@ -36,7 +36,7 @@ class SgdNesterovOptimizer implements IOptimizer {
     step(layer: ILayer, activations: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): OptimizerStep {
         if (!this.cache.has(layer)) {
             this.cache.set(layer, {
-                gradient: matrix.zero(layer.size),
+                tmp1: matrix.zero(layer.size),
                 weights: {moments: matrix.zero(layer.size)}
             })
         }
@@ -44,12 +44,16 @@ class SgdNesterovOptimizer implements IOptimizer {
         const s = this.cache.get(layer)!;
 
         // next gradient
-        matrix.matrix1d_binary_op(activations, s.weights.moments, (a, m) => layer.activation.moment(a + m), s.gradient);
-        matrix.mul_to(s.gradient, error);
+        matrix.matrix1d_binary_op(activations, s.weights.moments, (a, m) => layer.activation.moment(a + m), s.tmp1);
+        matrix.mul_to(s.tmp1, error);
 
-        matrix.matrix1d_binary_in_place_op(s.weights.moments, s.gradient, (m, g) => this.beta * m + this.lr * g);
+        // calculate/update moment
+        matrix.matrix1d_binary_in_place_op(s.weights.moments, s.tmp1, (m, g) => this.beta * m + (1 - this.beta) * g);
 
-        return {weightStep: s.weights.moments, biasStep: s.weights.moments};
+        // apply learning rate to moment
+        matrix.matrix1d_binary_in_place_op(s.tmp1, s.weights.moments, (_, m) => m * this.lr);
+
+        return {weightStep: s.tmp1, biasStep: s.tmp1};
     }
 }
 

@@ -36,7 +36,7 @@ let lastDraw = 0;
 let lastUpdateMetrics = 0;
 
 function create_nn(sizes: number[], lr: number) {
-    const nn = new NN.Models.Sequential(new NN.Optimizers.nesterov(lr, 0.5));
+    const nn = new NN.Models.Sequential(new NN.Optimizers.sgd(lr));
     nn.addLayer(new NN.Layers.Dense(2));
     for (const size of sizes) {
         nn.addLayer(new NN.Layers.Dense(size, "sigmoid", "xavier"));

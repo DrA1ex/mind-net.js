@@ -24,7 +24,9 @@ export abstract class ModelBase {
 
     abstract compile(...args: any[]): void
 
-    constructor(optimizer: OptimizerT | IOptimizer = 'sgd') {
+    constructor(optimizer: OptimizerT | IOptimizer = 'sgd',
+                protected l1WeightRegularization: number = 0,
+                protected l2WeightRegularization: number = 0) {
         this.optimizer = buildOptimizer(optimizer);
     }
 
@@ -85,12 +87,12 @@ export abstract class ModelBase {
         return {activations, primes};
     }
 
-    protected _calculateLoss(output: matrix.Matrix1D, expected: matrix.Matrix1D): matrix.Matrix1D {
-        if (expected.length !== output.length) {
-            throw new Error(`Output matrix has different size. Expected size ${output.length}, got ${expected.length}`);
+    protected _calculateLoss(predicted: matrix.Matrix1D, expected: matrix.Matrix1D): matrix.Matrix1D {
+        if (expected.length !== predicted.length) {
+            throw new Error(`Output matrix has different size. Expected size ${expected.length}, got ${predicted.length}`);
         }
 
-        return matrix.sub(expected, output);
+        return matrix.sub(expected, predicted);
     }
 
     protected _backprop(data: BackpropData, loss: matrix.Matrix1D) {
@@ -136,7 +138,20 @@ export abstract class ModelBase {
         matrix.matrix1d_binary_in_place_op(layer.biases, deltaBiases, (b, d) => b + d / batchSize);
 
         for (let j = 0; j < layer.size; j++) {
-            matrix.matrix1d_binary_in_place_op(layer.weights[j], deltaWeights[j], (w, d) => w + d / batchSize);
+            matrix.matrix1d_binary_in_place_op(layer.weights[j], deltaWeights[j], (w, d) => {
+                let l1Regularization = 0;
+                if (this.l1WeightRegularization > 0) {
+                    l1Regularization = Math.sign(w) * this.l1WeightRegularization
+                }
+
+                let l2Regularization = 0;
+                if (this.l2WeightRegularization > 0) {
+                    l2Regularization = 2 * w * this.l2WeightRegularization
+                }
+
+                const change = d / batchSize;
+                return w - l1Regularization - l2Regularization + change;
+            });
         }
     }
 
