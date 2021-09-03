@@ -1,8 +1,7 @@
-import * as matrix from "../matrix";
 import {zero, zero_2d} from "../matrix";
 
 import {ILayer} from "../base";
-import {BackpropData, ModelBase} from "./base";
+import {ModelBase} from "./base";
 
 export class ChainModel extends ModelBase {
     layers: ILayer[] = [];
@@ -55,31 +54,15 @@ export class ChainModel extends ModelBase {
         this.compiled = true;
     }
 
-    protected override _backprop(data: BackpropData, loss: matrix.Matrix1D) {
-        const {activations, primes} = data;
-        let errors = loss;
-
-        for (let i = this.layers.length - 1; i > 0; i--) {
+    protected _applyDelta(batchSize: number) {
+        for (let i = 1; i < this.layers.length; i++) {
             const layer = this.layers[i];
             const [, trainable] = this.modelByLayer.get(layer)!;
-
-            const change = this.optimizer.step(layer, primes[i], errors, this.epoch);
-
-            let layerWeights: matrix.Matrix2D;
-            if (trainable) {
-                layerWeights = layer.weights;
-                matrix.matrix1d_binary_in_place_op(layer.biases, change, (b, c) => b + c);
-            } else {
-                layerWeights = matrix.copy_2d(layer.weights);
+            if (!trainable) {
+                continue;
             }
 
-            for (let j = 0; j < layer.size; j++) {
-                matrix.matrix1d_binary_in_place_op(layerWeights[j], activations[i - 1], (w, a) => w + a * change[j]);
-            }
-
-            if (i > 1) {
-                errors = matrix.dot_2d_translated(layerWeights, errors);
-            }
+            this._applyLayerDelta(layer, batchSize);
         }
     }
 }

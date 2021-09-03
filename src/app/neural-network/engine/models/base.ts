@@ -103,10 +103,10 @@ export abstract class ModelBase {
 
             const change = this.optimizer.step(layer, primes[i], errors, this.epoch);
             for (let j = 0; j < layer.size; j++) {
-                matrix.matrix1d_binary_in_place_op(deltaWeights[j], activations[i - 1], (w, a) => w + a * change[j]);
+                matrix.matrix1d_binary_in_place_op(deltaWeights[j], activations[i - 1], (w, a) => w + a * change.weightStep[j]);
             }
 
-            matrix.add_to(deltaBiases, change);
+            matrix.add_to(deltaBiases, change.biasStep);
 
             if (i > 1) {
                 errors = matrix.dot_2d_translated(layer.weights, errors);
@@ -126,13 +126,17 @@ export abstract class ModelBase {
     protected _applyDelta(batchSize: number): void {
         for (let i = 1; i < this.layers.length; i++) {
             const layer = this.layers[i];
-            const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
+            this._applyLayerDelta(layer, batchSize);
+        }
+    }
 
-            matrix.matrix1d_binary_in_place_op(layer.biases, deltaBiases, (b, d) => b + d / batchSize);
+    protected _applyLayerDelta(layer: ILayer, batchSize: number): void {
+        const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
 
-            for (let j = 0; j < layer.size; j++) {
-                matrix.matrix1d_binary_in_place_op(layer.weights[j], deltaWeights[j], (w, d) => w + d / batchSize);
-            }
+        matrix.matrix1d_binary_in_place_op(layer.biases, deltaBiases, (b, d) => b + d / batchSize);
+
+        for (let j = 0; j < layer.size; j++) {
+            matrix.matrix1d_binary_in_place_op(layer.weights[j], deltaWeights[j], (w, d) => w + d / batchSize);
         }
     }
 

@@ -7,7 +7,7 @@ export const DEFAULT_NN_PARAMS: NetworkParams = [16, [32, 64], 16 * 16];
 
 export const DRAWING_DELAY = 1000;
 export const MAX_ITERATION_TIME = DRAWING_DELAY / 2;
-export const TRAINING_BATCH_SIZE = 250;
+export const TRAINING_BATCH_SIZE = 1;
 
 export const DRAW_GRID_DIMENSION = 5;
 

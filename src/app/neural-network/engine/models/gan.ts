@@ -1,4 +1,5 @@
 import * as matrix from "../matrix"
+import * as iter from "../iter"
 
 import {SequentialModel} from "./sequential";
 import {ChainModel} from "./chain";
@@ -10,6 +11,10 @@ export class GenerativeAdversarialModel {
     ganChain: ChainModel;
 
     constructor(public generator: SequentialModel, public discriminator: SequentialModel, optimizer: OptimizerT | IOptimizer = 'sgd') {
+        if (discriminator.layers[discriminator.layers.length - 1].size !== 1) {
+            throw new Error("Size of discriminator's output should be 1");
+        }
+
         this.ganChain = new ChainModel(optimizer);
         this.ganChain
             .addModel(generator)
@@ -21,12 +26,18 @@ export class GenerativeAdversarialModel {
         return this.generator.compute(input);
     }
 
-    train(real: matrix.Matrix1D[], realExpected: matrix.Matrix1D[], input: matrix.Matrix1D[], inputExpected: matrix.Matrix1D[]) {
-        this.discriminator.train(real, realExpected);
+    train(real: matrix.Matrix1D[], batchSize: number = 32) {
+        for (const batch of iter.partition(real, batchSize)) {
+            const ones = matrix.fill_value([1], batch.length);
+            const zeros = matrix.fill_value([0], batch.length);
+            const noise = matrix.random_2d(batch.length, this.generator.layers[0].size, -1, 1);
 
-        const fake = input.map(i => this.generator.compute(i));
-        this.discriminator.train(fake, inputExpected);
+            this.discriminator.train(batch, ones, batchSize);
 
-        this.ganChain.train(input, realExpected);
+            const fake = noise.map(input => this.generator.compute(input));
+            this.discriminator.train(fake, zeros, batchSize);
+
+            this.ganChain.train(matrix.random_2d(batch.length, this.generator.layers[0].size), ones, batchSize);
+        }
     }
 }

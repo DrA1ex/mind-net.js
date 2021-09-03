@@ -18,8 +18,13 @@ export interface ILayer {
     step(input: matrix.Matrix1D): matrix.Matrix1D;
 }
 
+export interface OptimizerStep {
+    weightStep: matrix.Matrix1D
+    biasStep: matrix.Matrix1D
+}
+
 export interface IOptimizer {
-    step(layer: ILayer, activations: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D
+    step(layer: ILayer, activations: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): OptimizerStep
     readonly description: string
 }
 
