@@ -14,12 +14,16 @@ import {
     DRAWING_DELAY,
     MAX_ITERATION_TIME,
     NetworkParams,
+    PROGRESS_DELAY,
     TRAINING_BATCH_SIZE
 } from "./gan.worker.consts"
 
 let lastDrawTime = 0;
-let trainingIterations = 0;
+let currentIteration = 0;
 let trainingData: number[][];
+let batchedTrainingData: number[][][];
+let batchSize = 0;
+let batchCount = 0;
 
 let nnParams: NetworkParams = DEFAULT_NN_PARAMS;
 let learningRate = DEFAULT_LEARNING_RATE;
@@ -64,10 +68,21 @@ addEventListener('message', ({data}) => {
 
         neuralNetwork = createNn();
 
-        trainingIterations = 0;
+        currentIteration = 0;
+        batchSize = Math.max(1, Math.floor(trainingData.length / 200));
+        batchCount = Math.ceil(trainingData.length / batchSize);
+
         if (trainingData && trainingData.length > 0) {
             draw();
         }
+
+        postMessage({
+            type: "progress",
+            epoch: 1,
+            batchNo: 1,
+            batchCount,
+            speed: 0
+        });
     }
 
     switch (data.type) {
@@ -84,6 +99,7 @@ addEventListener('message', ({data}) => {
 
         case "set_data":
             trainingData = data.data;
+
             _refresh();
             break;
     }
@@ -95,27 +111,46 @@ function trainBatch() {
     }
 
     const startTime = performance.now();
-    let i = 0;
-    while (++i) {
-        neuralNetwork.train(trainingData, Math.max(1, trainingData.length / 200));
+    let progressLastTime = startTime;
+    let batches = 0
+    let batchesCntToCheck = 0;
 
-        if (i % TRAINING_BATCH_SIZE === 0 && (performance.now() - startTime) > MAX_ITERATION_TIME) {
+    while (true) {
+        if (currentIteration % batchCount === 0) {
+            batchedTrainingData = Array.from(iter.partition(iter.shuffled(trainingData), batchSize));
+        }
+
+        neuralNetwork.trainBatch(batchedTrainingData[currentIteration % batchCount]);
+        
+        if (++batches > batchesCntToCheck) {
+            const elapsed = performance.now() - progressLastTime;
+            const batchTime = elapsed / batches;
+            batchesCntToCheck = PROGRESS_DELAY / batchTime;
+
+            postMessage({
+                type: "progress",
+                epoch: Math.floor(currentIteration / batchCount) + 1,
+                batchNo: currentIteration % batchCount + 1,
+                batchCount,
+                speed: 1000 / batchTime
+            });
+
+            batches = 0;
+            progressLastTime = performance.now();
+        }
+
+        ++currentIteration;
+
+        if (currentIteration % TRAINING_BATCH_SIZE === 0 && (performance.now() - startTime) > MAX_ITERATION_TIME) {
             break;
         }
     }
 
-    trainingIterations += i;
-
-    const batchTime = performance.now() - startTime;
-    console.log(`*** BATCH FINISHED with ${i} in ${batchTime.toFixed(2)}ms (${(i / batchTime * 1000).toFixed(2)} op/s)`)
-
-    const disRealErr = nnUtils.mse(
-        neuralNetwork.discriminator.compute(nnUtils.pickRandomItem(trainingData)), [1]);
-    const disFakeErr = nnUtils.mse(
-        neuralNetwork.discriminator.compute(
-            neuralNetwork.generator.compute(nnUtils.generateInputNoise(nnParams[0]))), [0]);
-
-    console.log(`*** DISCRIMINATOR real loss ${disRealErr.toFixed(2)}, fake loss ${disFakeErr.toFixed(2)}`);
+    postMessage({
+        type: "progress",
+        epoch: Math.floor(currentIteration / batchCount) + 1,
+        batchNo: currentIteration % batchCount + 1,
+    });
 
     const t = performance.now();
     if (t - lastDrawTime > DRAWING_DELAY) {
@@ -144,7 +179,7 @@ function draw() {
         height: gridSize,
         trainingData: dataSamples,
         generatedData: genSamples,
-        currentIteration: trainingIterations
+        currentIteration: currentIteration
     }, [dataSamples, genSamples])
 }
 

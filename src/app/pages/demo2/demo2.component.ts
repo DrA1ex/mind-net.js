@@ -28,6 +28,9 @@ export class Demo2Component {
     learningRate: number = DEFAULT_LEARNING_RATE;
 
     currentIteration: number = 0;
+    currentBatch: number = 0;
+    totalBatches: number = 0;
+    speed: number = 0;
 
     fileLoading = false;
     fileProcessingCurrent: number = 0;
@@ -41,8 +44,13 @@ export class Demo2Component {
                 case "training_data":
                     this.generatedImage.draw(data.generatedData, data.width, data.height);
                     this.trainingImage.draw(data.trainingData, data.width, data.height);
+                    break;
 
-                    this.currentIteration = data.currentIteration;
+                case "progress":
+                    this.currentIteration = data.epoch ?? this.currentIteration;
+                    this.currentBatch = data.batchNo ?? this.currentBatch;
+                    this.totalBatches = data.batchCount ?? this.totalBatches;
+                    this.speed = data.speed ?? this.speed;
                     break;
             }
         }

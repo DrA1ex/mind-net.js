@@ -31,17 +31,22 @@ export class GenerativeAdversarialModel {
     }
 
     train(real: matrix.Matrix1D[], batchSize: number = 32) {
-        for (const batch of iter.partition(real, batchSize)) {
-            const ones = matrix.fill_value([1], batch.length);
-            const zeros = matrix.fill_value([0], batch.length);
-            const noise = matrix.random_2d(batch.length, this.generator.layers[0].size, -1, 1);
-
-            this.discriminator.train(batch, ones, batchSize);
-
-            const fake = noise.map(input => this.generator.compute(input));
-            this.discriminator.train(fake, zeros, batchSize);
-
-            this.ganChain.train(noise, ones, batchSize);
+        const shuffledTrainSet = iter.shuffled(real);
+        for (const batch of iter.partition(shuffledTrainSet, batchSize)) {
+            this.trainBatch(batch);
         }
+    }
+
+    public trainBatch(batch: matrix.Matrix1D[]) {
+        const ones = matrix.fill_value([1], batch.length);
+        const zeros = matrix.fill_value([0], batch.length);
+        const noise = matrix.random_2d(batch.length, this.generator.layers[0].size, -1, 1);
+
+        this.discriminator.trainBatch(iter.zip(batch, ones));
+
+        const fake = noise.map(input => this.generator.compute(input));
+        this.discriminator.trainBatch(iter.zip(fake, zeros));
+
+        this.ganChain.trainBatch(iter.zip(noise, ones));
     }
 }

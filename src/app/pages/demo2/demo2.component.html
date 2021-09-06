@@ -28,7 +28,9 @@
                 </button>
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item pointer" (click)="loadData()">File...</a></li>
-                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
                     <li><a class="dropdown-item pointer" (click)="loadPredefined('check-mark-10-16.json')">check-mark-10-16</a></li>
                     <li><a class="dropdown-item pointer" (click)="loadPredefined('mnist-500-16.json')">mnist-500-16</a></li>
                     <li><a class="dropdown-item pointer" (click)="loadPredefined('mnist-10000-16.json')">mnist-10000-16</a></li>
@@ -52,8 +54,8 @@
             </div>
         </div>
     </div>
-    <div class="row" *ngIf="currentIteration > 0">
-        <p>Training iteration {{currentIteration}}</p>
+    <div class="row" *ngIf="currentIteration > 0 || currentBatch > 0">
+        <p>Training... Epoch: {{currentIteration}}. Batch: {{currentBatch}} from {{totalBatches}} ({{speed.toFixed(2)}} op/s)</p>
     </div>
 </div>
 

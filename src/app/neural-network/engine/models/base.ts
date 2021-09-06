@@ -55,18 +55,25 @@ export abstract class ModelBase {
 
         const shuffledTrainSet = iter.shuffled(Array.from(iter.zip(input, expected)));
         for (const batch of iter.partition(shuffledTrainSet, batchSize)) {
-            this._clearDelta();
-
-            for (const [trainInput, trainExpected] of batch) {
-                const data = this._calculateBackpropData(trainInput);
-                const loss = this._calculateLoss(data.activations[data.activations.length - 1], trainExpected);
-                this._backprop(data, loss);
-            }
-
-            this._applyDelta(batch.length);
+            this.trainBatch(batch);
         }
 
         this._epoch += 1;
+    }
+
+    public trainBatch(batch: Iterable<[matrix.Matrix1D, matrix.Matrix1D]>) {
+        this._clearDelta();
+
+        let count = 0;
+        for (const [trainInput, trainExpected] of batch) {
+            const data = this._calculateBackpropData(trainInput);
+            const loss = this._calculateLoss(data.activations[data.activations.length - 1], trainExpected);
+            this._backprop(data, loss);
+
+            ++count;
+        }
+
+        this._applyDelta(count);
     }
 
     protected _calculateBackpropData(input: matrix.Matrix1D): BackpropData {
