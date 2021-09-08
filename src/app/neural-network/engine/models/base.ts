@@ -24,9 +24,7 @@ export abstract class ModelBase {
 
     abstract compile(...args: any[]): void
 
-    constructor(optimizer: OptimizerT | IOptimizer = 'sgd',
-                protected l1WeightRegularization: number = 0,
-                protected l2WeightRegularization: number = 0) {
+    constructor(optimizer: OptimizerT | IOptimizer = 'sgd') {
         this.optimizer = buildOptimizer(optimizer);
     }
 
@@ -69,7 +67,6 @@ export abstract class ModelBase {
             const data = this._calculateBackpropData(trainInput);
             const loss = this._calculateLoss(data.activations[data.activations.length - 1], trainExpected);
             this._backprop(data, loss);
-
             ++count;
         }
 
@@ -110,16 +107,39 @@ export abstract class ModelBase {
             const layer = this.layers[i];
             const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
 
-            const change = this.optimizer.step(layer, primes[i], errors, this.epoch);
+            const gradient = matrix.matrix1d_unary_op(errors, v => layer.activation.moment(v));
+
             for (let j = 0; j < layer.size; j++) {
-                matrix.matrix1d_binary_in_place_op(deltaWeights[j], activations[i - 1], (w, a) => w + a * change.weightStep[j]);
+                matrix.matrix1d_binary_in_place_op(deltaWeights[j], activations[i - 1], (w, a) => w + a * gradient[j]);
             }
 
-            matrix.add_to(deltaBiases, change.biasStep);
+            matrix.add_to(deltaBiases, errors);
 
             if (i > 1) {
-                matrix.matrix1d_unary_in_place_op(errors, (e, j) => e * layer.activation.moment(primes[i][j]))
-                errors = matrix.dot_2d_translated(layer.weights, errors);
+                errors = matrix.dot_2d_translated(this.layers[i].weights, gradient);
+            }
+        }
+    }
+
+    protected __backprop(data: BackpropData, loss: matrix.Matrix1D) {
+        const {activations, primes} = data;
+        let errors = loss;
+
+        for (let i = this.layers.length - 1; i > 0; i--) {
+            const layer = this.layers[i];
+            const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
+
+            for (let j = 0; j < layer.size; j++) {
+                matrix.matrix1d_binary_in_place_op(deltaWeights[j], activations[i - 1], (w, a) => w + a * errors[j]);
+            }
+
+            matrix.add_to(deltaBiases, errors);
+
+            if (i > 1) {
+                errors = matrix.matrix1d_binary_in_place_op(
+                    matrix.dot_2d_translated(this.layers[i].weights, errors), primes[i - 1],
+                    (d, z) => d * this.layers[i - 1].activation.moment(z)
+                );
             }
         }
     }
@@ -142,25 +162,7 @@ export abstract class ModelBase {
 
     protected _applyLayerDelta(layer: ILayer, batchSize: number): void {
         const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
-
-        matrix.matrix1d_binary_in_place_op(layer.biases, deltaBiases, (b, d) => b + d / batchSize);
-
-        for (let j = 0; j < layer.size; j++) {
-            matrix.matrix1d_binary_in_place_op(layer.weights[j], deltaWeights[j], (w, d) => {
-                let l1Regularization = 0;
-                if (this.l1WeightRegularization > 0) {
-                    l1Regularization = Math.sign(w) * this.l1WeightRegularization
-                }
-
-                let l2Regularization = 0;
-                if (this.l2WeightRegularization > 0) {
-                    l2Regularization = 2 * w * this.l2WeightRegularization
-                }
-
-                const change = d / batchSize;
-                return w - l1Regularization - l2Regularization + change;
-            });
-        }
+        this.optimizer.updateWeights(layer, deltaWeights, deltaBiases, batchSize);
     }
 
     getSnapshot(): NeuralNetworkSnapshot {

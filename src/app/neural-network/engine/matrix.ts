@@ -5,6 +5,7 @@ export type Matrix2D = number[][];
 
 export type OptMatrix1D = number[] | undefined;
 
+
 export function fill<T>(value_fn: (i: number) => T, length: number): T[] {
     return Array.from(iter.map(iter.range(0, length), value_fn));
 }
@@ -19,6 +20,8 @@ export function matrix1d_binary_in_place_op(dst: Matrix1D, b: Matrix1D, op: (x1:
     for (let i = 0; i < length; ++i) {
         dst[i] = op(dst[i], b[i]);
     }
+
+    return dst;
 }
 
 export function matrix1d_binary_op(a: Matrix1D, b: Matrix1D, op: (x1: number, x2: number) => number, dst: OptMatrix1D = undefined): Matrix1D {

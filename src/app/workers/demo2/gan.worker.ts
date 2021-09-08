@@ -32,11 +32,11 @@ let neuralNetwork = createNn();
 
 function createNn() {
     function _createOptimizer() {
-        return new NN.Optimizers.nesterov(learningRate, 0.25);
+        return new NN.Optimizers.sgd(learningRate);
     }
 
     function _createHiddenLayer(size: number) {
-        return new NN.Layers.Dense(size)
+        return new NN.Layers.Dense(size, new NN.Activations.leakyRelu(0.2))
     }
 
     const [input, genSizes, output] = nnParams;
@@ -121,7 +121,7 @@ function trainBatch() {
         }
 
         neuralNetwork.trainBatch(batchedTrainingData[currentIteration % batchCount]);
-        
+
         if (++batches > batchesCntToCheck) {
             const elapsed = performance.now() - progressLastTime;
             const batchTime = elapsed / batches;
@@ -139,9 +139,7 @@ function trainBatch() {
             progressLastTime = performance.now();
         }
 
-        ++currentIteration;
-
-        if (currentIteration % TRAINING_BATCH_SIZE === 0 && (performance.now() - startTime) > MAX_ITERATION_TIME) {
+        if (++currentIteration % TRAINING_BATCH_SIZE === 0 && (performance.now() - startTime) > MAX_ITERATION_TIME) {
             break;
         }
     }

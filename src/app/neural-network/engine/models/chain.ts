@@ -11,6 +11,8 @@ export class ChainModel extends ModelBase {
     readonly models: ModelBase[] = [];
 
     addModel(model: ModelBase, trainable = true): this {
+        this.compiled = false;
+
         this.models.push(model);
         this.trainable.push(trainable);
         return this;
