@@ -5,11 +5,5 @@ import {Models} from "./engine/models";
 import {Initializers} from "./engine/initializers";
 import * as Utils from "./utils"
 
-export default {
-    Activations,
-    Initializers,
-    Optimizers,
-    Layers,
-    Models,
-    Utils
-}
+export default {Activations, Initializers, Optimizers, Layers, Models, Utils};
+export {Activations, Initializers, Optimizers, Layers, Models, Utils};

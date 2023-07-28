@@ -15,6 +15,9 @@ export default {
         },
     },
     devtool: 'source-map',
+    experiments: {
+        outputModule: true,
+    },
     module: {
         rules: [
             {
@@ -28,15 +31,11 @@ export default {
         extensions: ['.tsx', '.ts', '.js'],
         plugins: [new TsconfigPathsPlugin({configFile: "./tsconfig.lib.json"})]
     },
-    optimization: {
-        splitChunks: {chunks: 'all'},
-        usedExports: true,
-    },
     output: {
         path: path.resolve(__dirname, "lib"),
         filename: '[name].js',
-        libraryTarget: 'umd',
-        library: 'neural-network',
-        umdNamedDefine: true
+        library: {
+            type: "module"
+        }
     },
 };
