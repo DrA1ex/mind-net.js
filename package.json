@@ -5,8 +5,10 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "watch": "ng build --watch --configuration development"
+    "watch": "ng build --watch --configuration development",
+    "lib": "webpack"
   },
+  "type": "module",
   "private": true,
   "dependencies": {
     "@angular/animations": "~12.1.0",
@@ -19,7 +21,7 @@
     "@angular/router": "~12.1.0",
     "@fortawesome/fontawesome-free": "^5.15.4",
     "bootstrap": "^5.0.2",
-    "jszip": "^3.7.1",
+    "jszip": "^3.8.0",
     "pngjs": "^6.0.0",
     "rxjs": "~6.6.0",
     "tslib": "^2.2.0",
@@ -31,6 +33,10 @@
     "@angular/compiler-cli": "~12.1.0",
     "@types/jszip": "^3.4.1",
     "@types/node": "^12.11.1",
-    "typescript": "~4.3.2"
+    "ts-loader": "^9.4.4",
+    "tsconfig-paths-webpack-plugin": "^4.1.0",
+    "typescript": "~4.3.2",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
   }
 }

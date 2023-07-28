@@ -3,6 +3,7 @@
 import * as matrix from "../../neural-network/engine/matrix";
 import * as nnUtils from "../../neural-network/utils";
 import * as color from "../../utils/color";
+import * as logUtils from "../../utils/log";
 import {
     COLOR_A_BIN,
     COLOR_B_BIN,
@@ -130,7 +131,7 @@ function trainBatch() {
     } else {
         lastDraw = 0;
         console.log('*** DATA SET TRAINING FINISHED ***');
-        nnUtils.print(neuralNetwork, trainingInputs, trainingOutputs);
+        logUtils.print(neuralNetwork, trainingInputs, trainingOutputs);
 
         sendCurrentState(2);
     }

@@ -1,6 +1,6 @@
 import {IActivation} from "./base";
 
-class SigmoidActivation implements IActivation {
+export class SigmoidActivation implements IActivation {
     value(x: number): number {
         return 1 / (1 + Math.exp(-x));
     }
@@ -11,7 +11,7 @@ class SigmoidActivation implements IActivation {
     }
 }
 
-class LeakyReluActivation implements IActivation {
+export class LeakyReluActivation implements IActivation {
     alpha: number;
 
     constructor(alpha = 0.01) {
@@ -27,7 +27,7 @@ class LeakyReluActivation implements IActivation {
     }
 }
 
-class ReluActivation implements IActivation {
+export class ReluActivation implements IActivation {
     private leakyRelu = new LeakyReluActivation(0);
 
     value(x: number): number {
@@ -39,7 +39,7 @@ class ReluActivation implements IActivation {
     }
 }
 
-class TanhActivation implements IActivation {
+export class TanhActivation implements IActivation {
     value(x: number): number {
         return Math.tanh(x);
     }

@@ -3,6 +3,7 @@ import {Layers} from "./engine/layers";
 import {Activations} from "./engine/activations";
 import {Models} from "./engine/models";
 import {Initializers} from "./engine/initializers";
+import * as Utils from "./utils"
 
 export default {
     Activations,
@@ -10,4 +11,5 @@ export default {
     Optimizers,
     Layers,
     Models,
+    Utils
 }

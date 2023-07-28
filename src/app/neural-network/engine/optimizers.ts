@@ -2,7 +2,7 @@ import * as matrix from "./matrix";
 
 import {ILayer, IOptimizer, OptimizerStep} from "./base";
 
-class SgdOptimizer implements IOptimizer {
+export class SgdOptimizer implements IOptimizer {
     readonly description: string;
     readonly lr: number;
 
@@ -19,7 +19,7 @@ class SgdOptimizer implements IOptimizer {
 
 type NesterovCacheT = { tmp1: matrix.Matrix1D, weights: { moments: matrix.Matrix1D } };
 
-class SgdNesterovOptimizer implements IOptimizer {
+export class SgdNesterovOptimizer implements IOptimizer {
     readonly description: string;
     readonly lr: number;
     readonly beta: number;
@@ -60,7 +60,7 @@ class SgdNesterovOptimizer implements IOptimizer {
 
 type RMSPropCacheT = { velocities: matrix.Matrix1D, tmp1: matrix.Matrix1D };
 
-class RMSPropOptimizer implements IOptimizer {
+export class RMSPropOptimizer implements IOptimizer {
     readonly description: string;
     readonly beta: number;
     readonly lr: number;
@@ -95,9 +95,14 @@ class RMSPropOptimizer implements IOptimizer {
     }
 }
 
-type AdamCacheT = { moments: matrix.Matrix1D, velocities: matrix.Matrix1D, tmp1: matrix.Matrix1D, tmp2: matrix.Matrix1D };
+type AdamCacheT = {
+    moments: matrix.Matrix1D,
+    velocities: matrix.Matrix1D,
+    tmp1: matrix.Matrix1D,
+    tmp2: matrix.Matrix1D
+};
 
-class AdamOptimizer implements IOptimizer {
+export class AdamOptimizer implements IOptimizer {
     readonly description: string;
     readonly lr: number;
     readonly beta1: number;

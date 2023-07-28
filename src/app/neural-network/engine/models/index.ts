@@ -1,9 +1,9 @@
 import {SequentialModel} from "./sequential";
-import {Chain} from "@angular/compiler";
+import {ChainModel} from "./chain";
 import {GenerativeAdversarialModel} from "./gan";
 
 export const Models = {
     Sequential: SequentialModel,
-    Chain: Chain,
+    Chain: ChainModel,
     GAN: GenerativeAdversarialModel
 }
