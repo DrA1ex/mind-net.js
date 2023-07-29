@@ -1,7 +1,6 @@
 import path from "path";
 import url from "url";
 import {TsconfigPathsPlugin} from "tsconfig-paths-webpack-plugin";
-import TerserPlugin from "terser-webpack-plugin";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 

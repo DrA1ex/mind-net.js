@@ -1,13 +1,85 @@
-# Neural Network Engine
+# mind-net.js
 
-Repository contains simple neural network implementation in pure TypeScript/JavaScript for educational or pet-project uses.
+Repository contains simple neural network implementation in pure TypeScript.
 
-## Code
+## Installation 
+
+```bash
+npm install mind-net.js
+```
+
+## Get Started
+
+```javascript
+import MindNet from "mind-net.js";
+
+const network = new MindNet.Models.Sequential("rmsprop");
+
+network.addLayer(new MindNet.Layers.Dense(2));
+network.addLayer(new MindNet.Layers.Dense(4));
+network.addLayer(new MindNet.Layers.Dense(1));
+
+network.compile();
+
+const input = [[0, 0], [0, 1], [1, 0], [1, 1]];
+const expected = [[0], [1], [1], [0]];
+for (let i = 0; i < 20000; i++) {
+    network.train(input, expected);
+}
+
+console.log(network.compute([1, 0])); // 0.99
+```
+
+### More complex example
+```javascript
+import MindNet from "mind-net.js";
+
+const optimizer = new MindNet.Optimizers.adam(0.0005, 0.2);
+const activation = "relu";
+
+const network = new MindNet.Models.Sequential(optimizer);
+
+for (const size of [2, 64, 64, 1]) {
+    network.addLayer(new MindNet.Layers.Dense(size, activation));
+}
+
+network.compile();
+
+function getInput() {
+    const x = Math.floor(Math.random() * 10),
+        y = Math.floor(Math.random() * 10);
+
+    return [x, y];
+}
+
+for (let i = 0; i < 100000; i++) {
+    const [x, y] = getInput();
+    const input = [[x, y]];
+    const output = [[x + y]];
+    
+    network.train(input, output);
+    const loss = Utils.loss(network, input, output);
+
+    if (i % 1000 === 0) {
+        console.log(`Epoch ${network.epoch}. Loss: ${loss}`);
+    }
+
+    if (loss < 1e-14) {
+        console.log(`Training complete. Epoch ${network.epoch}. Loss: ${loss}`);
+        break;
+    }
+}
+
+const [x, y] = getInput();
+console.log(`${x} + ${y} = ${Math.round(network.compute([x, y])[0])}`);
+console.log(`${y} + ${x} = ${Math.round(network.compute([x, y])[0])}`);
+```
+
+## Examples
 - Seuqential Network @ [implementation](src/app/neural-network/engine/models/sequential.ts)
-
 - Generative-adversarial Network @ [implementation](src/app/neural-network/engine/models/gan.ts)
 
-# Examples
+# Demo
 ## [Sequential demo](https://dra1ex.github.io/neural-network/demo1/)
 ### Classification of 2D space from set of points with different type
 ![image](https://user-images.githubusercontent.com/1194059/128631442-0a0350df-d5b1-4ac2-b3d0-030e341f68a3.png)
