@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build && cp ./dist/index.html ./dist/404.html",
     "watch": "ng build --watch --configuration development",
     "lib": "tsc --project tsconfig.lib.json && webpack"
   },
