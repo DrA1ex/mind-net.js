@@ -1,6 +1,6 @@
 # mind-net.js
 
-Repository contains simple neural network implementation in pure TypeScript.
+Simple to use neural network implementation in pure TypeScript.
 
 ## Installation 
 
