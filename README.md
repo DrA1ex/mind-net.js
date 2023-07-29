@@ -1,6 +1,7 @@
 <p align="center">
-<img alt="Logo" width="128" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/0057edad-e58b-4bfd-a515-acfeebbdaf88"/>
+<img alt="Logo" width="128" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/6d2ce44b-f435-4cbc-902e-0d60eaf15dc1"/>
 </p>
+
 
 
 # mind-net.js
