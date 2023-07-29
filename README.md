@@ -80,7 +80,7 @@ console.log(`${y} + ${x} = ${Math.round(network.compute([x, y])[0])}`);
 - Generative-adversarial Network @ [implementation](src/app/neural-network/engine/models/gan.ts)
 
 # Demo
-## [Sequential demo](https://dra1ex.github.io/neural-network/demo1/)
+## [Sequential demo](https://dra1ex.github.io/mind-net.js/demo1/)
 ### Classification of 2D space from set of points with different type
 ![image](https://user-images.githubusercontent.com/1194059/128631442-0a0350df-d5b1-4ac2-b3d0-030e341f68a3.png)
 
@@ -91,15 +91,15 @@ console.log(`${y} + ${x} = ${Math.round(network.compute([x, y])[0])}`);
 - To clear points click delete button
 - To Export/Import point set click export/import button 
 
-**Source code**: [src/app/pages/demo1](https://github.com/DrA1ex/neural-network/tree/main/src/app/pages/demo1)
+**Source code**: [src/app/pages/demo1](/src/app/pages/demo1)
 
-## [Generative-adversarial Network demo](https://dra1ex.github.io/neural-network/demo2/)
+## [Generative-adversarial Network demo](https://dra1ex.github.io/mind-net.js/demo2/)
 ### Generating images by unlabeled sample data
 ![image](https://user-images.githubusercontent.com/1194059/131479119-84f7bd37-8d49-4f5f-981d-1dd7b64140e0.png)
 
 **Example training datasets**: 
-- [mnist-500-16.zip](https://github.com/DrA1ex/neural-network/files/7082675/mnist-16.zip)
-- [check-mark-10-16.zip](https://github.com/DrA1ex/neural-network/files/7082841/check-mark-16.zip)
+- [mnist-500-16.zip](https://github.com/DrA1ex/mind-net.js/files/7082675/mnist-16.zip)
+- [check-mark-10-16.zip](https://github.com/DrA1ex/mind-net.js/files/7082841/check-mark-16.zip)
 
 
-**Source code**: [src/app/pages/demo2](https://github.com/DrA1ex/neural-network/tree/main/src/app/pages/demo2)
+**Source code**: [src/app/pages/demo2](/src/app/pages/demo2)
