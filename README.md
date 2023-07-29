@@ -1,3 +1,8 @@
+<p align="center">
+<img alt="Logo" width="128" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/0057edad-e58b-4bfd-a515-acfeebbdaf88"/>
+</p>
+
+
 # mind-net.js
 
 Simple to use neural network implementation in pure TypeScript.
