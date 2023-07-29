@@ -42,7 +42,7 @@ console.log(network.compute([1, 0])); // 0.99
 
 ### More complex example
 ```javascript
-import MindNet from "mind-net.js";
+import MindNet, {Utils} from "mind-net.js";
 
 const optimizer = new MindNet.Optimizers.adam(0.0005, 0.2);
 const activation = "relu";
