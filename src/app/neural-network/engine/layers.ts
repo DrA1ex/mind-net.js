@@ -22,7 +22,9 @@ export class Dense implements ILayer {
                 weight_initializer: InitializerT | InitializerFn = "he",
                 bias_initializer: InitializerT | InitializerFn = "zero",
                 public l1WeightRegularization: number = 0,
-                public l2WeightRegularization: number = 0) {
+                public l1BiasRegularization: number = 0,
+                public l2WeightRegularization: number = 0,
+                public l2BiasRegularization: number = 0) {
         this.size = size;
 
         this.weight_initializer = typeof weight_initializer === "string" ? Initializers[weight_initializer] : weight_initializer;

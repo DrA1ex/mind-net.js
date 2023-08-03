@@ -3,6 +3,7 @@ import * as matrix from "../matrix";
 
 import {ILayer, IOptimizer} from "../base";
 import {buildOptimizer, OptimizerT} from "../optimizers";
+import {shuffle} from "../iter";
 
 export type NeuralNetworkSnapshot = { weights: matrix.Matrix2D[], biases: matrix.Matrix1D[] };
 
@@ -51,7 +52,7 @@ export abstract class ModelBase {
             throw new Error("Model should be compiled before usage");
         }
 
-        const shuffledTrainSet = iter.shuffled(Array.from(iter.zip(input, expected)));
+        const shuffledTrainSet = iter.shuffle(Array.from(iter.zip(input, expected)));
         for (const batch of iter.partition(shuffledTrainSet, batchSize)) {
             this.trainBatch(batch);
         }
@@ -96,7 +97,7 @@ export abstract class ModelBase {
             throw new Error(`Output matrix has different size. Expected size ${expected.length}, got ${predicted.length}`);
         }
 
-        return matrix.sub(expected, predicted);
+        return matrix.sub(expected, predicted).map(v => -2 * v / expected.length);
     }
 
     protected _backprop(data: BackpropData, loss: matrix.Matrix1D) {
@@ -107,39 +108,19 @@ export abstract class ModelBase {
             const layer = this.layers[i];
             const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
 
-            const gradient = matrix.matrix1d_unary_op(errors, v => layer.activation.moment(v));
+            const layerPrimes = primes[i];
+            const gradient = matrix.matrix1d_unary_op(errors,
+                (e, i) => e * layer.activation.moment(layerPrimes[i]));
 
             for (let j = 0; j < layer.size; j++) {
-                matrix.matrix1d_binary_in_place_op(deltaWeights[j], activations[i - 1], (w, a) => w + a * gradient[j]);
+                matrix.matrix1d_binary_in_place_op(deltaWeights[j], activations[i - 1],
+                    (w, a) => w + a * gradient[j]);
             }
 
-            matrix.add_to(deltaBiases, errors);
+            matrix.add_to(deltaBiases, gradient);
 
             if (i > 1) {
                 errors = matrix.dot_2d_translated(this.layers[i].weights, gradient);
-            }
-        }
-    }
-
-    protected __backprop(data: BackpropData, loss: matrix.Matrix1D) {
-        const {activations, primes} = data;
-        let errors = loss;
-
-        for (let i = this.layers.length - 1; i > 0; i--) {
-            const layer = this.layers[i];
-            const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
-
-            for (let j = 0; j < layer.size; j++) {
-                matrix.matrix1d_binary_in_place_op(deltaWeights[j], activations[i - 1], (w, a) => w + a * errors[j]);
-            }
-
-            matrix.add_to(deltaBiases, errors);
-
-            if (i > 1) {
-                errors = matrix.matrix1d_binary_in_place_op(
-                    matrix.dot_2d_translated(this.layers[i].weights, errors), primes[i - 1],
-                    (d, z) => d * this.layers[i - 1].activation.moment(z)
-                );
             }
         }
     }

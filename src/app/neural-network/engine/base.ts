@@ -15,7 +15,9 @@ export interface ILayer {
     readonly activation: IActivation;
 
     readonly l1WeightRegularization: number;
+    readonly l1BiasRegularization: number;
     readonly l2WeightRegularization: number;
+    readonly l2BiasRegularization: number;
 
     build(index: number, prevSize: number): void;
     step(input: matrix.Matrix1D): matrix.Matrix1D;
@@ -23,10 +25,8 @@ export interface ILayer {
 
 
 export interface IOptimizer {
-    step(layer: ILayer, activations: matrix.Matrix1D, primes: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D
     updateWeights(layer: ILayer, deltaWeights: matrix.Matrix2D, deltaBiases: matrix.Matrix1D, batchSize: number): void
     readonly description: string
-
 }
 
 export type InitializerFn = (size: number, prevSize: number) => matrix.Matrix1D;

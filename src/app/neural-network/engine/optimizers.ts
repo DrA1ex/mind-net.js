@@ -4,18 +4,34 @@ import {ILayer, IOptimizer} from "./base";
 
 abstract class OptimizerBase implements IOptimizer {
     abstract readonly description: string;
-    abstract readonly lr: number;
+    readonly lr: number;
+    readonly decay: number;
 
-    abstract step(layer: ILayer, activations: matrix.Matrix1D, primes: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D;
+    protected constructor(lr: number, decay: number) {
+        this.lr = lr;
+        this.decay = decay;
+    }
 
     updateWeights(layer: ILayer, deltaWeights: matrix.Matrix2D, deltaBiases: matrix.Matrix1D, batchSize: number) {
-        matrix.matrix1d_binary_in_place_op(layer.biases, deltaBiases, (b, d) => b + this.lr * d / batchSize);
+        matrix.matrix1d_binary_in_place_op(layer.biases, deltaBiases, (b, d) => {
+            let L1Regularization = 0;
+            if (layer.l1BiasRegularization > 0) {
+                L1Regularization = Math.sign(b) * layer.l1BiasRegularization
+            }
+
+            let l2Regularization = 0;
+            if (layer.l2BiasRegularization > 0) {
+                l2Regularization = 2 * b * layer.l2BiasRegularization
+            }
+
+            return b - this.lr * (L1Regularization + l2Regularization + d / batchSize)
+        });
 
         for (let j = 0; j < layer.size; j++) {
             matrix.matrix1d_binary_in_place_op(layer.weights[j], deltaWeights[j], (w, d) => {
-                let l1Regularization = 0;
+                let L1Regularization = 0;
                 if (layer.l1WeightRegularization > 0) {
-                    l1Regularization = Math.sign(w) * layer.l1WeightRegularization
+                    L1Regularization = Math.sign(w) * layer.l1WeightRegularization
                 }
 
                 let l2Regularization = 0;
@@ -23,8 +39,7 @@ abstract class OptimizerBase implements IOptimizer {
                     l2Regularization = 2 * w * layer.l2WeightRegularization
                 }
 
-                const change = d / batchSize;
-                return w - l1Regularization - l2Regularization + this.lr * change;
+                return w - this.lr * (L1Regularization + l2Regularization + d / batchSize);
             });
         }
     }
@@ -32,14 +47,12 @@ abstract class OptimizerBase implements IOptimizer {
 
 class SgdOptimizer extends OptimizerBase {
     readonly description: string;
-    readonly lr: number;
 
     private cache = new Map<ILayer, { tmp1: matrix.Matrix1D }>();
 
-    constructor(lr = 0.01) {
-        super();
+    constructor(lr = 0.01, decay = 0) {
+        super(lr, decay);
 
-        this.lr = lr;
         this.description = `sgd(lr: ${this.lr})`;
     }
 
@@ -61,17 +74,14 @@ type NesterovCacheT = { tmp1: matrix.Matrix1D, weights: { moments: matrix.Matrix
 
 class SgdNesterovOptimizer extends OptimizerBase {
     readonly description: string;
-    readonly lr: number;
     readonly beta: number;
 
     private cache = new Map<ILayer, NesterovCacheT>();
 
-    constructor(lr = 0.01, beta = 0.9) {
-        super();
+    constructor(lr = 0.01, decay = 0, beta = 0.9) {
+        super(lr, decay);
 
-        this.lr = lr;
         this.beta = beta;
-
         this.description = `nesterov(beta: ${this.beta}, lr: ${this.lr})`;
     }
 
@@ -105,15 +115,13 @@ type RMSPropCacheT = { velocities: matrix.Matrix1D, tmp1: matrix.Matrix1D };
 class RMSPropOptimizer extends OptimizerBase {
     readonly description: string;
     readonly beta: number;
-    readonly lr: number;
     readonly eps: number
 
     private cache = new Map<ILayer, RMSPropCacheT>();
 
-    constructor(lr = 0.005, beta = 0.9, eps = 1e-8) {
-        super();
+    constructor(lr = 0.005, decay = 0, beta = 0.9, eps = 1e-8) {
+        super(lr, decay);
 
-        this.lr = lr;
         this.beta = beta;
         this.eps = eps;
         this.description = `rmsprop(beta: ${beta}, lr: ${this.lr}, eps: ${this.eps})`;
@@ -148,17 +156,15 @@ type AdamCacheT = {
 
 class AdamOptimizer extends OptimizerBase {
     readonly description: string;
-    readonly lr: number;
     readonly beta1: number;
     readonly beta2: number;
     readonly eps: number;
 
     private cache = new Map<ILayer, AdamCacheT>();
 
-    constructor(lr = 0.005, beta1 = 0.9, beta2 = 0.999, eps = 1e-8) {
-        super();
+    constructor(lr = 0.005, decay = 0, beta1 = 0.9, beta2 = 0.999, eps = 1e-8) {
+        super(lr, decay);
 
-        this.lr = lr;
         this.beta1 = beta1;
         this.beta2 = beta2;
         this.eps = eps;
