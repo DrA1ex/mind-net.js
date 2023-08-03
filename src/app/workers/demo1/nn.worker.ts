@@ -40,7 +40,7 @@ function create_nn(sizes: number[], lr: number) {
     const nn = new NN.Models.Sequential(new NN.Optimizers.sgd(lr));
     nn.addLayer(new NN.Layers.Dense(2));
     for (const size of sizes) {
-        nn.addLayer(new NN.Layers.Dense(size, "sigmoid", "xavier"));
+        nn.addLayer(new NN.Layers.Dense(size, "relu", "xavier"));
     }
 
     nn.addLayer(new NN.Layers.Dense(1));
