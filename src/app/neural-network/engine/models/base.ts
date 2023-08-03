@@ -118,6 +118,7 @@ export abstract class ModelBase {
             matrix.add_to(deltaBiases, change.biasStep);
 
             if (i > 1) {
+                matrix.matrix1d_unary_in_place_op(errors, (e, j) => e * layer.activation.moment(primes[i][j]))
                 errors = matrix.dot_2d_translated(layer.weights, errors);
             }
         }
