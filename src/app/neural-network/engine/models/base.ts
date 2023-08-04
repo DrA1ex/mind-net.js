@@ -3,7 +3,6 @@ import * as matrix from "../matrix";
 
 import {ILayer, IOptimizer} from "../base";
 import {buildOptimizer, OptimizerT} from "../optimizers";
-import {shuffle} from "../iter";
 
 export type NeuralNetworkSnapshot = { weights: matrix.Matrix2D[], biases: matrix.Matrix1D[] };
 
@@ -15,7 +14,8 @@ export abstract class ModelBase {
 
     protected compiled: boolean = false;
     protected cache = new Map<ILayer, LayerCache>();
-    protected readonly optimizer: IOptimizer;
+
+    readonly optimizer: IOptimizer;
 
     public get epoch() {
         return this._epoch;
@@ -52,11 +52,13 @@ export abstract class ModelBase {
             throw new Error("Model should be compiled before usage");
         }
 
+        this.optimizer.beforePass();
         const shuffledTrainSet = iter.shuffle(Array.from(iter.zip(input, expected)));
         for (const batch of iter.partition(shuffledTrainSet, batchSize)) {
             this.trainBatch(batch);
         }
 
+        this.optimizer.afterPass();
         this._epoch += 1;
     }
 

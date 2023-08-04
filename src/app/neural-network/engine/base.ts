@@ -26,6 +26,11 @@ export interface ILayer {
 
 export interface IOptimizer {
     updateWeights(layer: ILayer, deltaWeights: matrix.Matrix2D, deltaBiases: matrix.Matrix1D, batchSize: number): void
+    beforePass(): void
+    afterPass(): void
+
+
+    readonly lr: number;
     readonly description: string
 }
 

@@ -4,12 +4,25 @@ import {ILayer, IOptimizer} from "./base";
 
 abstract class OptimizerBase implements IOptimizer {
     abstract readonly description: string;
-    readonly lr: number;
     readonly decay: number;
 
+    private readonly _initialLearningRate: number;
+    private _lr: number;
+
+    get lr(): number {return this._lr};
+
     protected constructor(lr: number, decay: number) {
-        this.lr = lr;
+        this._initialLearningRate = lr;
+        this._lr = lr;
         this.decay = decay;
+    }
+
+    beforePass() {}
+
+    afterPass() {
+        if (this.decay > 0) {
+            this._lr = (this._initialLearningRate * this._lr) / (this._initialLearningRate + this.decay * this._lr);
+        }
     }
 
     updateWeights(layer: ILayer, deltaWeights: matrix.Matrix2D, deltaBiases: matrix.Matrix1D, batchSize: number) {
