@@ -110,10 +110,7 @@ export abstract class ModelBase {
             const layer = this.layers[i];
             const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
 
-            const layerPrimes = primes[i];
-            const gradient = matrix.matrix1d_unary_op(errors,
-                (e, i) => e * layer.activation.moment(layerPrimes[i]));
-
+            const gradient = this.optimizer.step(layer, activations[i], primes[i], errors, this.epoch);
             for (let j = 0; j < layer.size; j++) {
                 matrix.matrix1d_binary_in_place_op(deltaWeights[j], activations[i - 1],
                     (w, a) => w + a * gradient[j]);
@@ -122,6 +119,7 @@ export abstract class ModelBase {
             matrix.add_to(deltaBiases, gradient);
 
             if (i > 1) {
+                //TODO: cache output array
                 errors = matrix.dot_2d_translated(this.layers[i].weights, gradient);
             }
         }
@@ -145,7 +143,7 @@ export abstract class ModelBase {
 
     protected _applyLayerDelta(layer: ILayer, batchSize: number): void {
         const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
-        this.optimizer.updateWeights(layer, deltaWeights, deltaBiases, batchSize);
+        this.optimizer.updateWeights(layer, deltaWeights, deltaBiases, this.epoch, batchSize);
     }
 
     getSnapshot(): NeuralNetworkSnapshot {

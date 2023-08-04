@@ -4,6 +4,7 @@ export type Matrix1D = number[];
 export type Matrix2D = number[][];
 
 export type OptMatrix1D = number[] | undefined;
+export type OptMatrix2D = number[][] | undefined;
 
 
 export function fill<T>(value_fn: (i: number) => T, length: number): T[] {
@@ -53,6 +54,33 @@ export function matrix1d_unary_in_place_op(a: Matrix1D, op: (x1: number, i: numb
     }
 
     return a;
+}
+
+export function matrix2d_binary_in_place_op(dst: Matrix2D, b: Matrix2D, op: (x1: number, x2: number) => number) {
+    const rows = Math.min(dst.length, b.length);
+    const columns = Math.min(dst[0].length, b[0].length);
+
+    for (let i = 0; i < rows; ++i) {
+        for (let j = 0; j < columns; j++) {
+            dst[i][j] = op(dst[i][j], b[i][j]);
+        }
+    }
+
+    return dst;
+}
+
+export function matrix2d_binary_op(a: Matrix2D, b: Matrix2D, op: (x1: number, x2: number) => number, dst: OptMatrix2D = undefined) {
+    const rows = Math.min(a.length, b.length);
+    const columns = Math.min(a[0].length, b[0].length);
+    const result = dst || zero_2d(rows, columns);
+
+    for (let i = 0; i < rows; ++i) {
+        for (let j = 0; j < columns; j++) {
+            result[i][j] = op(a[i][j], b[i][j]);
+        }
+    }
+
+    return result;
 }
 
 export function sub(a: Matrix1D, b: Matrix1D, dst: OptMatrix1D = undefined): Matrix1D {

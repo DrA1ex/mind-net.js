@@ -1,15 +1,18 @@
 import * as matrix from "./matrix";
-
+import {Matrix1D, Matrix2D} from "./matrix";
 import {ILayer, IOptimizer} from "./base";
 
 abstract class OptimizerBase implements IOptimizer {
     abstract readonly description: string;
     readonly decay: number;
 
+    private _cache = new Map<ILayer, { tmp1: Matrix1D }>();
     private readonly _initialLearningRate: number;
     private _lr: number;
 
+
     get lr(): number {return this._lr};
+
 
     protected constructor(lr: number, decay: number) {
         this._initialLearningRate = lr;
@@ -25,8 +28,21 @@ abstract class OptimizerBase implements IOptimizer {
         }
     }
 
-    updateWeights(layer: ILayer, deltaWeights: matrix.Matrix2D, deltaBiases: matrix.Matrix1D, batchSize: number) {
-        matrix.matrix1d_binary_in_place_op(layer.biases, deltaBiases, (b, d) => {
+    step(layer: ILayer, activations: Matrix1D, primes: Matrix1D, error: Matrix1D, epoch: number): Matrix1D {
+        if (!this._cache.has(layer)) {
+            this._cache.set(layer, {
+                tmp1: matrix.zero(layer.size)
+            })
+        }
+
+        const {tmp1} = this._cache.get(layer)!;
+        matrix.matrix1d_binary_op(primes, error, (a, e) => layer.activation.moment(a) * e, tmp1);
+
+        return tmp1;
+    }
+
+    updateWeights(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, epoch: number, batchSize: number) {
+        matrix.matrix1d_binary_in_place_op(layer.biases, deltaBiases, (b, dB) => {
             let L1Regularization = 0;
             if (layer.l1BiasRegularization > 0) {
                 L1Regularization = Math.sign(b) * layer.l1BiasRegularization
@@ -37,11 +53,11 @@ abstract class OptimizerBase implements IOptimizer {
                 l2Regularization = 2 * b * layer.l2BiasRegularization
             }
 
-            return b - this.lr * (L1Regularization + l2Regularization + d / batchSize)
+            return b - this.lr * (L1Regularization + l2Regularization + dB / batchSize)
         });
 
         for (let j = 0; j < layer.size; j++) {
-            matrix.matrix1d_binary_in_place_op(layer.weights[j], deltaWeights[j], (w, d) => {
+            matrix.matrix1d_binary_in_place_op(layer.weights[j], deltaWeights[j], (w, dW) => {
                 let L1Regularization = 0;
                 if (layer.l1WeightRegularization > 0) {
                     L1Regularization = Math.sign(w) * layer.l1WeightRegularization
@@ -52,7 +68,7 @@ abstract class OptimizerBase implements IOptimizer {
                     l2Regularization = 2 * w * layer.l2WeightRegularization
                 }
 
-                return w - this.lr * (L1Regularization + l2Regularization + d / batchSize);
+                return w - this.lr * (L1Regularization + l2Regularization + dW / batchSize);
             });
         }
     }
@@ -61,29 +77,44 @@ abstract class OptimizerBase implements IOptimizer {
 class SgdOptimizer extends OptimizerBase {
     readonly description: string;
 
-    private cache = new Map<ILayer, { tmp1: matrix.Matrix1D }>();
-
-    constructor(lr = 0.01, decay = 0) {
+    constructor(lr = 1, decay = 0) {
         super(lr, decay);
 
         this.description = `sgd(lr: ${this.lr})`;
     }
+}
 
-    step(layer: ILayer, activations: matrix.Matrix1D, primes: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D {
+type SgdMomentumCacheT = { mWeights: Matrix2D, mBiases: Matrix1D };
+
+class SgdMomentumOptimizer extends OptimizerBase {
+    private cache = new Map<ILayer, SgdMomentumCacheT>();
+
+    readonly description: string;
+
+    constructor(lr = 0.01, decay = 0, readonly beta = 0.5) {
+        super(lr, decay);
+
+        this.description = `sgd-momentum(beta: ${beta}, lr: ${this.lr})`;
+    }
+
+    updateWeights(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, epoch: number, batchSize: number) {
         if (!this.cache.has(layer)) {
             this.cache.set(layer, {
-                tmp1: matrix.zero(layer.size)
+                mWeights: matrix.zero_2d(layer.size, layer.prevSize),
+                mBiases: matrix.zero(layer.size)
             })
         }
 
-        const {tmp1} = this.cache.get(layer)!;
-        matrix.matrix1d_binary_op(primes, error, (a, e) => layer.activation.moment(a) * e, tmp1);
+        const {mWeights, mBiases} = this.cache.get(layer)!;
 
-        return tmp1;
+        matrix.matrix2d_binary_in_place_op(mWeights, deltaWeights, (mW, dW) => dW - this.beta * mW);
+        matrix.matrix1d_binary_in_place_op(mBiases, deltaBiases, (mB, dB) => dB - this.beta * mB);
+
+        super.updateWeights(layer, mWeights, mBiases, epoch, batchSize);
     }
 }
 
-type NesterovCacheT = { tmp1: matrix.Matrix1D, weights: { moments: matrix.Matrix1D } };
+type NesterovCacheT = { tmp1: Matrix1D, momentum: Matrix1D };
 
 class SgdNesterovOptimizer extends OptimizerBase {
     readonly description: string;
@@ -102,28 +133,25 @@ class SgdNesterovOptimizer extends OptimizerBase {
         if (!this.cache.has(layer)) {
             this.cache.set(layer, {
                 tmp1: matrix.zero(layer.size),
-                weights: {moments: matrix.zero(layer.size)}
+                momentum: matrix.zero(layer.size)
             })
         }
 
         const s = this.cache.get(layer)!;
 
         // next gradient
-        matrix.matrix1d_binary_op(primes, s.weights.moments, (a, m) => layer.activation.moment(a + m), s.tmp1);
+        matrix.matrix1d_binary_op(primes, s.momentum, (a, m) => layer.activation.moment(a + m), s.tmp1);
         matrix.mul_to(s.tmp1, error);
 
         // calculate/update moment
-        matrix.matrix1d_binary_in_place_op(s.weights.moments, s.tmp1, (m, g) => this.beta * m + (1 - this.beta) * g);
-
-        // apply learning rate to moment
-        matrix.matrix1d_binary_in_place_op(s.tmp1, s.weights.moments, (_, m) => m);
+        matrix.matrix1d_binary_in_place_op(s.momentum, s.tmp1, (m, g) => this.beta * m + (1 - this.beta) * g);
 
         return s.tmp1;
     }
 }
 
 
-type RMSPropCacheT = { velocities: matrix.Matrix1D, tmp1: matrix.Matrix1D };
+type RMSPropCacheT = { mWeights: Matrix2D, mBiases: Matrix1D };
 
 class RMSPropOptimizer extends OptimizerBase {
     readonly description: string;
@@ -132,7 +160,7 @@ class RMSPropOptimizer extends OptimizerBase {
 
     private cache = new Map<ILayer, RMSPropCacheT>();
 
-    constructor(lr = 0.005, decay = 0, beta = 0.9, eps = 1e-8) {
+    constructor(lr = 0.001, decay = 0, beta = 0.9, eps = 1e-8) {
         super(lr, decay);
 
         this.beta = beta;
@@ -140,31 +168,33 @@ class RMSPropOptimizer extends OptimizerBase {
         this.description = `rmsprop(beta: ${beta}, lr: ${this.lr}, eps: ${this.eps})`;
     }
 
-    step(layer: ILayer, activations: matrix.Matrix1D, primes: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D {
+    updateWeights(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, epoch: number, batchSize: number) {
         if (!this.cache.has(layer)) {
             this.cache.set(layer, {
-                velocities: matrix.zero(layer.size),
-                tmp1: matrix.zero(layer.size)
+                mWeights: matrix.zero_2d(layer.size, layer.prevSize),
+                mBiases: matrix.zero(layer.size)
             })
         }
 
-        const s = this.cache.get(layer)!;
+        const {mWeights, mBiases} = this.cache.get(layer)!;
 
-        // next gradient
-        matrix.matrix1d_binary_op(primes, error, (a, e) => e * layer.activation.moment(a), s.tmp1);
+        matrix.matrix2d_binary_in_place_op(mWeights, deltaWeights, (mW, dW) =>
+            this.beta * mW + (1 - this.beta) * Math.pow(dW, 2));
+        matrix.matrix1d_binary_in_place_op(mBiases, deltaBiases, (mB, dB) =>
+            this.beta * mB + (1 - this.beta) * Math.pow(dB, 2));
 
-        matrix.matrix1d_binary_in_place_op(s.velocities, s.tmp1, (m, g) => this.beta * m + (1 - this.beta) * g * g);
-        matrix.matrix1d_binary_in_place_op(s.tmp1, s.velocities, (g, m) => (1 / Math.sqrt(m + this.eps) * g));
+        matrix.matrix2d_binary_in_place_op(deltaWeights, mWeights, (dW, mW) =>
+            dW / Math.sqrt(mW) + this.eps);
+        matrix.matrix1d_binary_in_place_op(deltaBiases, mBiases, (dB, mB) =>
+            dB / Math.sqrt(mB) + this.eps);
 
-        return s.tmp1;
+        super.updateWeights(layer, deltaWeights, deltaBiases, epoch, batchSize);
     }
 }
 
 type AdamCacheT = {
-    moments: matrix.Matrix1D,
-    velocities: matrix.Matrix1D,
-    tmp1: matrix.Matrix1D,
-    tmp2: matrix.Matrix1D
+    mWeights: Matrix2D, mBiases: Matrix1D,
+    cWeights: Matrix2D, cBiases: Matrix1D
 };
 
 class AdamOptimizer extends OptimizerBase {
@@ -175,7 +205,7 @@ class AdamOptimizer extends OptimizerBase {
 
     private cache = new Map<ILayer, AdamCacheT>();
 
-    constructor(lr = 0.005, decay = 0, beta1 = 0.9, beta2 = 0.999, eps = 1e-8) {
+    constructor(lr = 0.001, decay = 0, beta1 = 0.9, beta2 = 0.999, eps = 1e-8) {
         super(lr, decay);
 
         this.beta1 = beta1;
@@ -185,37 +215,47 @@ class AdamOptimizer extends OptimizerBase {
         this.description = `adam(beta1: ${beta1}, beta2: ${beta2}, lr: ${this.lr}, eps: ${eps.toExponential()})`;
     }
 
-    step(layer: ILayer, activations: matrix.Matrix1D, primes: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D {
-        if (!this.cache.has(layer) || epoch === 0) {
+    updateWeights(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, epoch: number, batchSize: number) {
+        if (!this.cache.has(layer)) {
             this.cache.set(layer, {
-                moments: matrix.zero(layer.size),
-                velocities: matrix.zero(layer.size),
-                tmp1: matrix.zero(layer.size),
-                tmp2: matrix.zero(layer.size)
-            })
+                mWeights: matrix.zero_2d(layer.size, layer.prevSize),
+                mBiases: matrix.zero(layer.size),
+                cWeights: matrix.zero_2d(layer.size, layer.prevSize),
+                cBiases: matrix.zero(layer.size)
+            });
         }
 
-        const s = this.cache.get(layer)!;
+        const {
+            mWeights, mBiases,
+            cWeights, cBiases
+        } = this.cache.get(layer)!;
 
-        // gradient
-        matrix.matrix1d_binary_op(primes, error, (a, e) => layer.activation.moment(a) * e, s.tmp1);
+        matrix.matrix2d_binary_in_place_op(mWeights, deltaWeights, (mW, dW) =>
+            this.beta1 * mW + (1 - this.beta1) * dW);
+        matrix.matrix1d_binary_in_place_op(mBiases, deltaBiases, (mB, dB) =>
+            this.beta1 * mB + (1 - this.beta1) * dB);
 
-        // moving smooth moment and velocity
-        matrix.matrix1d_binary_in_place_op(s.moments, s.tmp1, (m, g) => m * this.beta1 + (1 - this.beta1) * g);
-        matrix.matrix1d_binary_in_place_op(s.velocities, s.tmp1, (m, g) => m * this.beta2 + (1 - this.beta2) * g * g);
+        matrix.matrix2d_binary_in_place_op(cWeights, deltaWeights, (cW, dW) =>
+            this.beta2 * cW + (1 - this.beta2) * Math.pow(dW, 2));
+        matrix.matrix1d_binary_in_place_op(cBiases, deltaBiases, (cB, dB) =>
+            this.beta2 * cB + (1 - this.beta2) * Math.pow(dB, 2));
 
-        // boost moment and velocity for first epochs
-        matrix.matrix1d_binary_in_place_op(s.tmp1, s.moments, (_, m) => m / (1 - Math.pow(this.beta1, epoch + 1)));
-        matrix.matrix1d_binary_in_place_op(s.tmp2, s.velocities, (_, v) => v / (1 - Math.pow(this.beta2, epoch + 1)));
+        const beta1Ep = Math.pow(this.beta1, epoch + 1);
+        const beta2Ep = Math.pow(this.beta2, epoch + 1);
 
-        matrix.matrix1d_binary_in_place_op(s.tmp1, s.tmp2, (m, v) => m / (Math.sqrt(v) + this.eps));
+        matrix.matrix2d_binary_op(mWeights, cWeights, (mW, cW) =>
+                (mW / (1 - beta1Ep)) / (Math.sqrt(cW / (1 - beta2Ep)) + this.eps),
+            deltaWeights);
 
-        return s.tmp1;
+        matrix.matrix1d_binary_op(mBiases, cBiases, (mB, cB) =>
+                (mB / (1 - beta1Ep)) / (Math.sqrt(cB / (1 - beta2Ep)) + this.eps),
+            deltaBiases);
+
+        super.updateWeights(layer, deltaWeights, deltaBiases, epoch, batchSize);
     }
-
 }
 
-export type OptimizerT = "sgd" | "nesterov" | "adam" | "rmsprop";
+export type OptimizerT = "sgd" | "sgdMomentum" | "nesterov" | "adam" | "rmsprop";
 
 export function buildOptimizer(optimizer: OptimizerT | IOptimizer = 'sgd') {
     const optimizer_param = typeof optimizer === "string" ? Optimizers[optimizer] : optimizer
@@ -232,6 +272,7 @@ export function buildOptimizer(optimizer: OptimizerT | IOptimizer = 'sgd') {
 
 export const Optimizers = {
     sgd: SgdOptimizer,
+    sgdMomentum: SgdMomentumOptimizer,
     nesterov: SgdNesterovOptimizer,
     adam: AdamOptimizer,
     rmsprop: RMSPropOptimizer
