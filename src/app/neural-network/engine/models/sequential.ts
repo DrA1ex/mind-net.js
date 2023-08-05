@@ -1,6 +1,6 @@
 import {ModelBase} from "./base";
 import {ILayer} from "../base";
-import {zero, zero_2d} from "../matrix";
+import {one, zero, zero_2d} from "../matrix";
 import {CategoricalCrossEntropyLoss} from "../loss";
 import {SoftMaxActivation} from "../activations";
 
@@ -33,8 +33,10 @@ export class SequentialModel extends ModelBase {
             layer.build(i, prevSize);
             this.cache.set(layer, {
                 activation: zero(layer.size),
+                mask: one(layer.size),
                 deltaBiases: zero(layer.size),
-                deltaWeights: zero_2d(layer.size, prevSize)
+                deltaWeights: zero_2d(layer.size, prevSize),
+                gradientCache: zero(prevSize)
             });
         }
 

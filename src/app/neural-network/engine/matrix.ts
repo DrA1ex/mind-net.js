@@ -215,8 +215,8 @@ export function dot_2d(x1: Matrix2D, x2: Matrix1D, dst: OptMatrix1D = undefined)
     return result;
 }
 
-export function dot_2d_translated(x1: Matrix2D, x2: Matrix1D): Matrix1D {
-    const result = new Array(x1[0].length);
+export function dot_2d_translated(x1: Matrix2D, x2: Matrix1D, dst?: Matrix1D): Matrix1D {
+    const result = dst ?? new Array(x1[0].length);
     const rowsLength = Math.min(x1.length, x2.length);
 
     for (let i = 0; i < result.length; ++i) {

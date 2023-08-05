@@ -1,4 +1,4 @@
-import {zero, zero_2d} from "../matrix";
+import {one, zero, zero_2d} from "../matrix";
 
 import {ILayer} from "../base";
 import {ModelBase} from "./base";
@@ -47,7 +47,13 @@ export class ChainModel extends ModelBase {
 
             for (const layer of layers) {
                 this.modelByLayer.set(layer, [model, this.trainable[i]]);
-                this.cache.set(layer, {activation: zero(layer.size), deltaBiases: zero(layer.size), deltaWeights: zero_2d(layer.size, layer.prevSize)});
+                this.cache.set(layer, {
+                    activation: zero(layer.size),
+                    deltaBiases: zero(layer.size),
+                    mask: one(layer.size),
+                    deltaWeights: zero_2d(layer.size, layer.prevSize),
+                    gradientCache: zero(layer.prevSize),
+                });
             }
 
             this.layers.push(...layers);

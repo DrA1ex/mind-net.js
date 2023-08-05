@@ -20,6 +20,8 @@ export interface ILayer {
     readonly l2WeightRegularization: number;
     readonly l2BiasRegularization: number;
 
+    readonly dropout: number;
+
     build(index: number, prevSize: number): void;
     step(input: matrix.Matrix1D): matrix.Matrix1D;
 }

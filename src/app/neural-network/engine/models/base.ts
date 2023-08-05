@@ -4,11 +4,18 @@ import * as matrix from "../matrix";
 import {ILayer, IOptimizer, ILoss} from "../base";
 import {buildLoss, LossT} from "../loss";
 import {buildOptimizer, OptimizerT} from "../optimizers";
+import {executeKarmaBuilder} from "@angular-devkit/build-angular";
 
 export type NeuralNetworkSnapshot = { weights: matrix.Matrix2D[], biases: matrix.Matrix1D[] };
 
 export type BackpropData = { activations: matrix.Matrix1D[], primes: matrix.Matrix1D[] };
-export type LayerCache = { activation: matrix.Matrix1D, deltaBiases: matrix.Matrix1D, deltaWeights: matrix.Matrix2D };
+export type LayerCache = {
+    activation: matrix.Matrix1D,
+    deltaBiases: matrix.Matrix1D,
+    mask: matrix.Matrix1D,
+    deltaWeights: matrix.Matrix2D,
+    gradientCache: matrix.Matrix1D,
+};
 
 export abstract class ModelBase {
     protected _epoch: number = 0;
@@ -89,12 +96,40 @@ export abstract class ModelBase {
         activations[0] = input;
         for (let i = 1; i < this.layers.length; i++) {
             const layer = this.layers[i];
+            const {activation, mask} = this.cache.get(layer)!;
+            this._calculateDropoutMask(layer, mask);
 
             primes[i] = layer.step(activations[i - 1]);
-            activations[i] = layer.activation.value(primes[i], this.cache.get(layer)?.activation);
+            activations[i] = layer.activation.value(primes[i], activation);
+
+            this._applyDropoutMask(layer, activations[i], mask);
         }
 
         return {activations, primes};
+    }
+
+    protected _calculateDropoutMask(layer: ILayer, dst: matrix.Matrix1D) {
+        if (layer.dropout <= 0) return;
+
+        const rate = 1 - layer.dropout;
+        const maxZeros = Math.floor(layer.size * (1 - rate));
+
+        let count = 0;
+        for (let i = 0; i < layer.size; i++) {
+            let v;
+            if (count < maxZeros && (v = Math.random() < rate ? 1 : 0) === 0) {
+                dst[i] = v;
+                count++;
+            } else {
+                dst[i] = 1 / rate;
+            }
+        }
+    }
+
+    protected _applyDropoutMask(layer: ILayer, values: matrix.Matrix1D, mask: matrix.Matrix1D) {
+        if (layer.dropout <= 0) return;
+
+        matrix.mul_to(values, mask);
     }
 
     protected _backprop(data: BackpropData, loss: matrix.Matrix1D) {
@@ -103,9 +138,11 @@ export abstract class ModelBase {
 
         for (let i = this.layers.length - 1; i > 0; i--) {
             const layer = this.layers[i];
-            const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
+            const {deltaWeights, deltaBiases, gradientCache, mask} = this.cache.get(layer)!;
 
             const gradient = this.optimizer.step(layer, activations[i], primes[i], errors, this.epoch);
+            this._applyDropoutMask(layer, gradient, mask);
+
             for (let j = 0; j < layer.size; j++) {
                 matrix.matrix1d_binary_in_place_op(deltaWeights[j], activations[i - 1],
                     (w, a) => w + a * gradient[j]);
@@ -114,8 +151,7 @@ export abstract class ModelBase {
             matrix.add_to(deltaBiases, gradient);
 
             if (i > 1) {
-                //TODO: cache output array
-                errors = matrix.dot_2d_translated(this.layers[i].weights, gradient);
+                errors = matrix.dot_2d_translated(this.layers[i].weights, gradient, gradientCache);
             }
         }
     }
