@@ -15,10 +15,10 @@ import {
     DRAWING_DELAY,
     MAX_ITERATION_TIME,
     MAX_TRAINING_ITERATION,
-    Point,
     RESOLUTION_SCALE,
     TRAINING_EPOCHS_PER_CALL,
     UPDATE_METRICS_DELAY,
+    Point,
 } from "./nn.worker.consts"
 
 import NN from "../../neural-network/neural-network";
@@ -31,19 +31,25 @@ let trainingOutputs: matrix.Matrix1D[] = []
 let currentTrainIterations = 0;
 let isTraining = false;
 let loss = 1;
+let accuracy = 0;
 let epochsFromLastMetricsUpdate = 0;
 
 let lastDraw = 0;
 let lastUpdateMetrics = 0;
 
 function create_nn(sizes: number[], lr: number) {
-    const nn = new NN.Models.Sequential(new NN.Optimizers.sgd(lr));
+    const nn = new NN.Models.Sequential(new NN.Optimizers.adam(lr, 5e-5), "categoricalCrossEntropy");
     nn.addLayer(new NN.Layers.Dense(2));
     for (const size of sizes) {
-        nn.addLayer(new NN.Layers.Dense(size, "relu", "xavier"));
+        nn.addLayer(new NN.Layers.Dense(size, "relu",
+            "xavier", "zero", {
+                dropout: 0.1,
+                l2WeightRegularization: 5e-4,
+                l2BiasRegularization: 5e-4,
+            }));
     }
 
-    nn.addLayer(new NN.Layers.Dense(1));
+    nn.addLayer(new NN.Layers.Dense(2, "softmax"));
     nn.compile();
 
     return nn;
@@ -56,7 +62,7 @@ addEventListener('message', ({data}) => {
 
             points.push(point);
             trainingInputs.push([point.x, point.y]);
-            trainingOutputs.push([point.type]);
+            trainingOutputs.push(point.type === 0 ? [1, 0] : [0, 1]);
 
             currentTrainIterations = 0;
             epochsFromLastMetricsUpdate = 0;
@@ -66,7 +72,7 @@ addEventListener('message', ({data}) => {
         case "set_points":
             points = data.points as Point[];
             trainingInputs = points.map(point => [point.x, point.y]);
-            trainingOutputs = points.map(point => [point.type]);
+            trainingOutputs = points.map(point => point.type === 0 ? [1, 0] : [0, 1]);
             currentTrainIterations = 0;
             epochsFromLastMetricsUpdate = 0;
             isTraining = true;
@@ -90,7 +96,7 @@ function trainBatch() {
 
     const iterationsLeft = MAX_TRAINING_ITERATION - currentTrainIterations;
     const startTime = performance.now();
-    const batchSize = Math.max(1, Math.floor(points.length / 50))
+    const batchSize = Math.max(64, Math.floor(points.length / 10))
 
     let iterationsPerCheck = TRAINING_EPOCHS_PER_CALL;
     let epochs;
@@ -114,13 +120,17 @@ function trainBatch() {
     epochsFromLastMetricsUpdate += epochs;
     const metricsTime = performance.now() - lastUpdateMetrics;
     if (metricsTime >= UPDATE_METRICS_DELAY) {
-        loss = nnUtils.loss(neuralNetwork, trainingInputs, trainingOutputs).loss;
+        const l = nnUtils.loss(neuralNetwork, trainingInputs, trainingOutputs);
+        loss = l.loss;
+        accuracy = l.accuracy;
         isTraining = loss >= DESIRED_LOSS && currentTrainIterations < MAX_TRAINING_ITERATION;
 
         console.log(`*** METRICS ${epochsFromLastMetricsUpdate} `
             + `epochs in ${metricsTime.toFixed(2)}ms `
             + `(${(points.length * epochsFromLastMetricsUpdate / metricsTime).toFixed(2)} op/ms) `
-            + `loss: ${loss.toFixed(4)}`);
+            + `loss: ${loss.toFixed(4)} `
+            + `acc.: ${accuracy.toFixed(4)} `
+            + `lr: ${neuralNetwork.optimizer.lr.toFixed(4)}`);
 
         epochsFromLastMetricsUpdate = 0;
         lastUpdateMetrics = performance.now();
@@ -153,14 +163,16 @@ function sendCurrentState(scale: number = RESOLUTION_SCALE) {
     for (let x = 0; x < xSteps; x++) {
         for (let y = 0; y < ySteps; y++) {
             const result = neuralNetwork.compute([x * xStep, y * yStep]);
-            state[y * xSteps + x] = color.getLinearColorBin(COLOR_A_BIN, COLOR_B_BIN, result[0]);
+            const typeIndex = (result.indexOf(Math.max(...result))) * Math.max(...result);
+            state[y * xSteps + x] = color.getLinearColorBin(COLOR_A_BIN, COLOR_B_BIN, typeIndex);
         }
     }
 
     const message = {
         type: "training_data",
         epoch: neuralNetwork.epoch,
-        loss: loss,
+        loss,
+        accuracy,
         isTraining: isTraining,
         state: state.buffer,
         nnSnapshot: neuralNetwork.getSnapshot(),
