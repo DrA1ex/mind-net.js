@@ -4,12 +4,40 @@ export function* range(from: number, to: number): Iterable<number> {
     }
 }
 
-export function* map<T, R>(input: Iterable<T>, map: (arg: T, i?: number) => R): Iterable<R> {
+export function* map<T, R>(input: Iterable<T>, map: (arg: T, i: number) => R): Iterable<R> {
     let i = 0;
     for (const item of input) {
         yield map(item, i);
         i += 1;
     }
+}
+
+export function* map2d<T, R>(input: Iterable<Iterable<T>>, mapFn: (arg: T, i: number, j: number) => R): Iterable<Iterable<R>> {
+    let i = 0;
+    for (const row of input) {
+        yield map(row, (item, j) => mapFn(item, i, j))
+        i += 1;
+    }
+}
+
+export function sum(input: Iterable<number>): number {
+    let s = 0;
+    for (const item of input) {
+        s += item;
+    }
+
+    return s;
+}
+
+export function max(input: Iterable<number>): number {
+    let m = Number.NEGATIVE_INFINITY;
+    for (const item of input) {
+        if (item > m) {
+            m = item;
+        }
+    }
+
+    return m;
 }
 
 export function* reverse<T>(input: Iterable<T>): Iterable<T> {

@@ -1,4 +1,5 @@
 import * as matrix from "./matrix";
+import {Matrix1D} from "./matrix";
 
 export interface IActivation {
     value(x: number): number
@@ -36,3 +37,10 @@ export interface IOptimizer {
 }
 
 export type InitializerFn = (size: number, prevSize: number) => matrix.Matrix1D;
+
+export interface ILoss {
+    loss(predicted: Matrix1D[], expected: Matrix1D[]): number;
+    accuracy(predicted: Matrix1D[], expected: Matrix1D[]): number;
+
+    calculateError(predicted: Matrix1D, expected: Matrix1D): Matrix1D;
+}

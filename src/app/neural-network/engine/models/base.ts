@@ -1,7 +1,8 @@
 import * as iter from "../iter";
 import * as matrix from "../matrix";
 
-import {ILayer, IOptimizer} from "../base";
+import {ILayer, IOptimizer, ILoss} from "../base";
+import {buildLoss, LossT} from "../loss";
 import {buildOptimizer, OptimizerT} from "../optimizers";
 
 export type NeuralNetworkSnapshot = { weights: matrix.Matrix2D[], biases: matrix.Matrix1D[] };
@@ -16,6 +17,7 @@ export abstract class ModelBase {
     protected cache = new Map<ILayer, LayerCache>();
 
     readonly optimizer: IOptimizer;
+    readonly loss: ILoss;
 
     public get epoch() {
         return this._epoch;
@@ -25,8 +27,9 @@ export abstract class ModelBase {
 
     abstract compile(...args: any[]): void
 
-    constructor(optimizer: OptimizerT | IOptimizer = 'sgd') {
+    constructor(optimizer: OptimizerT | IOptimizer = 'sgd', loss: LossT | ILoss = "mse") {
         this.optimizer = buildOptimizer(optimizer);
+        this.loss = buildLoss(loss);
     }
 
     compute(input: matrix.Matrix1D): matrix.Matrix1D {
@@ -44,7 +47,7 @@ export abstract class ModelBase {
             result = matrix.matrix1d_unary_op(layer.step(result), x => layer.activation.value(x), this.cache.get(layer)?.activation);
         }
 
-        return result;
+        return result.concat();
     }
 
     train(input: matrix.Matrix1D[], expected: matrix.Matrix1D[], batchSize: number = 32) {
@@ -68,7 +71,7 @@ export abstract class ModelBase {
         let count = 0;
         for (const [trainInput, trainExpected] of batch) {
             const data = this._calculateBackpropData(trainInput);
-            const loss = this._calculateLoss(data.activations[data.activations.length - 1], trainExpected);
+            const loss = this.loss.calculateError(data.activations[data.activations.length - 1], trainExpected);
             this._backprop(data, loss);
             ++count;
         }
@@ -92,14 +95,6 @@ export abstract class ModelBase {
         }
 
         return {activations, primes};
-    }
-
-    protected _calculateLoss(predicted: matrix.Matrix1D, expected: matrix.Matrix1D): matrix.Matrix1D {
-        if (expected.length !== predicted.length) {
-            throw new Error(`Output matrix has different size. Expected size ${expected.length}, got ${predicted.length}`);
-        }
-
-        return matrix.sub(expected, predicted).map(v => -2 * v / expected.length);
     }
 
     protected _backprop(data: BackpropData, loss: matrix.Matrix1D) {

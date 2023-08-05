@@ -4,7 +4,8 @@ import * as iter from "../iter"
 import {SequentialModel} from "./sequential";
 import {ChainModel} from "./chain";
 import {OptimizerT} from "../optimizers";
-import {IOptimizer} from "../base";
+import {ILoss, IOptimizer} from "../base";
+import {LossT} from "../loss";
 
 
 export class GenerativeAdversarialModel {
@@ -12,23 +13,24 @@ export class GenerativeAdversarialModel {
 
     constructor(public generator: SequentialModel,
                 public discriminator: SequentialModel,
-                optimizer: OptimizerT | IOptimizer = 'sgd') {
+                optimizer: OptimizerT | IOptimizer = 'sgd',
+                loss: LossT | ILoss = "mse") {
         if (discriminator.layers[discriminator.layers.length - 1].size !== 1) {
             throw new Error("Size of discriminator's output should be 1");
         }
 
-        this.ganChain = new ChainModel(optimizer);
+        this.ganChain = new ChainModel(optimizer, loss);
         this.ganChain
             .addModel(generator)
             .addModel(discriminator, false)
             .compile();
     }
 
-    compute(input: matrix.Matrix1D): matrix.Matrix1D {
+    public compute(input: matrix.Matrix1D): matrix.Matrix1D {
         return this.generator.compute(input);
     }
 
-    train(real: matrix.Matrix1D[], batchSize: number = 32) {
+    public train(real: matrix.Matrix1D[], batchSize: number = 32) {
         const shuffledTrainSet = iter.shuffled(real);
         for (const batch of iter.partition(shuffledTrainSet, batchSize)) {
             this.trainBatch(batch);

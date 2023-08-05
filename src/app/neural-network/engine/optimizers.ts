@@ -68,7 +68,7 @@ abstract class OptimizerBase implements IOptimizer {
                     l2Regularization = 2 * w * layer.l2WeightRegularization
                 }
 
-                return w - (L1Regularization + l2Regularization + dW / batchSize);
+                return w - this.lr * (L1Regularization + l2Regularization + dW / batchSize);
             });
         }
     }
