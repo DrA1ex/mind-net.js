@@ -1,7 +1,6 @@
 import {ILoss} from "./base";
 import {Matrix1D} from "./matrix";
 import * as matrix from "./matrix";
-import * as iter from "./iter";
 import * as utils from "../utils";
 
 export class MeanSquaredErrorLoss implements ILoss {
@@ -97,6 +96,58 @@ export class CategoricalCrossEntropyLoss implements ILoss {
     }
 }
 
+export class BinaryCrossEntropy implements ILoss {
+    loss(predicted: Matrix1D[], expected: Matrix1D[]): number {
+        const rows = predicted.length;
+        const columns = predicted[0].length;
+
+        let sum = 0;
+        for (let i = 0; i < rows; i++) {
+            let rowSum = 0;
+            for (let j = 0; j < columns; j++) {
+                const e = expected[i][j];
+                const p = this._clip(predicted[i][j]);
+                rowSum += -(e * Math.log(p) + (1 - e) * Math.log(1 - p));
+            }
+
+            sum += rowSum / columns;
+        }
+
+        return sum / rows;
+    }
+
+    accuracy(predicted: Matrix1D[], expected: Matrix1D[]): number {
+        const rows = predicted.length;
+        const columns = predicted[0].length;
+
+        let count = 0;
+        for (let i = 0; i < rows; i++) {
+            let rowCount = 0;
+            for (let j = 0; j < columns; j++) {
+                const pState = predicted[i][j] > 0.5 ? 1 : 0;
+                if (pState === expected[i][j]) {
+                    rowCount += 1;
+                }
+            }
+
+            count += rowCount / columns;
+        }
+
+        return count / rows;
+    }
+
+    calculateError(predicted: Matrix1D, expected: Matrix1D, dst?: Matrix1D): Matrix1D {
+        return matrix.matrix1d_binary_op(predicted, expected, (p, e) => {
+            const c = this._clip(p);
+            return -(e / c - (1 - e) / (1 - c)) / predicted.length;
+        }, dst);
+    }
+
+    private _clip(value: number, eps = 1e-7) {
+        return Math.max(eps, Math.min(value, 1 - eps))
+    }
+}
+
 export function buildLoss(loss: LossT | ILoss = 'mse') {
     const loss_param = typeof loss === "string" ? Loss[loss] : loss
     if (!loss_param) {
@@ -110,9 +161,10 @@ export function buildLoss(loss: LossT | ILoss = 'mse') {
     return new loss_param();
 }
 
-export type LossT = "mse" | "mae" | "categoricalCrossEntropy";
+export type LossT = "mse" | "mae" | "categoricalCrossEntropy" | "binaryCrossEntropy";
 export const Loss = {
     mse: MeanSquaredErrorLoss,
     mae: MeanAbsoluteErrorLoss,
-    categoricalCrossEntropy: CategoricalCrossEntropyLoss
+    categoricalCrossEntropy: CategoricalCrossEntropyLoss,
+    binaryCrossEntropy: BinaryCrossEntropy
 }
