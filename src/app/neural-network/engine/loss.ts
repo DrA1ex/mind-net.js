@@ -23,10 +23,9 @@ export class MeanSquaredErrorLoss implements ILoss {
         return utils.absoluteAccuracy(predicted, expected);
     }
 
-    calculateError(predicted: Matrix1D, expected: Matrix1D): Matrix1D {
-        //TODO: cache
+    calculateError(predicted: Matrix1D, expected: Matrix1D, dst?: Matrix1D): Matrix1D {
         return matrix.matrix1d_binary_op(predicted, expected, (p, e) =>
-            -2 * (e - p) / predicted.length);
+            -2 * (e - p) / predicted.length, dst);
     }
 }
 
@@ -49,10 +48,9 @@ export class MeanAbsoluteErrorLoss implements ILoss {
         return utils.absoluteAccuracy(predicted, expected);
     }
 
-    calculateError(predicted: Matrix1D, expected: Matrix1D): Matrix1D {
-        //TODO: cache
+    calculateError(predicted: Matrix1D, expected: Matrix1D, dst?: Matrix1D): Matrix1D {
         return matrix.matrix1d_binary_op(predicted, expected, (p, e) =>
-            Math.sign(p - e) / predicted.length);
+            Math.sign(p - e) / predicted.length, dst);
     }
 }
 
@@ -61,13 +59,11 @@ export class CategoricalCrossEntropyLoss implements ILoss {
         const rows = predicted.length;
         const columns = predicted[0].length;
 
-        const softMaxed = predicted.map(this._softMax);
-
         let sum = 0;
         for (let i = 0; i < rows; i++) {
             let rowSum = 0;
             for (let j = 0; j < columns; j++) {
-                rowSum += this._clip(softMaxed[i][j]) * expected[i][j];
+                rowSum += this._clip(predicted[i][j]) * expected[i][j];
             }
 
             sum += -Math.log(rowSum);
@@ -92,22 +88,12 @@ export class CategoricalCrossEntropyLoss implements ILoss {
         return count / rows;
     }
 
-    calculateError(predicted: Matrix1D, expected: Matrix1D): Matrix1D {
-        //TODO: cache
-        const softMaxed = this._softMax(predicted);
-        return matrix.sub(softMaxed, expected);
+    calculateError(predicted: Matrix1D, expected: Matrix1D, dst?: Matrix1D): Matrix1D {
+        return matrix.sub(predicted, expected, dst);
     }
 
     private _clip(value: number, eps = 1e-7) {
         return Math.max(eps, Math.min(value, 1 - eps))
-    }
-
-    private _softMax(data: Matrix1D): Matrix1D {
-        const max = iter.max(data);
-        const mapped = matrix.matrix1d_unary_op(data, value => Math.exp(value - max));
-        const sum = iter.sum(mapped);
-
-        return matrix.matrix1d_unary_in_place_op(mapped, v => v / sum);
     }
 }
 

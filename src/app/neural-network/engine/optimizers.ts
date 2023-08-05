@@ -36,7 +36,9 @@ abstract class OptimizerBase implements IOptimizer {
         }
 
         const {tmp1} = this._cache.get(layer)!;
-        matrix.matrix1d_binary_op(primes, error, (a, e) => layer.activation.moment(a) * e, tmp1);
+
+        layer.activation.moment(primes, tmp1);
+        matrix.matrix1d_binary_in_place_op(tmp1, error, (a, e) => a * e);
 
         return tmp1;
     }
@@ -114,7 +116,7 @@ class SgdMomentumOptimizer extends OptimizerBase {
     }
 }
 
-type NesterovCacheT = { tmp1: Matrix1D, momentum: Matrix1D };
+type NesterovCacheT = { tmp1: Matrix1D, nextGrad: Matrix1D, momentum: Matrix1D };
 
 class SgdNesterovOptimizer extends OptimizerBase {
     readonly description: string;
@@ -133,6 +135,7 @@ class SgdNesterovOptimizer extends OptimizerBase {
         if (!this.cache.has(layer)) {
             this.cache.set(layer, {
                 tmp1: matrix.zero(layer.size),
+                nextGrad: matrix.zero(layer.size),
                 momentum: matrix.zero(layer.size)
             })
         }
@@ -140,7 +143,8 @@ class SgdNesterovOptimizer extends OptimizerBase {
         const s = this.cache.get(layer)!;
 
         // next gradient
-        matrix.matrix1d_binary_op(primes, s.momentum, (a, m) => layer.activation.moment(a + m), s.tmp1);
+        matrix.add(primes, s.momentum, s.nextGrad);
+        layer.activation.moment(s.nextGrad, s.tmp1);
         matrix.mul_to(s.tmp1, error);
 
         // calculate/update moment

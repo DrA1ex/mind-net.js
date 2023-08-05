@@ -104,7 +104,7 @@ export function mul(a: Matrix1D, b: Matrix1D, dst: OptMatrix1D = undefined): Mat
 }
 
 export function mul_to(dst: Matrix1D, b: Matrix1D): Matrix1D {
-    return matrix1d_binary_op(dst, b, (x1, x2) => x1 * x2, dst);
+    return matrix1d_binary_in_place_op(dst, b, (x1, x2) => x1 * x2);
 }
 
 export function mul_scalar(a: Matrix1D, value: number, dst: OptMatrix1D = undefined): Matrix1D {
@@ -113,6 +113,14 @@ export function mul_scalar(a: Matrix1D, value: number, dst: OptMatrix1D = undefi
 
 export function div(a: Matrix1D, b: Matrix1D, dst: OptMatrix1D = undefined): Matrix1D {
     return matrix1d_binary_op(a, b, (x1, x2) => x1 / x2, dst);
+}
+
+export function copy_to(src: Matrix1D, dst: Matrix1D): Matrix1D {
+    for (let i = 0; i < src.length; i++) {
+        dst[i] = src[i];
+    }
+
+    return dst;
 }
 
 export function dot(a: Matrix1D, b: Matrix1D): number {

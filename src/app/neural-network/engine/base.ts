@@ -2,8 +2,8 @@ import * as matrix from "./matrix";
 import {Matrix1D} from "./matrix";
 
 export interface IActivation {
-    value(x: number): number
-    moment(x: number): number;
+    value(input: Matrix1D, dst?: Matrix1D): Matrix1D
+    moment(input: Matrix1D, dst?: Matrix1D): Matrix1D;
 }
 
 export interface ILayer {
@@ -42,5 +42,5 @@ export interface ILoss {
     loss(predicted: Matrix1D[], expected: Matrix1D[]): number;
     accuracy(predicted: Matrix1D[], expected: Matrix1D[]): number;
 
-    calculateError(predicted: Matrix1D, expected: Matrix1D): Matrix1D;
+    calculateError(predicted: Matrix1D, expected: Matrix1D, dst?: Matrix1D): Matrix1D;
 }

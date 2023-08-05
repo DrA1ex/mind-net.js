@@ -44,7 +44,7 @@ export abstract class ModelBase {
         let result = input;
         for (let i = 1; i < this.layers.length; i++) {
             const layer = this.layers[i];
-            result = matrix.matrix1d_unary_op(layer.step(result), x => layer.activation.value(x), this.cache.get(layer)?.activation);
+            result = layer.activation.value(layer.step(result), this.cache.get(layer)?.activation);
         }
 
         return result.concat();
@@ -91,7 +91,7 @@ export abstract class ModelBase {
             const layer = this.layers[i];
 
             primes[i] = layer.step(activations[i - 1]);
-            activations[i] = matrix.matrix1d_unary_op(primes[i], x => layer.activation.value(x), this.cache.get(layer)?.activation);
+            activations[i] = layer.activation.value(primes[i], this.cache.get(layer)?.activation);
         }
 
         return {activations, primes};
