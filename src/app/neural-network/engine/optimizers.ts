@@ -68,7 +68,7 @@ abstract class OptimizerBase implements IOptimizer {
                     l2Regularization = 2 * w * layer.l2WeightRegularization
                 }
 
-                return w - this.lr * (L1Regularization + l2Regularization + dW / batchSize);
+                return w - (L1Regularization + l2Regularization + dW / batchSize);
             });
         }
     }
@@ -184,9 +184,9 @@ class RMSPropOptimizer extends OptimizerBase {
             this.beta * mB + (1 - this.beta) * Math.pow(dB, 2));
 
         matrix.matrix2d_binary_in_place_op(deltaWeights, mWeights, (dW, mW) =>
-            dW / Math.sqrt(mW) + this.eps);
+            dW / (Math.sqrt(mW) + this.eps));
         matrix.matrix1d_binary_in_place_op(deltaBiases, mBiases, (dB, mB) =>
-            dB / Math.sqrt(mB) + this.eps);
+            dB / (Math.sqrt(mB) + this.eps));
 
         super.updateWeights(layer, deltaWeights, deltaBiases, epoch, batchSize);
     }
