@@ -11,6 +11,8 @@ import {LossT} from "../loss";
 export class GenerativeAdversarialModel {
     ganChain: ChainModel;
 
+    get optimizer() {return this.ganChain.models[0].optimizer;};
+
     constructor(public generator: SequentialModel,
                 public discriminator: SequentialModel,
                 optimizer: OptimizerT | IOptimizer = 'sgd',

@@ -4,7 +4,6 @@ import * as matrix from "../matrix";
 import {ILayer, IOptimizer, ILoss} from "../base";
 import {buildLoss, LossT} from "../loss";
 import {buildOptimizer, OptimizerT} from "../optimizers";
-import {executeKarmaBuilder} from "@angular-devkit/build-angular";
 
 export type NeuralNetworkSnapshot = { weights: matrix.Matrix2D[], biases: matrix.Matrix1D[] };
 

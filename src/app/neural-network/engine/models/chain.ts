@@ -62,15 +62,10 @@ export class ChainModel extends ModelBase {
         this.compiled = true;
     }
 
-    protected _applyDelta(batchSize: number) {
-        for (let i = 1; i < this.layers.length; i++) {
-            const layer = this.layers[i];
-            const [, trainable] = this.modelByLayer.get(layer)!;
-            if (!trainable) {
-                continue;
-            }
+    protected _applyLayerDelta(layer: ILayer, batchSize: number) {
+        const [, trainable] = this.modelByLayer.get(layer)!;
+        if (!trainable) return;
 
-            this._applyLayerDelta(layer, batchSize);
-        }
+        super._applyLayerDelta(layer, batchSize);
     }
 }

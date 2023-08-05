@@ -137,6 +137,16 @@ export function dot(a: Matrix1D, b: Matrix1D): number {
     return sum;
 }
 
+function random_n(from = 0, to = 1): number {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random(); //Converting [0,1) to (0,1)
+    while (v === 0) v = Math.random();
+    const value = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+
+    const dist = to - from;
+    return from + value * dist;
+}
+
 
 export function zero(length: number): Matrix1D {
     return fill_value(0, length);
@@ -150,9 +160,13 @@ export function one(length: number): Matrix1D {
     return fill_value(1, length);
 }
 
-export function random(length: number, from: number = 0, to: number = 1): Matrix1D {
+export function random_1d(length: number, from: number = 0, to: number = 1): Matrix1D {
     const dist = to - from;
     return fill(() => from + Math.random() * dist, length);
+}
+
+export function random_normal_1d(length: number, from: number = 0, to: number = 1): Matrix1D {
+    return fill(() => random_n(from, to), length);
 }
 
 export function copy(a: Matrix1D): Matrix1D {
@@ -201,9 +215,12 @@ export function transform(m: Matrix2D): Matrix2D {
 }
 
 export function random_2d(rows: number, cols: number, from: number = 0, to: number = 1): Matrix2D {
-    return fill(i => random(cols, from, to), rows);
+    return fill(() => random_1d(cols, from, to), rows);
 }
 
+export function random_normal_2d(rows: number, cols: number, from: number = 0, to: number = 1): Matrix2D {
+    return fill(() => random_1d(cols, from, to), rows);
+}
 
 export function dot_2d(x1: Matrix2D, x2: Matrix1D, dst: OptMatrix1D = undefined): Matrix1D {
     const length = x1.length;

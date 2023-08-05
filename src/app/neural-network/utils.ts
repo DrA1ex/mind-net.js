@@ -2,7 +2,7 @@ import * as matrix from "./engine/matrix";
 import {ModelBase} from "./engine/models/base";
 
 export function generateInputNoise(size: number, from = 0, to = 1): matrix.Matrix1D {
-    return matrix.random(size, from, to);
+    return matrix.random_1d(size, from, to);
 }
 
 export function pickRandomItem(trainingData: matrix.Matrix1D[]) {
