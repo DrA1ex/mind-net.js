@@ -11,7 +11,7 @@ import {LossT} from "../loss";
 export class GenerativeAdversarialModel {
     ganChain: ChainModel;
 
-    get optimizer() {return this.ganChain.models[0].optimizer;};
+    get optimizer() {return this.ganChain.optimizer;};
 
     constructor(public generator: SequentialModel,
                 public discriminator: SequentialModel,
@@ -33,10 +33,14 @@ export class GenerativeAdversarialModel {
     }
 
     public train(real: matrix.Matrix1D[], batchSize: number = 32) {
+        this.beforeTrain();
+
         const shuffledTrainSet = iter.shuffled(real);
         for (const batch of iter.partition(shuffledTrainSet, batchSize)) {
             this.trainBatch(batch);
         }
+
+        this.afterTrain();
     }
 
     public trainBatch(batch: matrix.Matrix1D[]) {
@@ -48,5 +52,17 @@ export class GenerativeAdversarialModel {
 
         this.discriminator.trainBatch(iter.zip([...batch, ...fake], [...almostOnes, ...zeros]));
         this.ganChain.trainBatch(iter.zip(noise, ones));
+    }
+
+    public beforeTrain() {
+        this.generator.beforeTrain()
+        this.discriminator.beforeTrain();
+        this.ganChain.beforeTrain();
+    }
+
+    public afterTrain() {
+        this.generator.afterTrain()
+        this.discriminator.afterTrain();
+        this.ganChain.afterTrain();
     }
 }

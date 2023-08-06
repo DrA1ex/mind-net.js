@@ -61,14 +61,14 @@ export abstract class ModelBase {
             throw new Error("Model should be compiled before usage");
         }
 
-        this.optimizer.beforePass();
+        this.beforeTrain();
+
         const shuffledTrainSet = iter.shuffle(Array.from(iter.zip(input, expected)));
         for (const batch of iter.partition(shuffledTrainSet, batchSize)) {
             this.trainBatch(batch);
         }
 
-        this.optimizer.afterPass();
-        this._epoch += 1;
+        this.afterTrain();
     }
 
     public trainBatch(batch: Iterable<[matrix.Matrix1D, matrix.Matrix1D]>) {
@@ -83,6 +83,15 @@ export abstract class ModelBase {
         }
 
         this._applyDelta(count);
+    }
+
+    public beforeTrain() {
+        this.optimizer.beforePass();
+    }
+
+    public afterTrain() {
+        this.optimizer.afterPass();
+        this._epoch += 1;
     }
 
     protected _calculateBackpropData(input: matrix.Matrix1D): BackpropData {
