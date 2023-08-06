@@ -2,7 +2,7 @@ import * as matrix from "./matrix";
 import {Matrix1D, Matrix2D} from "./matrix";
 import {ILayer, IOptimizer} from "./base";
 
-abstract class OptimizerBase implements IOptimizer {
+export abstract class OptimizerBase implements IOptimizer {
     abstract readonly description: string;
     readonly decay: number;
 
@@ -76,7 +76,7 @@ abstract class OptimizerBase implements IOptimizer {
     }
 }
 
-class SgdOptimizer extends OptimizerBase {
+export class SgdOptimizer extends OptimizerBase {
     readonly description: string;
 
     constructor(lr = 1, decay = 0) {
@@ -88,7 +88,7 @@ class SgdOptimizer extends OptimizerBase {
 
 type SgdMomentumCacheT = { mWeights: Matrix2D, mBiases: Matrix1D };
 
-class SgdMomentumOptimizer extends OptimizerBase {
+export class SgdMomentumOptimizer extends OptimizerBase {
     private cache = new Map<ILayer, SgdMomentumCacheT>();
 
     readonly description: string;
@@ -118,7 +118,7 @@ class SgdMomentumOptimizer extends OptimizerBase {
 
 type NesterovCacheT = { tmp1: Matrix1D, nextGrad: Matrix1D, momentum: Matrix1D };
 
-class SgdNesterovOptimizer extends OptimizerBase {
+export class SgdNesterovOptimizer extends OptimizerBase {
     readonly description: string;
     readonly beta: number;
 
@@ -157,12 +157,12 @@ class SgdNesterovOptimizer extends OptimizerBase {
 
 type RMSPropCacheT = { mWeights: Matrix2D, mBiases: Matrix1D };
 
-class RMSPropOptimizer extends OptimizerBase {
+export class RMSPropOptimizer extends OptimizerBase {
     readonly description: string;
     readonly beta: number;
     readonly eps: number
 
-    private cache = new Map<ILayer, RMSPropCacheT>();
+    private readonly cache = new Map<ILayer, RMSPropCacheT>();
 
     constructor(lr = 0.001, decay = 0, beta = 0.9, eps = 1e-8) {
         super(lr, decay);
@@ -201,7 +201,7 @@ type AdamCacheT = {
     cWeights: Matrix2D, cBiases: Matrix1D
 };
 
-class AdamOptimizer extends OptimizerBase {
+export class AdamOptimizer extends OptimizerBase {
     readonly description: string;
     readonly beta1: number;
     readonly beta2: number;
