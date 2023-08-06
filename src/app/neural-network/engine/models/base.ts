@@ -108,6 +108,7 @@ export abstract class ModelBase {
             activations[i] = layer.activation.value(primes[i], activation);
 
             this._applyDropoutMask(layer, activations[i], mask);
+            this._applyDropoutMask(layer, primes[i], mask);
         }
 
         return {activations, primes};
@@ -146,7 +147,6 @@ export abstract class ModelBase {
             const {deltaWeights, deltaBiases, gradientCache, mask} = this.cache.get(layer)!;
 
             const gradient = this.optimizer.step(layer, activations[i], primes[i], errors, this.epoch);
-            this._applyDropoutMask(layer, gradient, mask);
 
             for (let j = 0; j < layer.size; j++) {
                 matrix.matrix1d_binary_in_place_op(deltaWeights[j], activations[i - 1],
