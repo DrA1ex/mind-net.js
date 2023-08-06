@@ -39,13 +39,8 @@ export abstract class ModelBase {
     }
 
     compute(input: matrix.Matrix1D): matrix.Matrix1D {
-        if (!this.compiled) {
-            throw new Error("Model should be compiled before usage");
-        }
-
-        if (input.length !== this.layers[0].size) {
-            throw new Error(`Input matrix has different size. Expected size ${this.layers[0].size}, got ${input.length}`);
-        }
+        this._assertCompiled();
+        this._assertInputSize(input);
 
         let result = input;
         for (let i = 1; i < this.layers.length; i++) {
@@ -57,9 +52,9 @@ export abstract class ModelBase {
     }
 
     train(input: matrix.Matrix1D[], expected: matrix.Matrix1D[], batchSize: number = 32) {
-        if (!this.compiled) {
-            throw new Error("Model should be compiled before usage");
-        }
+        this._assertCompiled();
+        this._assertInputSize2d(input);
+        this._assertExpectedSize2d(expected);
 
         this.beforeTrain();
 
@@ -72,12 +67,18 @@ export abstract class ModelBase {
     }
 
     public trainBatch(batch: Iterable<[matrix.Matrix1D, matrix.Matrix1D]>) {
+        this._assertCompiled();
+
         this._clearDelta();
 
         let count = 0;
         for (const [trainInput, trainExpected] of batch) {
+            this._assertInputSize(trainInput);
+            this._assertExpectedSize(trainExpected);
+
             const data = this._calculateBackpropData(trainInput);
             const loss = this.loss.calculateError(data.activations[data.activations.length - 1], trainExpected);
+
             this._backprop(data, loss);
             ++count;
         }
@@ -95,10 +96,6 @@ export abstract class ModelBase {
     }
 
     protected _calculateBackpropData(input: matrix.Matrix1D): BackpropData {
-        if (input.length !== this.layers[0].size) {
-            throw new Error(`Input matrix has different size. Expected size ${this.layers[0].size}, got ${input.length}`);
-        }
-
         const activations = new Array(this.layers.length);
         const primes = new Array(this.layers.length);
         activations[0] = input;
@@ -190,5 +187,39 @@ export abstract class ModelBase {
             weights: this.layers.slice(1).map(l => l.weights.map(w => matrix.copy(w))),
             biases: this.layers.slice(1).map(l => matrix.copy(l.biases))
         };
+    }
+
+    protected _assertCompiled() {
+        if (!this.compiled) {
+            throw new Error("Model should be compiled before usage");
+        }
+    }
+
+    protected _assertInputSize(input: matrix.Matrix1D) {
+        const inSize = this.layers[0].size;
+        if (input.length !== inSize) {
+            throw new Error(`Input matrix has different size. Expected size ${inSize}, got ${input.length}`);
+        }
+    }
+
+    protected _assertInputSize2d(input: matrix.Matrix2D) {
+        const inSize = this.layers[0].size;
+        if (input[0].length !== inSize) {
+            throw new Error(`Input matrix has different size. Expected size ${inSize}, got ${input[0].length}`);
+        }
+    }
+
+    protected _assertExpectedSize(expected: matrix.Matrix1D) {
+        const outSize = this.layers[this.layers.length - 1].size;
+        if (expected.length !== outSize) {
+            throw new Error(`Expected matrix has different size. Expected size ${outSize}, got ${expected.length}`);
+        }
+    }
+
+    protected _assertExpectedSize2d(expected: matrix.Matrix2D) {
+        const outSize = this.layers[this.layers.length - 1].size;
+        if (expected[0].length !== outSize) {
+            throw new Error(`Expected matrix has different size. Expected size ${outSize}, got ${expected[0].length}`);
+        }
     }
 }
