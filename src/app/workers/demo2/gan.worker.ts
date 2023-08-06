@@ -15,16 +15,16 @@ import {
     MAX_ITERATION_TIME,
     NetworkParams,
     PROGRESS_DELAY,
-    TRAINING_BATCH_SIZE
+    TRAINING_BATCH_SIZE,
+    DEFAULT_BATCH_SIZE
 } from "./gan.worker.consts"
 
 let lastDrawTime = 0;
 let currentIteration = 0;
 let trainingData: number[][];
-let trainingInput: number[][];
 let inputNoise: number[][][];
-let batchedTrainingData: [number[], number[]][][];
-let batchSize = 0;
+let batchedTrainingData: number[][][];
+let batchSize = DEFAULT_BATCH_SIZE;
 let batchCount = 0;
 
 let nnParams: NetworkParams = DEFAULT_NN_PARAMS;
@@ -34,16 +34,17 @@ let neuralNetwork = createNn();
 
 function createNn() {
     function _createOptimizer() {
-        return new NN.Optimizers.sgd(learningRate);
+        return new NN.Optimizers.adam(learningRate, 1e-5);
     }
 
     function _createHiddenLayer(size: number) {
-        return new NN.Layers.Dense(size, "leakyRelu")
+        return new NN.Layers.Dense(size, new NN.Activations.leakyRelu(0.2),
+            "he", "zero", {dropout: 0.3});
     }
 
     const [input, genSizes, output] = nnParams;
 
-    const generator = new NN.Models.Sequential(_createOptimizer());
+    const generator = new NN.Models.Sequential(_createOptimizer(), "binaryCrossEntropy");
     generator.addLayer(new NN.Layers.Dense(input));
     for (const size of genSizes) {
         generator.addLayer(_createHiddenLayer(size));
@@ -51,7 +52,7 @@ function createNn() {
     generator.addLayer(new NN.Layers.Dense(output));
     generator.compile();
 
-    const discriminator = new NN.Models.Sequential(_createOptimizer());
+    const discriminator = new NN.Models.Sequential(_createOptimizer(), "binaryCrossEntropy");
     discriminator.addLayer(new NN.Layers.Dense(output));
     for (const size of iter.reverse(genSizes)) {
         discriminator.addLayer(_createHiddenLayer(size));
@@ -59,7 +60,7 @@ function createNn() {
     discriminator.addLayer(new NN.Layers.Dense(1));
     discriminator.compile();
 
-    return generator;
+    return new NN.Models.GAN(generator, discriminator, _createOptimizer(), "binaryCrossEntropy");
 }
 
 
@@ -72,8 +73,15 @@ addEventListener('message', ({data}) => {
         neuralNetwork = createNn();
 
         currentIteration = 0;
-        batchSize = Math.max(32, Math.floor(trainingData.length / 200));
         batchCount = Math.ceil(trainingData.length / batchSize);
+
+        inputNoise = Array.from(
+            iter.map(iter.range(0, DRAW_GRID_DIMENSION), () =>
+                Array.from(iter.map(iter.range(0, DRAW_GRID_DIMENSION),
+                    () => nnUtils.generateInputNoise(nnParams[0]))
+                )
+            )
+        );
 
         if (trainingData && trainingData.length > 0) {
             draw();
@@ -102,14 +110,6 @@ addEventListener('message', ({data}) => {
 
         case "set_data":
             trainingData = data.data;
-            trainingInput = data.data.map(() => nnUtils.generateInputNoise(nnParams[0]));
-            inputNoise = Array.from(
-                iter.map(iter.range(0, DRAW_GRID_DIMENSION), () =>
-                    Array.from(iter.map(iter.range(0, DRAW_GRID_DIMENSION),
-                        () => nnUtils.generateInputNoise(nnParams[0]))
-                    )
-                )
-            );
 
             _refresh();
             break;
@@ -128,13 +128,15 @@ function trainBatch() {
 
     while (true) {
         if (currentIteration % batchCount === 0) {
-            const zipped = iter.shuffled(Array.from(iter.zip(trainingInput, trainingData)));
-            batchedTrainingData = Array.from(iter.partition(zipped, batchSize));
+            batchedTrainingData = Array.from(iter.partition(iter.shuffled(trainingData), batchSize));
+            neuralNetwork.beforeTrain();
         }
 
         neuralNetwork.trainBatch(batchedTrainingData[currentIteration % batchCount]);
 
         if (++batches > batchesCntToCheck) {
+            neuralNetwork.afterTrain();
+
             const elapsed = performance.now() - progressLastTime;
             const batchTime = elapsed / batches;
             batchesCntToCheck = PROGRESS_DELAY / batchTime;
@@ -144,16 +146,14 @@ function trainBatch() {
                 epoch: Math.floor(currentIteration / batchCount) + 1,
                 batchNo: currentIteration % batchCount + 1,
                 batchCount,
-                speed: 1000 / batchTime
+                speed: batchCount * 1000 / batchTime
             });
 
             batches = 0;
             progressLastTime = performance.now();
         }
 
-        ++currentIteration;
-
-        if (currentIteration % TRAINING_BATCH_SIZE === 0 && (performance.now() - startTime) > MAX_ITERATION_TIME) {
+        if (++currentIteration % TRAINING_BATCH_SIZE === 0 && (performance.now() - startTime) > MAX_ITERATION_TIME) {
             break;
         }
     }
