@@ -6,7 +6,7 @@
     "start": "ng serve",
     "build": "ng build && cp ./dist/index.html ./dist/404.html",
     "watch": "ng build --watch --configuration development",
-    "lib": "tsc --project tsconfig.lib.json && webpack && mv ./lib/neural-network.d.ts ./lib/main.d.ts && cp ./README.md ./lib/"
+    "lib": "webpack && mv ./lib/neural-network.d.ts ./lib/main.d.ts && cp ./README.md ./lib/"
   },
   "type": "module",
   "private": true,
@@ -34,7 +34,6 @@
     "@types/jszip": "^3.4.1",
     "@types/node": "^20.4.5",
     "ts-loader": "^9.4.4",
-    "tsconfig-paths-webpack-plugin": "^4.1.0",
     "typescript": "~5.1.6",
     "webpack": "^5.88.2",
     "webpack-cli": "^5.1.4"
