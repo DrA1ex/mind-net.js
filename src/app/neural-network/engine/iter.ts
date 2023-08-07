@@ -100,9 +100,14 @@ export function* join<T1, T2>(a: Iterable<T1>, b: Iterable<T2>): Iterable<T1 | T
 export function* partition<T>(data: Iterable<T>, partitionSize: number): Iterable<T[]> {
     const iterated = iterate(data);
     while (true) {
-        const partition = Array.from(take(iterated, partitionSize));
-        if (partition.length > 0) {
-            yield partition;
+        const batch = [];
+        let cnt = 0;
+        for (const item of take(iterated, partitionSize)) {
+            batch.push(item);
+            cnt++;
+        }
+        if (cnt > 0) {
+            yield batch;
         } else {
             break;
         }
@@ -111,16 +116,11 @@ export function* partition<T>(data: Iterable<T>, partitionSize: number): Iterabl
 
 export function* take<T>(data: Iterable<T>, size: number): Iterable<T> {
     const iterator = data[Symbol.iterator]();
-    let current: IteratorResult<T>;
-    let cnt = 0;
+    for (let cnt = 0; cnt < size; cnt++) {
+        const {value, done} = iterator.next();
+        if (done) return;
 
-    while ((current = iterator.next()).done === false) {
-        yield current.value;
-        ++cnt;
-
-        if (cnt >= size) {
-            break;
-        }
+        yield value;
     }
 }
 
