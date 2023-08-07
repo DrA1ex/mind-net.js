@@ -21,11 +21,11 @@ export class LeakyReluActivation implements IActivation {
     }
 
     value(input: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return matrix.matrix1d_unary_op(input, x => x > 0 ? x : x * this.alpha, dst);
+        return matrix.matrix1d_unary_op(input, x => x >= 0 ? x : x * this.alpha, dst);
     }
 
     moment(input: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return matrix.matrix1d_unary_op(input, x => x > 0 ? 1 : this.alpha, dst);
+        return matrix.matrix1d_unary_op(input, x => x >= 0 ? 1 : this.alpha, dst);
     }
 }
 

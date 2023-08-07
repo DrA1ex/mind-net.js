@@ -76,6 +76,32 @@ export abstract class OptimizerBase implements IOptimizer {
     }
 }
 
+export abstract class PreAveragedOptimizerBase extends OptimizerBase {
+    abstract updateAveragedWeights(
+        layer: ILayer,
+        deltaWeights: Matrix2D,
+        deltaBiases: Matrix1D,
+        epoch: number
+    ): { dW: Matrix2D, dB: Matrix1D };
+
+    updateWeights(
+        layer: ILayer,
+        deltaWeights: Matrix2D,
+        deltaBiases: Matrix1D,
+        epoch: number,
+        batchSize: number
+    ) {
+        // Applying delta averaging to ensure that any batch size equally affects the moment
+        matrix.matrix2d_unary_in_place_op(deltaWeights, (dW) => dW / batchSize);
+        matrix.matrix1d_unary_in_place_op(deltaBiases, (dB) => dB / batchSize);
+
+        const {dW, dB} = this.updateAveragedWeights(layer, deltaWeights, deltaBiases, epoch);
+
+        // Pass bachSize = 1, since we already apply averaging to deltas
+        super.updateWeights(layer, dW, dB, epoch, 1);
+    }
+}
+
 export class SgdOptimizer extends OptimizerBase {
     readonly description: string;
 
@@ -88,7 +114,7 @@ export class SgdOptimizer extends OptimizerBase {
 
 type SgdMomentumCacheT = { mWeights: Matrix2D, mBiases: Matrix1D };
 
-export class SgdMomentumOptimizer extends OptimizerBase {
+export class SgdMomentumOptimizer extends PreAveragedOptimizerBase {
     private cache = new Map<ILayer, SgdMomentumCacheT>();
 
     readonly description: string;
@@ -99,7 +125,7 @@ export class SgdMomentumOptimizer extends OptimizerBase {
         this.description = `sgd-momentum(beta: ${beta}, lr: ${this.lr})`;
     }
 
-    updateWeights(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, epoch: number, batchSize: number) {
+    updateAveragedWeights(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, epoch: number) {
         if (!this.cache.has(layer)) {
             this.cache.set(layer, {
                 mWeights: matrix.zero_2d(layer.size, layer.prevSize),
@@ -112,7 +138,7 @@ export class SgdMomentumOptimizer extends OptimizerBase {
         matrix.matrix2d_binary_in_place_op(mWeights, deltaWeights, (mW, dW) => dW - this.beta * mW);
         matrix.matrix1d_binary_in_place_op(mBiases, deltaBiases, (mB, dB) => dB - this.beta * mB);
 
-        super.updateWeights(layer, mWeights, mBiases, epoch, batchSize);
+        return {dW: mWeights, dB: deltaBiases};
     }
 }
 
@@ -157,7 +183,7 @@ export class SgdNesterovOptimizer extends OptimizerBase {
 
 type RMSPropCacheT = { mWeights: Matrix2D, mBiases: Matrix1D };
 
-export class RMSPropOptimizer extends OptimizerBase {
+export class RMSPropOptimizer extends PreAveragedOptimizerBase {
     readonly description: string;
     readonly beta: number;
     readonly eps: number
@@ -172,7 +198,7 @@ export class RMSPropOptimizer extends OptimizerBase {
         this.description = `rmsprop(beta: ${beta}, lr: ${this.lr}, eps: ${this.eps})`;
     }
 
-    updateWeights(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, epoch: number, batchSize: number) {
+    updateAveragedWeights(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, epoch: number) {
         if (!this.cache.has(layer)) {
             this.cache.set(layer, {
                 mWeights: matrix.zero_2d(layer.size, layer.prevSize),
@@ -192,7 +218,7 @@ export class RMSPropOptimizer extends OptimizerBase {
         matrix.matrix1d_binary_in_place_op(deltaBiases, mBiases, (dB, mB) =>
             dB / (Math.sqrt(mB) + this.eps));
 
-        super.updateWeights(layer, deltaWeights, deltaBiases, epoch, batchSize);
+        return {dW: deltaWeights, dB: deltaBiases};
     }
 }
 
@@ -201,7 +227,7 @@ type AdamCacheT = {
     cWeights: Matrix2D, cBiases: Matrix1D
 };
 
-export class AdamOptimizer extends OptimizerBase {
+export class AdamOptimizer extends PreAveragedOptimizerBase {
     readonly description: string;
     readonly beta1: number;
     readonly beta2: number;
@@ -219,7 +245,7 @@ export class AdamOptimizer extends OptimizerBase {
         this.description = `adam(beta1: ${beta1}, beta2: ${beta2}, lr: ${this.lr}, eps: ${eps.toExponential()})`;
     }
 
-    updateWeights(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, epoch: number, batchSize: number) {
+    updateAveragedWeights(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, epoch: number) {
         if (!this.cache.has(layer)) {
             this.cache.set(layer, {
                 mWeights: matrix.zero_2d(layer.size, layer.prevSize),
@@ -255,7 +281,7 @@ export class AdamOptimizer extends OptimizerBase {
                 (mB / (1 - beta1Ep)) / (Math.sqrt(cB / (1 - beta2Ep)) + this.eps),
             deltaBiases);
 
-        super.updateWeights(layer, deltaWeights, deltaBiases, epoch, batchSize);
+        return {dW: deltaWeights, dB: deltaBiases};
     }
 }
 

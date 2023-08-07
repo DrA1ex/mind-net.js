@@ -56,6 +56,18 @@ export function matrix1d_unary_in_place_op(a: Matrix1D, op: (x1: number, i: numb
     return a;
 }
 
+export function matrix2d_unary_in_place_op(a: Matrix2D, op: (x1: number, i: number, j: number) => number): Matrix2D {
+    const rows = a.length;
+    const columns = a[0].length
+    for (let i = 0; i < rows; ++i) {
+        for (let j = 0; j < columns; j++) {
+            a[i][j] = op(a[i][j], i, j);
+        }
+    }
+
+    return a;
+}
+
 export function matrix2d_binary_in_place_op(dst: Matrix2D, b: Matrix2D, op: (x1: number, x2: number) => number) {
     const rows = Math.min(dst.length, b.length);
     const columns = Math.min(dst[0].length, b[0].length);
