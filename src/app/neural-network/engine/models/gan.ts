@@ -6,7 +6,6 @@ import {ChainModel} from "./chain";
 import {OptimizerT} from "../optimizers";
 import {ILoss, IOptimizer} from "../base";
 import {LossT} from "../loss";
-import {zip_iter} from "../iter";
 
 
 export class GenerativeAdversarialModel {

@@ -22,6 +22,9 @@ export abstract class ModelBase {
     protected compiled: boolean = false;
     protected cache = new Map<ILayer, LayerCache>();
 
+    protected activations!: matrix.Matrix1D[]
+    protected primes!: matrix.Matrix1D[]
+
     private _lossErrorCache!: matrix.Matrix1D;
 
     readonly optimizer: IOptimizer;
@@ -47,7 +50,7 @@ export abstract class ModelBase {
         let result = input;
         for (let i = 1; i < this.layers.length; i++) {
             const layer = this.layers[i];
-            result = layer.activation.value(layer.step(result), this.cache.get(layer)?.activation);
+            result = layer.activation.value(layer.step(result), this.cache.get(layer)!.activation);
         }
 
         return result.concat();
@@ -72,7 +75,11 @@ export abstract class ModelBase {
         this._assertCompiled();
 
         this._clearDelta();
+
+        //TODO: Refactor
         this._lossErrorCache = this._lossErrorCache ?? matrix.zero(this.layers[0].size);
+        if (!this.activations) this.activations = new Array(this.layers.length)
+        if (!this.primes) this.primes = new Array(this.layers.length);
 
         let count = 0;
         for (const [trainInput, trainExpected] of batch) {
@@ -99,27 +106,24 @@ export abstract class ModelBase {
     }
 
     protected _calculateBackpropData(input: matrix.Matrix1D): BackpropData {
-        const activations = new Array(this.layers.length);
-        const primes = new Array(this.layers.length);
-        activations[0] = input;
+        this.activations[0] = input;
         for (let i = 1; i < this.layers.length; i++) {
             const layer = this.layers[i];
             const {activation, mask} = this.cache.get(layer)!;
-            this._calculateDropoutMask(layer, mask);
 
-            primes[i] = layer.step(activations[i - 1]);
-            activations[i] = layer.activation.value(primes[i], activation);
+            this.primes[i] = layer.step(this.activations[i - 1]);
+            this.activations[i] = layer.activation.value(this.primes[i], activation);
 
-            this._applyDropoutMask(layer, activations[i], mask);
-            this._applyDropoutMask(layer, primes[i], mask);
+            if (layer.dropout > 0) {
+                this._calculateDropoutMask(layer, mask);
+                this._applyDropoutMask(layer, this.activations[i], mask);
+            }
         }
 
-        return {activations, primes};
+        return {activations: this.activations, primes: this.primes};
     }
 
     protected _calculateDropoutMask(layer: ILayer, dst: matrix.Matrix1D) {
-        if (layer.dropout <= 0) return;
-
         const rate = 1 - layer.dropout;
         const maxZeros = Math.floor(layer.size * (1 - rate));
 
@@ -136,8 +140,6 @@ export abstract class ModelBase {
     }
 
     protected _applyDropoutMask(layer: ILayer, values: matrix.Matrix1D, mask: matrix.Matrix1D) {
-        if (layer.dropout <= 0) return;
-
         matrix.mul_to(values, mask);
     }
 
@@ -148,6 +150,10 @@ export abstract class ModelBase {
         for (let i = this.layers.length - 1; i > 0; i--) {
             const layer = this.layers[i];
             const {deltaWeights, deltaBiases, gradientCache, mask} = this.cache.get(layer)!;
+
+            if (layer.dropout > 0) {
+                this._applyDropoutMask(layer, errors, mask);
+            }
 
             const gradient = this.optimizer.step(layer, activations[i], primes[i], errors, this.epoch);
 
