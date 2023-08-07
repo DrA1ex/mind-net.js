@@ -22,6 +22,8 @@ export abstract class ModelBase {
     protected compiled: boolean = false;
     protected cache = new Map<ILayer, LayerCache>();
 
+    private _lossErrorCache!: matrix.Matrix1D;
+
     readonly optimizer: IOptimizer;
     readonly loss: ILoss;
 
@@ -70,6 +72,7 @@ export abstract class ModelBase {
         this._assertCompiled();
 
         this._clearDelta();
+        this._lossErrorCache = this._lossErrorCache ?? matrix.zero(this.layers[0].size);
 
         let count = 0;
         for (const [trainInput, trainExpected] of batch) {
@@ -77,7 +80,7 @@ export abstract class ModelBase {
             this._assertExpectedSize(trainExpected);
 
             const data = this._calculateBackpropData(trainInput);
-            const loss = this.loss.calculateError(data.activations[data.activations.length - 1], trainExpected);
+            const loss = this.loss.calculateError(data.activations[data.activations.length - 1], trainExpected, this._lossErrorCache);
 
             this._backprop(data, loss);
             ++count;

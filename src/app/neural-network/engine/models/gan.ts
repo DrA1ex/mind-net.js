@@ -6,12 +6,11 @@ import {ChainModel} from "./chain";
 import {OptimizerT} from "../optimizers";
 import {ILoss, IOptimizer} from "../base";
 import {LossT} from "../loss";
+import {zip_iter} from "../iter";
 
 
 export class GenerativeAdversarialModel {
-    ganChain: ChainModel;
-
-    get optimizer() {return this.ganChain.optimizer;};
+    readonly ganChain: ChainModel;
 
     constructor(public generator: SequentialModel,
                 public discriminator: SequentialModel,
@@ -44,14 +43,20 @@ export class GenerativeAdversarialModel {
     }
 
     public trainBatch(batch: matrix.Matrix1D[]) {
-        const ones = matrix.fill_value([1], batch.length);
         const almostOnes = matrix.fill_value([0.9], batch.length);
         const zeros = matrix.fill_value([0], batch.length);
-        const noise = matrix.random_2d(batch.length, this.generator.layers[0].size, -1, 1);
-        const fake = noise.map(input => this.generator.compute(input));
+        const noise = matrix.random_normal_2d(batch.length, this.generator.layers[0].size, -1, 1);
 
-        this.discriminator.trainBatch(iter.zip([...batch, ...fake], [...almostOnes, ...zeros]));
-        this.ganChain.trainBatch(iter.zip(noise, ones));
+        const fake = iter.map(noise, input => this.generator.compute(input));
+        this.discriminator.trainBatch(
+            iter.zip_iter(
+                iter.join(batch, fake),
+                iter.join(almostOnes, zeros)
+            )
+        );
+
+        const ones = matrix.fill_value([1], batch.length);
+        this.ganChain.trainBatch(iter.zip_iter(noise, ones));
     }
 
     public beforeTrain() {

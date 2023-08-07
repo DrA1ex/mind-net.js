@@ -7,8 +7,7 @@ export function* range(from: number, to: number): Iterable<number> {
 export function* map<T, R>(input: Iterable<T>, map: (arg: T, i: number) => R): Iterable<R> {
     let i = 0;
     for (const item of input) {
-        yield map(item, i);
-        i += 1;
+        yield map(item, i++);
     }
 }
 
@@ -40,17 +39,9 @@ export function max(input: Iterable<number>): number {
     return m;
 }
 
-export function* reverse<T>(input: Iterable<T>): Iterable<T> {
-    const cache = [];
-    for (const e of input) {
-        cache.push(e);
-    }
-
-    for (let i = cache.length - 1; i >= 0; i--) {
-        yield cache[i];
-    }
+export function reverse<T>(input: Iterable<T>): Iterable<T> {
+    return Array.from(input).reverse();
 }
-
 
 export function shuffle<T>(array: Array<T>): Array<T> {
     let currentIndex = array.length, randomIndex;
@@ -76,6 +67,33 @@ export function* zip<T1, T2>(a: Array<T1>, b: Array<T2>): Iterable<[T1, T2]> {
 
     for (let i = 0; i < length; i++) {
         yield [a[i], b[i]];
+    }
+}
+
+export function* zip_iter<T1, T2>(a: Iterable<T1>, b: Iterable<T2>): Iterable<[T1, T2]> {
+    const aIter = a[Symbol.iterator]();
+    const bIter = b[Symbol.iterator]();
+
+    let aNext, bNext;
+    while (true) {
+        aNext = aIter.next();
+        bNext = bIter.next();
+
+        if (aNext.done || bNext.done) {
+            break;
+        }
+
+        yield [aNext.value, bNext.value];
+    }
+}
+
+export function* join<T1, T2>(a: Iterable<T1>, b: Iterable<T2>): Iterable<T1 | T2> {
+    for (const t1 of a) {
+        yield t1;
+    }
+
+    for (const t2 of b) {
+        yield t2;
     }
 }
 

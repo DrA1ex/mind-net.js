@@ -16,7 +16,7 @@ export class SigmoidActivation implements IActivation {
 export class LeakyReluActivation implements IActivation {
     alpha: number;
 
-    constructor(alpha = 0.01) {
+    constructor(alpha = 0.3) {
         this.alpha = alpha
     }
 
