@@ -124,6 +124,7 @@ console.log(`${y} + ${x} = ${Math.round(network.compute([x, y])[0])}`);
 **Example training datasets**: 
 - [mnist-500-16.zip](https://github.com/DrA1ex/mind-net.js/files/7082675/mnist-16.zip)
 - [check-mark-10-16.zip](https://github.com/DrA1ex/mind-net.js/files/7082841/check-mark-16.zip)
+- [fashion-mnist-300-28.zip](https://github.com/DrA1ex/mind-net.js/files/12293875/fashion-mnist-dataset.zip)
 
 
 **Source code**: [src/app/pages/demo2](/src/app/pages/demo2)
