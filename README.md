@@ -92,7 +92,10 @@ console.log(`${y} + ${x} = ${Math.round(network.compute([x, y])[0])}`);
 # Demo
 ## [Sequential demo](https://dra1ex.github.io/mind-net.js/demo1/)
 ### Classification of 2D space from set of points with different type
-![image](https://user-images.githubusercontent.com/1194059/128631442-0a0350df-d5b1-4ac2-b3d0-030e341f68a3.png)
+
+<img width="800" alt="spiral" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/8a571abf-35a2-47a0-b53f-9b2c835cc2fd">
+
+<img width="800" alt="star" src="https://user-images.githubusercontent.com/1194059/128631442-0a0350df-d5b1-4ac2-b3d0-030e341f68a3.png">
 
 #### Controls:
 - To place **T1** point do _Left click_ or select **T1** switch
@@ -105,7 +108,14 @@ console.log(`${y} + ${x} = ${Math.round(network.compute([x, y])[0])}`);
 
 ## [Generative-adversarial Network demo](https://dra1ex.github.io/mind-net.js/demo2/)
 ### Generating images by unlabeled sample data
-![image](https://user-images.githubusercontent.com/1194059/131479119-84f7bd37-8d49-4f5f-981d-1dd7b64140e0.png)
+
+<img width="480" height="480" alt="animation" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/7c453362-8968-4cd6-9fb2-a254fe862396">
+
+<img width="800" alt="digits" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/7bd64fe7-fe96-4593-aed7-34ec818df1c6">
+
+<img width="800" alt="checkmarks" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/0ff74201-6866-4613-a8d9-5a52fe932179">
+
+
 
 **Example training datasets**: 
 - [mnist-500-16.zip](https://github.com/DrA1ex/mind-net.js/files/7082675/mnist-16.zip)
