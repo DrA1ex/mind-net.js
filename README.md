@@ -19,6 +19,7 @@ npm install mind-net.js
 
 ## Get Started
 
+#### Approximation of the XOR function
 ```javascript
 import MindNet from "mind-net.js";
 
@@ -39,49 +40,52 @@ for (let i = 0; i < 20000; i++) {
 console.log(network.compute([1, 0])); // 0.99
 ```
 
-### More complex example
+### More complex examples
+#### Approximation of addition
 ```javascript
-import MindNet, {Utils} from "mind-net.js";
+import MindNet, {
+    AdamOptimizer,
+    Matrix,
+    MeanSquaredErrorLoss,
+    Utils
+} from "mind-net.js";
 
-const optimizer = new MindNet.Optimizers.adam(0.0005, 0.2);
+const optimizer = new AdamOptimizer(0.0001, 1e-5);
 const activation = "relu";
 
-const network = new MindNet.Models.Sequential(optimizer);
+const network = new MindNet.Models.Sequential(optimizer, new MeanSquaredErrorLoss(500));
 
-for (const size of [2, 64, 64, 1]) {
-    network.addLayer(new MindNet.Layers.Dense(size, activation));
+for (const size of [2, 64, 1]) {
+    network.addLayer(new MindNet.Layers.Dense(size, activation, "xavier"));
 }
 
 network.compile();
 
-function getInput() {
-    const x = Math.floor(Math.random() * 10),
-        y = Math.floor(Math.random() * 10);
+const MaxNumber = 10;
 
-    return [x, y];
-}
+const Input = Matrix.fill(() => [Math.random() * MaxNumber, Math.random() * MaxNumber], 1100);
+const Expected = Input.map(([x, y]) => [x + y]);
 
-for (let i = 0; i < 100000; i++) {
-    const [x, y] = getInput();
-    const input = [[x, y]];
-    const output = [[x + y]];
-    
-    network.train(input, output);
-    const loss = Utils.loss(network, input, output);
+const TestInput = Input.splice(0, Input.length / 10);
+const TestExpected = Expected.splice(0, TestInput.length);
 
-    if (i % 1000 === 0) {
-        console.log(`Epoch ${network.epoch}. Loss: ${loss}`);
+for (let i = 0; i < 3000; i++) {
+    network.train(Input, Expected);
+
+    const {loss, accuracy} = Utils.loss(network, TestInput, TestExpected);
+    if (network.epoch % 100 === 0) {
+        console.log(`Epoch ${network.epoch}. Loss: ${loss}. Accuracy: ${accuracy.toFixed(2)}`);
     }
 
-    if (loss < 1e-14) {
-        console.log(`Training complete. Epoch ${network.epoch}. Loss: ${loss}`);
+    if (loss < 1e-5) {
+        console.log(`Training complete. Epoch: ${network.epoch}`);
         break;
     }
 }
 
-const [x, y] = getInput();
-console.log(`${x} + ${y} = ${Math.round(network.compute([x, y])[0])}`);
-console.log(`${y} + ${x} = ${Math.round(network.compute([x, y])[0])}`);
+const [x, y] = [Math.random() * MaxNumber, Math.random() * MaxNumber];
+const [result] = network.compute([x, y]);
+console.log(`${x.toFixed(2)} + ${y.toFixed(2)} = ${result.toFixed(2)}`);
 ```
 
 ## Examples

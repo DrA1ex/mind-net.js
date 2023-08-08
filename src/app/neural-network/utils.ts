@@ -18,7 +18,14 @@ export function loss(nn: ModelBase, input: matrix.Matrix1D[], expected: matrix.M
 }
 
 export function absoluteAccuracy(input: matrix.Matrix1D[], expected: matrix.Matrix1D[], k = 2.5) {
-    const precision = std(expected.map(r => std(r))) / k;
+    if (!expected) return 0;
+
+    let precision;
+    if (expected[0].length > 1) {
+        precision = std(expected.map(r => std(r))) / k;
+    } else {
+        precision = std(expected.flat()) / k;
+    }
 
     const rows = input.length;
     const columns = input[0].length;
@@ -37,6 +44,8 @@ export function absoluteAccuracy(input: matrix.Matrix1D[], expected: matrix.Matr
 }
 
 export function std(data: matrix.Matrix1D) {
-    const mean = data.reduce((p, c) => p + c, 0) / data.length;
-    return Math.sqrt(data.reduce((p, c) => Math.pow(p - mean, 2), 0));
+    const length = data.length;
+    const mean = data.reduce((p, c) => (p + c) / length, 0);
+    const meanOfSquareDiff = data.reduce((p, c) => p + Math.pow(c - mean, 2) / length, 0);
+    return Math.sqrt(meanOfSquareDiff);
 }

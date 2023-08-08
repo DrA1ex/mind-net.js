@@ -12,7 +12,9 @@ export default {
             ]
         },
     },
-    devtool: 'source-map',
+    optimization: {
+        minimize: false
+    },
     experiments: {
         outputModule: true,
     },

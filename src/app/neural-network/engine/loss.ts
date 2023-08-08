@@ -4,6 +4,8 @@ import * as matrix from "./matrix";
 import * as utils from "../utils";
 
 export class MeanSquaredErrorLoss implements ILoss {
+    constructor(public readonly k = 2.5) {}
+
     loss(predicted: Matrix1D[], expected: Matrix1D[]): number {
         const rows = predicted.length;
         const columns = predicted[0].length;
@@ -19,7 +21,7 @@ export class MeanSquaredErrorLoss implements ILoss {
     }
 
     accuracy(predicted: Matrix1D[], expected: Matrix1D[]): number {
-        return utils.absoluteAccuracy(predicted, expected);
+        return utils.absoluteAccuracy(predicted, expected, this.k);
     }
 
     calculateError(predicted: Matrix1D, expected: Matrix1D, dst?: Matrix1D): Matrix1D {
@@ -29,6 +31,8 @@ export class MeanSquaredErrorLoss implements ILoss {
 }
 
 export class MeanAbsoluteErrorLoss implements ILoss {
+    constructor(public readonly k = 2.5) {}
+
     loss(predicted: Matrix1D[], expected: Matrix1D[]): number {
         const rows = predicted.length;
         const columns = predicted[0].length;
@@ -44,7 +48,7 @@ export class MeanAbsoluteErrorLoss implements ILoss {
     }
 
     accuracy(predicted: Matrix1D[], expected: Matrix1D[]): number {
-        return utils.absoluteAccuracy(predicted, expected);
+        return utils.absoluteAccuracy(predicted, expected, this.k);
     }
 
     calculateError(predicted: Matrix1D, expected: Matrix1D, dst?: Matrix1D): Matrix1D {
