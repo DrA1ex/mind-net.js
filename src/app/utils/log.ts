@@ -1,6 +1,5 @@
 import {ModelBase} from "../neural-network/engine/models/base";
 import * as matrix from "../neural-network/engine/matrix";
-import {mse} from "../neural-network/utils";
 
 export function print(nn: ModelBase, input: matrix.Matrix1D[], expected: matrix.Matrix1D[]) {
     if (input.length === 0) {
@@ -17,7 +16,7 @@ export function print(nn: ModelBase, input: matrix.Matrix1D[], expected: matrix.
 
         const outValue = out.map(n => n.toFixed(2));
         const tOutValue = t_output.map(n => n.toFixed(2));
-        const accuracy = (1 - mse(t_output, out)) * 100;
+        const accuracy = nn.loss.accuracy([out], [t_output]) * 100;
 
         console.log(`INPUT ${t_input} OUTPUT ${outValue} EXPECTED ${tOutValue} (accuracy ${accuracy.toFixed(2)}%)`);
 

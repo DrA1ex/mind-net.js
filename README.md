@@ -3,15 +3,14 @@
 </p>
 
 
-
 # mind-net.js
 
 Simple to use neural network implementation in pure TypeScript.
 
 ## About
+mind-net.js is a lightweight library that offers the necessary tools to train and execute neural networks. By using mind-net.js, developers can conveniently create and explore neural networks, gaining practical knowledge in the domain of machine learning.
 
-mind-net.js is a lightweight library designed for training and executing neural networks. It provides essential functionality and is primarily geared towards small-scale projects or educational purposes. With mind-net.js, users can easily develop and experiment with neural networks, gaining hands-on experience in the field of machine learning.
-
+**Note:** This library is primarily intended for educational purposes and is best suited for small to medium-sized projects. It may not be suitable for high-performance or large-scale applications.
 ## Installation 
 
 ```bash
@@ -92,7 +91,10 @@ console.log(`${y} + ${x} = ${Math.round(network.compute([x, y])[0])}`);
 # Demo
 ## [Sequential demo](https://dra1ex.github.io/mind-net.js/demo1/)
 ### Classification of 2D space from set of points with different type
-![image](https://user-images.githubusercontent.com/1194059/128631442-0a0350df-d5b1-4ac2-b3d0-030e341f68a3.png)
+
+<img width="800" alt="spiral" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/8a571abf-35a2-47a0-b53f-9b2c835cc2fd">
+
+<img width="800" alt="star" src="https://user-images.githubusercontent.com/1194059/128631442-0a0350df-d5b1-4ac2-b3d0-030e341f68a3.png">
 
 #### Controls:
 - To place **T1** point do _Left click_ or select **T1** switch
@@ -105,11 +107,25 @@ console.log(`${y} + ${x} = ${Math.round(network.compute([x, y])[0])}`);
 
 ## [Generative-adversarial Network demo](https://dra1ex.github.io/mind-net.js/demo2/)
 ### Generating images by unlabeled sample data
-![image](https://user-images.githubusercontent.com/1194059/131479119-84f7bd37-8d49-4f5f-981d-1dd7b64140e0.png)
+
+**DISCLAIMER**: The datasets used in this example have been deliberately simplified, and the hyperparameters have been selected for the purpose of demonstration to showcase early results. It is important to note that the quality of the outcomes may vary and is dependent on the size of the model and chosen hyperparameters.
+
+<img width="480" height="480" alt="animation" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/7c453362-8968-4cd6-9fb2-a254fe862396">
+
+<img width="800" alt="digits" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/7bd64fe7-fe96-4593-aed7-34ec818df1c6">
+
+<img width="800" alt="fashion" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/13106ccc-43e8-4d92-b91b-dac365043aca">
+
+<img width="800" alt="checkmarks" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/0ff74201-6866-4613-a8d9-5a52fe932179">
+
+
 
 **Example training datasets**: 
 - [mnist-500-16.zip](https://github.com/DrA1ex/mind-net.js/files/7082675/mnist-16.zip)
 - [check-mark-10-16.zip](https://github.com/DrA1ex/mind-net.js/files/7082841/check-mark-16.zip)
-
+- [fashion-mnist-300-28.zip](https://github.com/DrA1ex/mind-net.js/files/12293875/fashion-mnist-dataset.zip)
 
 **Source code**: [src/app/pages/demo2](/src/app/pages/demo2)
+
+## License
+This project is licensed under the BSD 3 License. See the [LICENSE](LICENSE) file for more information.

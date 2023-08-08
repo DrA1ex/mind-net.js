@@ -1,6 +1,5 @@
 import path from "path";
 import url from "url";
-import {TsconfigPathsPlugin} from "tsconfig-paths-webpack-plugin";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
@@ -21,14 +20,18 @@ export default {
         rules: [
             {
                 test: /\.tsx?$/,
-                use: 'ts-loader',
+                use: {
+                    loader: 'ts-loader',
+                    options: {
+                        configFile: "tsconfig.lib.json"
+                    }
+                },
                 exclude: /node_modules/,
             },
         ],
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
-        plugins: [new TsconfigPathsPlugin({configFile: "./tsconfig.lib.json"})]
     },
     output: {
         path: path.resolve(__dirname, "lib"),

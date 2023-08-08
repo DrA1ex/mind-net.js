@@ -1,4 +1,4 @@
-import {zero, zero_2d} from "../matrix";
+import {one, zero, zero_2d} from "../matrix";
 
 import {ILayer} from "../base";
 import {ModelBase} from "./base";
@@ -11,6 +11,8 @@ export class ChainModel extends ModelBase {
     readonly models: ModelBase[] = [];
 
     addModel(model: ModelBase, trainable = true): this {
+        this.compiled = false;
+
         this.models.push(model);
         this.trainable.push(trainable);
         return this;
@@ -45,7 +47,13 @@ export class ChainModel extends ModelBase {
 
             for (const layer of layers) {
                 this.modelByLayer.set(layer, [model, this.trainable[i]]);
-                this.cache.set(layer, {activation: zero(layer.size), deltaBiases: zero(layer.size), deltaWeights: zero_2d(layer.size, layer.prevSize)});
+                this.cache.set(layer, {
+                    activation: zero(layer.size),
+                    deltaBiases: zero(layer.size),
+                    mask: one(layer.size),
+                    deltaWeights: zero_2d(layer.size, layer.prevSize),
+                    gradientCache: zero(layer.prevSize),
+                });
             }
 
             this.layers.push(...layers);
@@ -54,15 +62,10 @@ export class ChainModel extends ModelBase {
         this.compiled = true;
     }
 
-    protected _applyDelta(batchSize: number) {
-        for (let i = 1; i < this.layers.length; i++) {
-            const layer = this.layers[i];
-            const [, trainable] = this.modelByLayer.get(layer)!;
-            if (!trainable) {
-                continue;
-            }
+    protected _applyLayerDelta(layer: ILayer, batchSize: number) {
+        const [, trainable] = this.modelByLayer.get(layer)!;
+        if (!trainable) return;
 
-            this._applyLayerDelta(layer, batchSize);
-        }
+        super._applyLayerDelta(layer, batchSize);
     }
 }

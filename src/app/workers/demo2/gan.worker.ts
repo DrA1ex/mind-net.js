@@ -3,7 +3,8 @@
 import * as iter from "../../neural-network/engine/iter";
 import * as color from "../../utils/color";
 import * as nnUtils from "../../neural-network/utils";
-import NN from "../../neural-network/neural-network";
+import NN, {Matrix} from "../../neural-network/neural-network";
+import {LossT} from "../../neural-network/engine/loss";
 
 import {
     COLOR_A_BIN,
@@ -15,14 +16,16 @@ import {
     MAX_ITERATION_TIME,
     NetworkParams,
     PROGRESS_DELAY,
-    TRAINING_BATCH_SIZE
+    TRAINING_BATCH_SIZE,
+    DEFAULT_BATCH_SIZE
 } from "./gan.worker.consts"
 
 let lastDrawTime = 0;
 let currentIteration = 0;
 let trainingData: number[][];
+let inputNoise: number[][][];
 let batchedTrainingData: number[][][];
-let batchSize = 0;
+let batchSize = DEFAULT_BATCH_SIZE;
 let batchCount = 0;
 
 let nnParams: NetworkParams = DEFAULT_NN_PARAMS;
@@ -32,24 +35,26 @@ let neuralNetwork = createNn();
 
 function createNn() {
     function _createOptimizer() {
-        return new NN.Optimizers.nesterov(learningRate, 0.25);
+        return new NN.Optimizers.adam(learningRate, 0, 0.5);
     }
 
     function _createHiddenLayer(size: number) {
-        return new NN.Layers.Dense(size)
+        return new NN.Layers.Dense(size, new NN.Activations.leakyRelu(0.2),
+            "he", "zero", {dropout: .3});
     }
 
     const [input, genSizes, output] = nnParams;
+    const loss: LossT = "binaryCrossEntropy";
 
-    const generator = new NN.Models.Sequential(_createOptimizer());
+    const generator = new NN.Models.Sequential(_createOptimizer(), loss);
     generator.addLayer(new NN.Layers.Dense(input));
     for (const size of genSizes) {
         generator.addLayer(_createHiddenLayer(size));
     }
-    generator.addLayer(new NN.Layers.Dense(output));
+    generator.addLayer(new NN.Layers.Dense(output, "tanh"));
     generator.compile();
 
-    const discriminator = new NN.Models.Sequential(_createOptimizer());
+    const discriminator = new NN.Models.Sequential(_createOptimizer(), loss);
     discriminator.addLayer(new NN.Layers.Dense(output));
     for (const size of iter.reverse(genSizes)) {
         discriminator.addLayer(_createHiddenLayer(size));
@@ -57,8 +62,9 @@ function createNn() {
     discriminator.addLayer(new NN.Layers.Dense(1));
     discriminator.compile();
 
-    return new NN.Models.GAN(generator, discriminator, _createOptimizer());
+    return new NN.Models.GAN(generator, discriminator, _createOptimizer(), loss);
 }
+
 
 addEventListener('message', ({data}) => {
     function _refresh() {
@@ -69,8 +75,15 @@ addEventListener('message', ({data}) => {
         neuralNetwork = createNn();
 
         currentIteration = 0;
-        batchSize = Math.max(1, Math.floor(trainingData.length / 200));
         batchCount = Math.ceil(trainingData.length / batchSize);
+
+        inputNoise = Array.from(
+            iter.map(iter.range(0, DRAW_GRID_DIMENSION), () =>
+                Array.from(iter.map(iter.range(0, DRAW_GRID_DIMENSION),
+                    () => Matrix.random_normal_1d(nnParams[0]))
+                )
+            )
+        );
 
         if (trainingData && trainingData.length > 0) {
             draw();
@@ -99,6 +112,11 @@ addEventListener('message', ({data}) => {
 
         case "set_data":
             trainingData = data.data;
+            for (let i = 0; i < trainingData.length; i++) {
+                for (let j = 0; j < trainingData[i].length; j++) {
+                    trainingData[i][j] = (0.5 - trainingData[i][j]) * 2;
+                }
+            }
 
             _refresh();
             break;
@@ -118,11 +136,15 @@ function trainBatch() {
     while (true) {
         if (currentIteration % batchCount === 0) {
             batchedTrainingData = Array.from(iter.partition(iter.shuffled(trainingData), batchSize));
+            neuralNetwork.beforeTrain();
         }
 
-        neuralNetwork.trainBatch(batchedTrainingData[currentIteration % batchCount]);
-        
+        const input = batchedTrainingData[currentIteration % batchCount];
+        neuralNetwork.trainBatch(input);
+
         if (++batches > batchesCntToCheck) {
+            neuralNetwork.afterTrain();
+
             const elapsed = performance.now() - progressLastTime;
             const batchTime = elapsed / batches;
             batchesCntToCheck = PROGRESS_DELAY / batchTime;
@@ -132,16 +154,14 @@ function trainBatch() {
                 epoch: Math.floor(currentIteration / batchCount) + 1,
                 batchNo: currentIteration % batchCount + 1,
                 batchCount,
-                speed: 1000 / batchTime
+                speed: batchCount * 1000 / batchTime
             });
 
             batches = 0;
             progressLastTime = performance.now();
         }
 
-        ++currentIteration;
-
-        if (currentIteration % TRAINING_BATCH_SIZE === 0 && (performance.now() - startTime) > MAX_ITERATION_TIME) {
+        if (++currentIteration % TRAINING_BATCH_SIZE === 0 && (performance.now() - startTime) > MAX_ITERATION_TIME) {
             break;
         }
     }
@@ -161,6 +181,7 @@ function trainBatch() {
     }
 }
 
+
 function draw() {
     const size = Math.floor(Math.sqrt(nnParams[2]))
     const gridSize = size * DRAW_GRID_DIMENSION;
@@ -168,7 +189,7 @@ function draw() {
     const dataSamples = drawGridSample(DRAW_GRID_DIMENSION, size,
         () => nnUtils.pickRandomItem(trainingData));
 
-    const genSamples = drawGridSample(DRAW_GRID_DIMENSION, size, () => {
+    const genSamples = drawGridSample(DRAW_GRID_DIMENSION, size, (i, j) => {
         const inputNoise = nnUtils.generateInputNoise(nnParams[0]);
         return neuralNetwork.compute(inputNoise);
     })
@@ -206,7 +227,7 @@ function drawGridSample(gridDimension: number, sampleDimension: number, fn: (i: 
 function dataToImageBuffer(data: number[]): Uint32Array {
     const state = new Uint32Array(data.length)
     for (let i = 0; i < data.length; i++) {
-        state[i] = color.getLinearColorBin(COLOR_A_BIN, COLOR_B_BIN, data[i]);
+        state[i] = color.getLinearColorBin(COLOR_A_BIN, COLOR_B_BIN, (data[i] / 2 + 0.5));
     }
 
     return state;

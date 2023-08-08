@@ -27,6 +27,7 @@ export class Demo1Component {
 
     currentEpoch: number = 0;
     currentLoss: number = 1;
+    currentAccuracy: number = 0;
     training: boolean = false;
     points: any[] = [];
 
@@ -38,6 +39,7 @@ export class Demo1Component {
                 case "training_data":
                     this.currentEpoch = data.epoch;
                     this.currentLoss = data.loss;
+                    this.currentAccuracy = data.accuracy;
                     this.training = data.isTraining;
 
                     this.plotDrawer.drawSnapshot(data.state, data.width, data.height);

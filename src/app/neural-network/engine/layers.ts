@@ -4,12 +4,26 @@ import {IActivation, ILayer, InitializerFn} from "./base";
 import {Activations, ActivationT} from "./activations";
 import {Initializers, InitializerT} from "./initializers";
 
+type DenseOptionsT = {
+    dropout?: number,
+    l1WeightRegularization?: number,
+    l1BiasRegularization?: number,
+    l2WeightRegularization?: number,
+    l2BiasRegularization?: number,
+}
+
 export class Dense implements ILayer {
     readonly size: number;
     prevSize: number = 0;
 
-    readonly weight_initializer: InitializerFn;
-    readonly bias_initializer: InitializerFn;
+    readonly dropout;
+    readonly l1WeightRegularization;
+    readonly l1BiasRegularization;
+    readonly l2WeightRegularization;
+    readonly l2BiasRegularization;
+
+    readonly weightInitializer: InitializerFn;
+    readonly biasInitializer: InitializerFn;
 
     biases!: matrix.Matrix1D;
     weights!: matrix.Matrix2D;
@@ -17,31 +31,39 @@ export class Dense implements ILayer {
 
     readonly activation: IActivation;
 
-    constructor(size: number,
-                activation: ActivationT | IActivation = "sigmoid",
-                weight_initializer: InitializerT | InitializerFn = "he",
-                bias_initializer: InitializerT | InitializerFn = "zero") {
+    constructor(
+        size: number,
+        activation: ActivationT | IActivation = "sigmoid",
+        weightInitializer: InitializerT | InitializerFn = "he",
+        biasInitializer: InitializerT | InitializerFn = "zero",
+        options?: DenseOptionsT
+    ) {
         this.size = size;
+        this.dropout = options?.dropout ?? 0;
+        this.l1WeightRegularization = options?.l1WeightRegularization ?? 0;
+        this.l1BiasRegularization = options?.l1BiasRegularization ?? 0;
+        this.l2WeightRegularization = options?.l2WeightRegularization ?? 0;
+        this.l2BiasRegularization = options?.l2BiasRegularization ?? 0;
 
-        this.weight_initializer = typeof weight_initializer === "string" ? Initializers[weight_initializer] : weight_initializer;
-        if (!this.weight_initializer) {
-            throw new Error(`Unknown weight initializer type ${weight_initializer}`);
+        this.weightInitializer = typeof weightInitializer === "string" ? Initializers[weightInitializer] : weightInitializer;
+        if (!this.weightInitializer) {
+            throw new Error(`Unknown weight initializer type ${weightInitializer}`);
         }
 
-        this.bias_initializer = typeof bias_initializer === "string" ? Initializers[bias_initializer] : bias_initializer;
-        if (!this.bias_initializer) {
-            throw new Error(`Unknown bias initializer type ${bias_initializer}`);
+        this.biasInitializer = typeof biasInitializer === "string" ? Initializers[biasInitializer] : biasInitializer;
+        if (!this.biasInitializer) {
+            throw new Error(`Unknown bias initializer type ${biasInitializer}`);
         }
 
-        const activation_param = typeof activation === "string" ? Activations[activation] : activation;
-        if (!activation_param) {
+        const activationParam = typeof activation === "string" ? Activations[activation] : activation;
+        if (!activationParam) {
             throw new Error(`Unknown activation type ${activation}`);
         }
 
-        if (typeof activation_param === "object") {
-            this.activation = activation_param;
+        if (typeof activationParam === "object") {
+            this.activation = activationParam;
         } else {
-            this.activation = new activation_param();
+            this.activation = new activationParam();
         }
     }
 
@@ -49,8 +71,8 @@ export class Dense implements ILayer {
         this.prevSize = prevSize;
 
         if (index > 0) {
-            this.weights = matrix.fill(() => this.weight_initializer(this.prevSize, this.size), this.size);
-            this.biases = this.bias_initializer(this.size, this.prevSize);
+            this.weights = matrix.fill(() => this.weightInitializer(this.prevSize, this.size), this.size);
+            this.biases = this.biasInitializer(this.size, this.prevSize);
             this.values = matrix.zero(this.size);
         } else {
             this.weights = [];

@@ -1,8 +1,9 @@
 import * as matrix from "./matrix";
+import {Matrix1D} from "./matrix";
 
 export interface IActivation {
-    value(x: number): number
-    moment(x: number): number;
+    value(input: Matrix1D, dst?: Matrix1D): Matrix1D
+    moment(input: Matrix1D, dst?: Matrix1D): Matrix1D;
 }
 
 export interface ILayer {
@@ -14,18 +15,34 @@ export interface ILayer {
 
     readonly activation: IActivation;
 
+    readonly l1WeightRegularization: number;
+    readonly l1BiasRegularization: number;
+    readonly l2WeightRegularization: number;
+    readonly l2BiasRegularization: number;
+
+    readonly dropout: number;
+
     build(index: number, prevSize: number): void;
     step(input: matrix.Matrix1D): matrix.Matrix1D;
 }
 
-export interface OptimizerStep {
-    weightStep: matrix.Matrix1D
-    biasStep: matrix.Matrix1D
-}
 
 export interface IOptimizer {
-    step(layer: ILayer, activations: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): OptimizerStep
+    step(layer: ILayer, activations: matrix.Matrix1D, primes: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D;
+    updateWeights(layer: ILayer, deltaWeights: matrix.Matrix2D, deltaBiases: matrix.Matrix1D, epoch: number, batchSize: number): void
+    beforePass(): void
+    afterPass(): void
+
+
+    readonly lr: number;
     readonly description: string
 }
 
 export type InitializerFn = (size: number, prevSize: number) => matrix.Matrix1D;
+
+export interface ILoss {
+    loss(predicted: Matrix1D[], expected: Matrix1D[]): number;
+    accuracy(predicted: Matrix1D[], expected: Matrix1D[]): number;
+
+    calculateError(predicted: Matrix1D, expected: Matrix1D, dst?: Matrix1D): Matrix1D;
+}
