@@ -3,15 +3,14 @@
 </p>
 
 
-
 # mind-net.js
 
 Simple to use neural network implementation in pure TypeScript.
 
 ## About
+mind-net.js is a lightweight library that offers the necessary tools to train and execute neural networks. By using mind-net.js, developers can conveniently create and explore neural networks, gaining practical knowledge in the domain of machine learning.
 
-mind-net.js is a lightweight library designed for training and executing neural networks. It provides essential functionality and is primarily geared towards small-scale projects or educational purposes. With mind-net.js, users can easily develop and experiment with neural networks, gaining hands-on experience in the field of machine learning.
-
+**Note:** This library is primarily intended for educational purposes and is best suited for small to medium-sized projects. It may not be suitable for high-performance or large-scale applications.
 ## Installation 
 
 ```bash
@@ -126,5 +125,7 @@ console.log(`${y} + ${x} = ${Math.round(network.compute([x, y])[0])}`);
 - [check-mark-10-16.zip](https://github.com/DrA1ex/mind-net.js/files/7082841/check-mark-16.zip)
 - [fashion-mnist-300-28.zip](https://github.com/DrA1ex/mind-net.js/files/12293875/fashion-mnist-dataset.zip)
 
-
 **Source code**: [src/app/pages/demo2](/src/app/pages/demo2)
+
+## License
+This project is licensed under the BSD 3 License. See the [LICENSE](LICENSE) file for more information.
