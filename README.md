@@ -41,18 +41,23 @@ console.log(network.compute([1, 0])); // 0.99
 ```
 
 ### More complex examples
-#### Approximation of addition
+#### Approximation of distance function
 ```javascript
-import MindNet, {Matrix,} from "mind-net.js";
+import MindNet, {Matrix} from "mind-net.js";
 
-const optimizer = new MindNet.Optimizers.AdamOptimizer({lr: 0.0001, decay: 1e-5});
+const optimizer = new MindNet.Optimizers.AdamOptimizer({lr: 0.01, decay: 1e-3});
 const loss = new MindNet.Loss.MeanSquaredErrorLoss({k: 500});
 
 const network = new MindNet.Models.Sequential(optimizer, loss);
 
-for (const size of [2, 64]) {
+network.addLayer(new MindNet.Layers.Dense(2));
+
+for (const size of [64, 64]) {
     network.addLayer(new MindNet.Layers.Dense(size, {
-        activation: "leakyRelu", weightInitializer: "xavier"
+        activation: "leakyRelu", weightInitializer: "xavier", options: {
+            l2WeightRegularization: 1e-5,
+            l2BiasRegularization: 1e-5,
+        }
     }));
 }
 
@@ -62,31 +67,34 @@ network.addLayer(new MindNet.Layers.Dense(1, {
 
 network.compile();
 
-const MaxNumber = 10;
 
-const Input = Matrix.fill(() => [Math.random() * MaxNumber, Math.random() * MaxNumber], 1100);
-const Expected = Input.map(([x, y]) => [x + y]);
+const MaxNumber = 10;
+const nextFn = () => [Math.random() * MaxNumber, Math.random() * MaxNumber];
+const realFn = (x, y) => Math.sqrt(x * x + y * y);
+
+const Input = Matrix.fill(nextFn, 1000);
+const Expected = Input.map(([x, y]) => [realFn(x, y)]);
 
 const TestInput = Input.splice(0, Input.length / 10);
 const TestExpected = Expected.splice(0, TestInput.length);
 
-for (let i = 0; i < 3000; i++) {
-    network.train(Input, Expected);
+// Training should take about 100-200 epochs
+for (let i = 0; i < 300; i++) {
+    network.train(Input, Expected, {epochs: 10, batchSize: 64});
 
     const {loss, accuracy} = network.evaluate(TestInput, TestExpected);
-    if (network.epoch % 100 === 0) {
-        console.log(`Epoch ${network.epoch}. Loss: ${loss}. Accuracy: ${accuracy.toFixed(2)}`);
-    }
+    console.log(`Epoch ${network.epoch}. Loss: ${loss}. Accuracy: ${accuracy.toFixed(2)}`);
 
-    if (loss < 1e-5) {
+    if (loss < 1e-4) {
         console.log(`Training complete. Epoch: ${network.epoch}`);
         break;
     }
 }
 
-const [x, y] = [Math.random() * MaxNumber, Math.random() * MaxNumber];
+const [x, y] = nextFn();
+const real = realFn(x, y);
 const [result] = network.compute([x, y]);
-console.log(`${x.toFixed(2)} + ${y.toFixed(2)} = ${result.toFixed(2)}`);
+console.log(`sqrt(${x.toFixed(2)} ** 2 + ${y.toFixed(2)} ** 2) = ${result.toFixed(2)} (real: ${real.toFixed(2)})`);
 ```
 
 ## Examples
