@@ -43,21 +43,22 @@ console.log(network.compute([1, 0])); // 0.99
 ### More complex examples
 #### Approximation of addition
 ```javascript
-import MindNet, {
-    AdamOptimizer,
-    Matrix,
-    MeanSquaredErrorLoss,
-    Utils
-} from "mind-net.js";
+import MindNet, {Matrix,} from "mind-net.js";
 
-const optimizer = new AdamOptimizer(0.0001, 1e-5);
-const activation = "relu";
+const optimizer = new MindNet.Optimizers.AdamOptimizer({lr: 0.0001, decay: 1e-5});
+const loss = new MindNet.Loss.MeanSquaredErrorLoss({k: 500});
 
-const network = new MindNet.Models.Sequential(optimizer, new MeanSquaredErrorLoss(500));
+const network = new MindNet.Models.Sequential(optimizer, loss);
 
-for (const size of [2, 64, 1]) {
-    network.addLayer(new MindNet.Layers.Dense(size, activation, "xavier"));
+for (const size of [2, 64]) {
+    network.addLayer(new MindNet.Layers.Dense(size, {
+        activation: "leakyRelu", weightInitializer: "xavier"
+    }));
 }
+
+network.addLayer(new MindNet.Layers.Dense(1, {
+    activation: "linear", weightInitializer: "xavier"
+}));
 
 network.compile();
 
@@ -72,7 +73,7 @@ const TestExpected = Expected.splice(0, TestInput.length);
 for (let i = 0; i < 3000; i++) {
     network.train(Input, Expected);
 
-    const {loss, accuracy} = Utils.loss(network, TestInput, TestExpected);
+    const {loss, accuracy} = network.evaluate(TestInput, TestExpected);
     if (network.epoch % 100 === 0) {
         console.log(`Epoch ${network.epoch}. Loss: ${loss}. Accuracy: ${accuracy.toFixed(2)}`);
     }
@@ -114,7 +115,7 @@ console.log(`${x.toFixed(2)} + ${y.toFixed(2)} = ${result.toFixed(2)}`);
 
 **DISCLAIMER**: The datasets used in this example have been deliberately simplified, and the hyperparameters have been selected for the purpose of demonstration to showcase early results. It is important to note that the quality of the outcomes may vary and is dependent on the size of the model and chosen hyperparameters.
 
-<img width="480" height="480" alt="animation" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/7c453362-8968-4cd6-9fb2-a254fe862396">
+<img width="480" alt="animation" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/7c453362-8968-4cd6-9fb2-a254fe862396">
 
 <img width="800" alt="digits" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/7bd64fe7-fe96-4593-aed7-34ec818df1c6">
 

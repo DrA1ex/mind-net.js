@@ -102,26 +102,52 @@ export abstract class PreAveragedOptimizerBase extends OptimizerBase {
     }
 }
 
+type SgdCtorArgsT = {
+    lr: number;
+    decay: number;
+};
+
+const DefaultSgdArgs: SgdCtorArgsT = {
+    lr: 1,
+    decay: 0,
+};
+
 export class SgdOptimizer extends OptimizerBase {
     readonly description: string;
 
-    constructor(lr = 1, decay = 0) {
+    constructor(options: Partial<SgdCtorArgsT> = DefaultSgdArgs) {
+        const {lr, decay}: SgdCtorArgsT = {...DefaultSgdArgs, ...options};
         super(lr, decay);
 
         this.description = `sgd(lr: ${this.lr})`;
     }
 }
 
+type SgdMomentumCtorArgsT = {
+    lr: number;
+    decay: number;
+    beta: number;
+};
+
+const DefaultSgdMomentumArgs: SgdMomentumCtorArgsT = {
+    lr: 0.01,
+    decay: 0,
+    beta: 0.5,
+};
+
 type SgdMomentumCacheT = { mWeights: Matrix2D, mBiases: Matrix1D };
 
 export class SgdMomentumOptimizer extends PreAveragedOptimizerBase {
+    readonly description: string;
+    beta: number;
+
     private cache = new Map<ILayer, SgdMomentumCacheT>();
 
-    readonly description: string;
-
-    constructor(lr = 0.01, decay = 0, readonly beta = 0.5) {
+    constructor(options: Partial<SgdMomentumCtorArgsT> = DefaultSgdMomentumArgs) {
+        const {lr, decay, beta}: SgdMomentumCtorArgsT = {...DefaultSgdMomentumArgs, ...options};
         super(lr, decay);
 
+        this.beta = beta;
         this.description = `sgd-momentum(beta: ${beta}, lr: ${this.lr})`;
     }
 
@@ -142,15 +168,28 @@ export class SgdMomentumOptimizer extends PreAveragedOptimizerBase {
     }
 }
 
+type SgdNesterovCtorArgsT = {
+    lr: number;
+    decay: number;
+    beta: number;
+};
+
+const DefaultSgdNesterovArgs: SgdNesterovCtorArgsT = {
+    lr: 0.01,
+    decay: 0,
+    beta: 0.9,
+};
+
 type NesterovCacheT = { tmp1: Matrix1D, nextGrad: Matrix1D, momentum: Matrix1D };
 
 export class SgdNesterovOptimizer extends OptimizerBase {
     readonly description: string;
-    readonly beta: number;
+    beta: number;
 
     private cache = new Map<ILayer, NesterovCacheT>();
 
-    constructor(lr = 0.01, decay = 0, beta = 0.9) {
+    constructor(options: Partial<SgdNesterovCtorArgsT> = DefaultSgdNesterovArgs) {
+        const {lr, decay, beta}: SgdNesterovCtorArgsT = {...DefaultSgdNesterovArgs, ...options};
         super(lr, decay);
 
         this.beta = beta;
@@ -180,17 +219,33 @@ export class SgdNesterovOptimizer extends OptimizerBase {
     }
 }
 
+type RMSPropCtorArgsT = {
+    lr: number;
+    decay: number;
+    beta: number;
+    eps: number;
+};
+
+const DefaultRMSPropArgs: RMSPropCtorArgsT = {
+    lr: 0.001,
+    decay: 0,
+    beta: 0.9,
+    eps: 1e-8,
+};
 
 type RMSPropCacheT = { mWeights: Matrix2D, mBiases: Matrix1D };
 
 export class RMSPropOptimizer extends PreAveragedOptimizerBase {
     readonly description: string;
-    readonly beta: number;
-    readonly eps: number
+    beta: number;
+    eps: number
 
     private readonly cache = new Map<ILayer, RMSPropCacheT>();
 
-    constructor(lr = 0.001, decay = 0, beta = 0.9, eps = 1e-8) {
+    constructor(options: Partial<RMSPropCtorArgsT> = DefaultRMSPropArgs) {
+        const {
+            lr, decay, beta, eps,
+        }: RMSPropCtorArgsT = {...DefaultRMSPropArgs, ...options};
         super(lr, decay);
 
         this.beta = beta;
@@ -222,6 +277,22 @@ export class RMSPropOptimizer extends PreAveragedOptimizerBase {
     }
 }
 
+type AdamCtorArgsT = {
+    lr: number;
+    decay: number;
+    beta1: number;
+    beta2: number;
+    eps: number;
+};
+
+const DefaultAdamArgs: AdamCtorArgsT = {
+    lr: 0.001,
+    decay: 0,
+    beta1: 0.9,
+    beta2: 0.999,
+    eps: 1e-8,
+};
+
 type AdamCacheT = {
     mWeights: Matrix2D, mBiases: Matrix1D,
     cWeights: Matrix2D, cBiases: Matrix1D
@@ -229,13 +300,16 @@ type AdamCacheT = {
 
 export class AdamOptimizer extends PreAveragedOptimizerBase {
     readonly description: string;
-    readonly beta1: number;
-    readonly beta2: number;
-    readonly eps: number;
+    beta1: number;
+    beta2: number;
+    eps: number;
 
     private cache = new Map<ILayer, AdamCacheT>();
 
-    constructor(lr = 0.001, decay = 0, beta1 = 0.9, beta2 = 0.999, eps = 1e-8) {
+    constructor(options: Partial<AdamCtorArgsT> = DefaultAdamArgs) {
+        const {
+            lr, decay, beta1, beta2, eps,
+        }: AdamCtorArgsT = {...DefaultAdamArgs, ...options};
         super(lr, decay);
 
         this.beta1 = beta1;
@@ -288,7 +362,7 @@ export class AdamOptimizer extends PreAveragedOptimizerBase {
 export type OptimizerT = "sgd" | "sgdMomentum" | "nesterov" | "adam" | "rmsprop";
 
 export function buildOptimizer(optimizer: OptimizerT | IOptimizer = 'sgd') {
-    const optimizer_param = typeof optimizer === "string" ? Optimizers[optimizer] : optimizer
+    const optimizer_param = typeof optimizer === "string" ? OptimizersMap[optimizer] : optimizer
     if (!optimizer_param) {
         throw new Error(`Unknown optimizer type ${optimizer_param}`);
     }
@@ -300,10 +374,18 @@ export function buildOptimizer(optimizer: OptimizerT | IOptimizer = 'sgd') {
     return new optimizer_param();
 }
 
-export const Optimizers = {
+export const OptimizersMap = {
     sgd: SgdOptimizer,
     sgdMomentum: SgdMomentumOptimizer,
     nesterov: SgdNesterovOptimizer,
     adam: AdamOptimizer,
     rmsprop: RMSPropOptimizer
+}
+
+export const Optimizers = {
+    SgdOptimizer,
+    SgdMomentumOptimizer,
+    SgdNesterovOptimizer,
+    AdamOptimizer,
+    RMSPropOptimizer,
 }

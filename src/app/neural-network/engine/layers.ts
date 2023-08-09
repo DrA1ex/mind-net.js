@@ -1,15 +1,29 @@
 import * as matrix from "./matrix";
 
 import {IActivation, ILayer, InitializerFn} from "./base";
-import {Activations, ActivationT} from "./activations";
+import {ActivationsMap, ActivationT} from "./activations";
 import {Initializers, InitializerT} from "./initializers";
 
 type DenseOptionsT = {
-    dropout?: number,
-    l1WeightRegularization?: number,
-    l1BiasRegularization?: number,
-    l2WeightRegularization?: number,
-    l2BiasRegularization?: number,
+    dropout: number,
+    l1WeightRegularization: number,
+    l1BiasRegularization: number,
+    l2WeightRegularization: number,
+    l2BiasRegularization: number,
+}
+
+type DenseCtorArgsT = {
+    activation: ActivationT | IActivation,
+    weightInitializer: InitializerT | InitializerFn,
+    biasInitializer: InitializerT | InitializerFn,
+    options: Partial<DenseOptionsT>
+}
+
+const DefaultDenseArgs: DenseCtorArgsT = {
+    activation: "sigmoid",
+    weightInitializer: "he",
+    biasInitializer: "zero",
+    options: {}
 }
 
 export class Dense implements ILayer {
@@ -31,13 +45,11 @@ export class Dense implements ILayer {
 
     readonly activation: IActivation;
 
-    constructor(
-        size: number,
-        activation: ActivationT | IActivation = "sigmoid",
-        weightInitializer: InitializerT | InitializerFn = "he",
-        biasInitializer: InitializerT | InitializerFn = "zero",
-        options?: DenseOptionsT
-    ) {
+    constructor(size: number, args: Partial<DenseCtorArgsT> = DefaultDenseArgs) {
+        const {
+            activation, weightInitializer, biasInitializer, options
+        }: DenseCtorArgsT = {...DefaultDenseArgs, ...args};
+
         this.size = size;
         this.dropout = options?.dropout ?? 0;
         this.l1WeightRegularization = options?.l1WeightRegularization ?? 0;
@@ -55,7 +67,7 @@ export class Dense implements ILayer {
             throw new Error(`Unknown bias initializer type ${biasInitializer}`);
         }
 
-        const activationParam = typeof activation === "string" ? Activations[activation] : activation;
+        const activationParam = typeof activation === "string" ? ActivationsMap[activation] : activation;
         if (!activationParam) {
             throw new Error(`Unknown activation type ${activation}`);
         }

@@ -4,7 +4,11 @@ import * as matrix from "./matrix";
 import * as utils from "../utils";
 
 export class MeanSquaredErrorLoss implements ILoss {
-    constructor(public readonly k = 2.5) {}
+    public k;
+
+    constructor({k = 2.5} = {}) {
+        this.k = k;
+    }
 
     loss(predicted: Matrix1D[], expected: Matrix1D[]): number {
         const rows = predicted.length;
@@ -31,7 +35,11 @@ export class MeanSquaredErrorLoss implements ILoss {
 }
 
 export class MeanAbsoluteErrorLoss implements ILoss {
-    constructor(public readonly k = 2.5) {}
+    public k;
+
+    constructor({k = 2.5} = {}) {
+        this.k = k;
+    }
 
     loss(predicted: Matrix1D[], expected: Matrix1D[]): number {
         const rows = predicted.length;
@@ -153,7 +161,7 @@ export class BinaryCrossEntropy implements ILoss {
 }
 
 export function buildLoss(loss: LossT | ILoss = 'mse') {
-    const loss_param = typeof loss === "string" ? Loss[loss] : loss
+    const loss_param = typeof loss === "string" ? LossMap[loss] : loss
     if (!loss_param) {
         throw new Error(`Unknown loss type ${loss_param}`);
     }
@@ -166,9 +174,16 @@ export function buildLoss(loss: LossT | ILoss = 'mse') {
 }
 
 export type LossT = "mse" | "mae" | "categoricalCrossEntropy" | "binaryCrossEntropy";
-export const Loss = {
+const LossMap = {
     mse: MeanSquaredErrorLoss,
     mae: MeanAbsoluteErrorLoss,
     categoricalCrossEntropy: CategoricalCrossEntropyLoss,
     binaryCrossEntropy: BinaryCrossEntropy
+}
+
+export const Loss = {
+    MeanSquaredErrorLoss,
+    MeanAbsoluteErrorLoss,
+    CategoricalCrossEntropyLoss,
+    BinaryCrossEntropy,
 }

@@ -16,7 +16,7 @@ export class SigmoidActivation implements IActivation {
 export class LeakyReluActivation implements IActivation {
     alpha: number;
 
-    constructor(alpha = 0.3) {
+    constructor({alpha = 0.3} = {}) {
         this.alpha = alpha
     }
 
@@ -30,7 +30,7 @@ export class LeakyReluActivation implements IActivation {
 }
 
 export class ReluActivation implements IActivation {
-    private leakyRelu = new LeakyReluActivation(0);
+    private leakyRelu = new LeakyReluActivation({alpha: 0});
 
     value(input: Matrix1D, dst?: Matrix1D): Matrix1D {
         return this.leakyRelu.value(input, dst);
@@ -57,7 +57,7 @@ export class LinearActivation implements IActivation {
     }
 
     moment(input: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return dst ? matrix.copy_to(input, dst) : input;
+        return matrix.matrix1d_unary_op(input, () => 1, dst);
     }
 }
 
@@ -77,7 +77,7 @@ export class SoftMaxActivation implements IActivation {
 
 export type ActivationT = "sigmoid" | "relu" | "leakyRelu" | "tanh" | "linear" | "softmax";
 
-export const Activations = {
+export const ActivationsMap = {
     sigmoid: SigmoidActivation,
     relu: ReluActivation,
     leakyRelu: LeakyReluActivation,
@@ -85,3 +85,12 @@ export const Activations = {
     linear: LinearActivation,
     softmax: SoftMaxActivation,
 };
+
+export const Activations = {
+    SigmoidActivation,
+    ReluActivation,
+    LeakyReluActivation,
+    TanhActivation,
+    LinearActivation,
+    SoftMaxActivation,
+}

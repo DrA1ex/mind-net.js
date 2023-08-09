@@ -5,5 +5,5 @@ import {GenerativeAdversarialModel} from "./gan";
 export const Models = {
     Sequential: SequentialModel,
     Chain: ChainModel,
-    GAN: GenerativeAdversarialModel
+    GenerativeAdversarial: GenerativeAdversarialModel
 }

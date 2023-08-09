@@ -16,7 +16,6 @@ import {
     MAX_ITERATION_TIME,
     NetworkParams,
     PROGRESS_DELAY,
-    TRAINING_BATCH_SIZE,
     DEFAULT_BATCH_SIZE
 } from "./gan.worker.consts"
 
@@ -34,16 +33,19 @@ let neuralNetwork = createNn();
 
 function createNn() {
     function _createOptimizer() {
-        return new NN.Optimizers.adam(learningRate, 0, 0.5);
+        return new NN.Optimizers.AdamOptimizer({lr: learningRate, beta1: 0.5});
     }
 
     function _createGenHiddenLayer(size: number) {
-        return new NN.Layers.Dense(size, "relu", "xavier");
+        return new NN.Layers.Dense(size, {activation: "relu", weightInitializer: "xavier"});
     }
 
     function _createDiscriminatorHiddenLayer(size: number) {
-        return new NN.Layers.Dense(size, new NN.Activations.leakyRelu(0.2),
-            "xavier", "zero", {dropout: .3});
+        return new NN.Layers.Dense(size, {
+            activation: new NN.Activations.LeakyReluActivation({alpha: 0.2}),
+            weightInitializer: "xavier",
+            options: {dropout: .3}
+        });
     }
 
     const [input, genSizes, output] = nnParams;
@@ -54,7 +56,7 @@ function createNn() {
     for (const size of genSizes) {
         generator.addLayer(_createGenHiddenLayer(size));
     }
-    generator.addLayer(new NN.Layers.Dense(output, "tanh"));
+    generator.addLayer(new NN.Layers.Dense(output, {activation: "tanh"}));
     generator.compile();
 
     const discriminator = new NN.Models.Sequential(_createOptimizer(), loss);
@@ -65,7 +67,7 @@ function createNn() {
     discriminator.addLayer(new NN.Layers.Dense(1));
     discriminator.compile();
 
-    return new NN.Models.GAN(generator, discriminator, _createOptimizer(), loss);
+    return new NN.Models.GenerativeAdversarial(generator, discriminator, _createOptimizer(), loss);
 }
 
 

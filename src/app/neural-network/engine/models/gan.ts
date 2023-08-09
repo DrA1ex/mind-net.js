@@ -30,15 +30,17 @@ export class GenerativeAdversarialModel {
         return this.generator.compute(input);
     }
 
-    public train(real: matrix.Matrix1D[], batchSize: number = 32) {
-        this.beforeTrain();
+    public train(real: matrix.Matrix1D[], {batchSize = 32, epochs = 1}) {
+        for (let i = 0; i < epochs; i++) {
+            this.beforeTrain();
 
-        const shuffledTrainSet = iter.shuffled(real);
-        for (const batch of iter.partition(shuffledTrainSet, batchSize)) {
-            this.trainBatch(batch);
+            const shuffledTrainSet = iter.shuffled(real);
+            for (const batch of iter.partition(shuffledTrainSet, batchSize)) {
+                this.trainBatch(batch);
+            }
+
+            this.afterTrain();
         }
-
-        this.afterTrain();
     }
 
     public trainBatch(batch: matrix.Matrix1D[]) {

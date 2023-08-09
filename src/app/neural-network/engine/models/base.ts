@@ -56,19 +56,30 @@ export abstract class ModelBase {
         return result.concat();
     }
 
-    train(input: matrix.Matrix1D[], expected: matrix.Matrix1D[], batchSize: number = 32) {
+    evaluate(input: matrix.Matrix1D[], expected: matrix.Matrix1D[]) {
+        const predicated = input.map((data) => this.compute(data));
+
+        return {
+            loss: this.loss.loss(predicated, expected),
+            accuracy: this.loss.accuracy(predicated, expected)
+        };
+    }
+
+    train(input: matrix.Matrix1D[], expected: matrix.Matrix1D[], {batchSize = 32, epochs = 1} = {}) {
         this._assertCompiled();
         this._assertInputSize2d(input);
         this._assertExpectedSize2d(expected);
 
-        this.beforeTrain();
+        for (let i = 0; i < epochs; i++) {
+            this.beforeTrain();
 
-        const shuffledTrainSet = iter.shuffle(Array.from(iter.zip(input, expected)));
-        for (const batch of iter.partition(shuffledTrainSet, batchSize)) {
-            this.trainBatch(batch);
+            const shuffledTrainSet = iter.shuffle(Array.from(iter.zip(input, expected)));
+            for (const batch of iter.partition(shuffledTrainSet, batchSize)) {
+                this.trainBatch(batch);
+            }
+
+            this.afterTrain();
         }
-
-        this.afterTrain();
     }
 
     public trainBatch(batch: Iterable<[matrix.Matrix1D, matrix.Matrix1D]>) {
@@ -77,7 +88,7 @@ export abstract class ModelBase {
         this._clearDelta();
 
         //TODO: Refactor
-        this._lossErrorCache = this._lossErrorCache ?? matrix.zero(this.layers[0].size);
+        if (this._lossErrorCache) this._lossErrorCache = matrix.zero(this.layers[this.layers.length - 1].size);
         if (!this.activations) this.activations = new Array(this.layers.length)
         if (!this.primes) this.primes = new Array(this.layers.length);
 
