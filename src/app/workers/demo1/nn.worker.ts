@@ -125,7 +125,7 @@ function trainBatch() {
     epochsFromLastMetricsUpdate += epochs;
     const metricsTime = performance.now() - lastUpdateMetrics;
     if (metricsTime >= UPDATE_METRICS_DELAY) {
-        const l = nnUtils.loss(neuralNetwork, trainingInputs, trainingOutputs);
+        const l = neuralNetwork.evaluate(trainingInputs, trainingOutputs);
         loss = l.loss;
         accuracy = l.accuracy;
         isTraining = loss >= DESIRED_LOSS && currentTrainIterations < MAX_TRAINING_ITERATION;

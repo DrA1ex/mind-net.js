@@ -1,5 +1,4 @@
 import * as matrix from "./engine/matrix";
-import {ModelBase} from "./engine/models/base";
 
 export function generateInputNoise(size: number, from = 0, to = 1): matrix.Matrix1D {
     return matrix.random_1d(size, from, to);
@@ -7,14 +6,6 @@ export function generateInputNoise(size: number, from = 0, to = 1): matrix.Matri
 
 export function pickRandomItem(trainingData: matrix.Matrix1D[]) {
     return trainingData[Math.floor(Math.random() * trainingData.length)]
-}
-
-export function loss(nn: ModelBase, input: matrix.Matrix1D[], expected: matrix.Matrix1D[]) {
-    const predicated = input.map((data) => nn.compute(data));
-    return {
-        loss: nn.loss.loss(predicated, expected),
-        accuracy: nn.loss.accuracy(predicated, expected)
-    };
 }
 
 export function absoluteAccuracy(input: matrix.Matrix1D[], expected: matrix.Matrix1D[], k = 2.5) {
