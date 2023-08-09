@@ -2,7 +2,7 @@ import {Component, ViewChild} from '@angular/core';
 
 import * as JSZip from "jszip";
 import {BinaryImageDrawerComponent} from "../../components/binary-image-drawer/binary-image-drawer.component";
-import {DEFAULT_LEARNING_RATE, DEFAULT_NN_PARAMS} from "../../workers/demo2/gan.worker.consts";
+import {DEFAULT_BATCH_SIZE, DEFAULT_LEARNING_RATE, DEFAULT_NN_PARAMS} from "../../workers/demo2/gan.worker.consts";
 
 import * as fileInteraction from "../../utils/file-interaction";
 import * as image from "../../utils/image";
@@ -24,8 +24,9 @@ export class Demo2Component {
 
     nnInputSize: number = DEFAULT_NN_PARAMS[0];
     nnHiddenLayers: string = DEFAULT_NN_PARAMS[1].join(" ");
-    nnGenOutSize: number = DEFAULT_NN_PARAMS[2]
+    nnGenOutSize: number = DEFAULT_NN_PARAMS[2];
     learningRate: number = DEFAULT_LEARNING_RATE;
+    batchSize: number = DEFAULT_BATCH_SIZE;
 
     currentIteration: number = 0;
     currentBatch: number = 0;
@@ -51,6 +52,7 @@ export class Demo2Component {
                     this.currentBatch = data.batchNo ?? this.currentBatch;
                     this.totalBatches = data.batchCount ?? this.totalBatches;
                     this.speed = data.speed ?? this.speed;
+                    this.nnGenOutSize = data.nnParams[2] ?? this.nnGenOutSize;
                     break;
             }
         }
@@ -63,7 +65,12 @@ export class Demo2Component {
             +this.nnGenOutSize
         ];
 
-        this.nnWorker.postMessage({type: "refresh", learningRate: this.learningRate, layers: config});
+        this.nnWorker.postMessage({
+            type: "refresh",
+            learningRate: this.learningRate,
+            batchSize: this.batchSize,
+            layers: config,
+        });
     }
 
     async loadData() {

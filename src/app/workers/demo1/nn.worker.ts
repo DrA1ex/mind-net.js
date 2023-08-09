@@ -38,14 +38,14 @@ let lastDraw = 0;
 let lastUpdateMetrics = 0;
 
 function create_nn(sizes: number[], lr: number) {
-    const nn = new NN.Models.Sequential(new NN.Optimizers.adam(lr, 5e-5), "categoricalCrossEntropy");
+    const nn = new NN.Models.Sequential(new NN.Optimizers.adam(lr, 5e-5, 0.5), "categoricalCrossEntropy");
     nn.addLayer(new NN.Layers.Dense(2));
     for (const size of sizes) {
         nn.addLayer(new NN.Layers.Dense(size, "relu",
-            "xavier", "zero", {
+            "he", "zero", {
                 dropout: 0.1,
-                l2WeightRegularization: 5e-4,
-                l2BiasRegularization: 5e-4,
+                l2WeightRegularization: 5e-5,
+                l2BiasRegularization: 5e-5,
             }));
     }
 

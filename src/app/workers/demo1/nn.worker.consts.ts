@@ -11,7 +11,7 @@ export const UPDATE_METRICS_DELAY = DRAWING_DELAY * 10;
 export const MAX_ITERATION_TIME = DRAWING_DELAY / 4;
 
 export const TRAINING_EPOCHS_PER_CALL = 10;
-export const MAX_TRAINING_ITERATION = 1e6;
+export const MAX_TRAINING_ITERATION = 10000;
 
 export const DESIRED_LOSS = 1e-4;
 

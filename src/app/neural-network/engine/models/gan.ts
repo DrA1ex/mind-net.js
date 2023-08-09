@@ -54,8 +54,9 @@ export class GenerativeAdversarialModel {
             )
         );
 
+        const trainNoise = matrix.random_normal_2d(batch.length, this.generator.layers[0].size, -1, 1);
         const ones = matrix.fill_value([1], batch.length);
-        this.ganChain.trainBatch(iter.zip_iter(noise, ones));
+        this.ganChain.trainBatch(iter.zip_iter(trainNoise, ones));
     }
 
     public beforeTrain() {

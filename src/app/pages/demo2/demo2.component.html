@@ -1,28 +1,31 @@
 <div class="container">
     <div class="row mt-2">
-        <div class="col-xl-6 col-lg-8 col-md-12 mb-2">
+        <div class="grid col-xl-6 col-lg-6 col-md-12">
             <div class="input-group">
                 <span class="input-group-text">In</span>
                 <input [(ngModel)]="nnInputSize" class="form-control" type="text">
                 <span class="input-group-text">Hidden</span>
                 <input [(ngModel)]="nnHiddenLayers" class="form-control" type="text">
                 <span class="input-group-text">Out</span>
-                <input [(ngModel)]="nnGenOutSize" class="form-control" type="text">
+                <input [(ngModel)]="nnGenOutSize" class="form-control" type="text" disabled>
             </div>
         </div>
 
-        <div class="col-xl-3 col-lg-3 col-md-3 col-6 mb-2">
+        <div class="col-xl-4 col-lg-4 col-md-6 col-8 mb-2">
             <div class="input-group">
+                <span class="input-group-text">Batch Size</span>
+                <input [(ngModel)]="batchSize" class="form-control" type="text">
                 <span class="input-group-text">L. Rate</span>
-                <input [(ngModel)]="learningRate" class="form-control" min="0.0001" step="0.01" type="number">
+                <input [(ngModel)]="learningRate" class="form-control" min="0.00001" type="text">
             </div>
         </div>
 
-        <div class="col-lg-auto col-md-2 col-4 mb-2">
+        <div class="col-lg-2 col-md-4 col-4 mb-2">
             <button class="btn btn-primary fa fa-ignore-lh fa-sync me-2" title="Restart training"
                     (click)="refresh()"></button>
             <div class="btn-group">
-                <button class="btn btn-secondary fa fa-ignore-lh fa-file-upload dropdown-toggle" title="Load training data"
+                <button class="btn btn-secondary fa fa-ignore-lh fa-file-upload dropdown-toggle"
+                        title="Load training data"
                         data-bs-toggle="dropdown" aria-expanded="false" [disabled]="fileLoading">
                     &nbsp;
                 </button>
@@ -31,9 +34,14 @@
                     <li>
                         <hr class="dropdown-divider">
                     </li>
-                    <li><a class="dropdown-item pointer" (click)="loadPredefined('check-mark-10-16.json')">check-mark-10-16</a></li>
-                    <li><a class="dropdown-item pointer" (click)="loadPredefined('mnist-500-16.json')">mnist-500-16</a></li>
-                    <li><a class="dropdown-item pointer" (click)="loadPredefined('mnist-10000-16.json')">mnist-10000-16</a></li>
+                    <li><a class="dropdown-item pointer" (click)="loadPredefined('check-mark-10-16.json')">check-mark-10-16</a>
+                    </li>
+                    <li><a class="dropdown-item pointer" (click)="loadPredefined('mnist-500-16.json')">mnist-500-16</a>
+                    </li>
+                    <li><a class="dropdown-item pointer" (click)="loadPredefined('fashion-mnist-500-28.json')">fashion-mnist-500-28</a>
+                    </li>
+                    <li><a class="dropdown-item pointer"
+                           (click)="loadPredefined('mnist-10000-16.json')">mnist-10000-16</a></li>
                 </ul>
             </div>
         </div>
@@ -55,7 +63,8 @@
         </div>
     </div>
     <div class="row" *ngIf="currentIteration > 0 || currentBatch > 0">
-        <p>Training... Epoch: {{currentIteration}}. Batch: {{currentBatch}} from {{totalBatches}} ({{speed.toFixed(2)}} op/s)</p>
+        <p>Training... Epoch: {{currentIteration}}. Batch: {{currentBatch}} from {{totalBatches}} ({{speed.toFixed(2)}}
+            op/s)</p>
     </div>
 </div>
 
@@ -63,7 +72,8 @@
     <div class="position-absolute top-50 start-50 translate-middle">
         <h3 class="">Loading training data...</h3>
         <div class="progress" style="height: 20px">
-            <div class="progress-bar" role="progressbar" [style]="{'width': (fileProcessingCurrent / fileProcessingTotal) * 100 + '%'}">
+            <div class="progress-bar" role="progressbar"
+                 [style]="{'width': (fileProcessingCurrent / fileProcessingTotal) * 100 + '%'}">
                 {{fileProcessingCurrent}}/{{fileProcessingTotal}}
             </div>
         </div>

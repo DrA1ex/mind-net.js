@@ -23,7 +23,6 @@ import {
 let lastDrawTime = 0;
 let currentIteration = 0;
 let trainingData: number[][];
-let inputNoise: number[][][];
 let batchedTrainingData: number[][][];
 let batchSize = DEFAULT_BATCH_SIZE;
 let batchCount = 0;
@@ -38,9 +37,13 @@ function createNn() {
         return new NN.Optimizers.adam(learningRate, 0, 0.5);
     }
 
-    function _createHiddenLayer(size: number) {
+    function _createGenHiddenLayer(size: number) {
+        return new NN.Layers.Dense(size, "relu", "xavier");
+    }
+
+    function _createDiscriminatorHiddenLayer(size: number) {
         return new NN.Layers.Dense(size, new NN.Activations.leakyRelu(0.2),
-            "he", "zero", {dropout: .3});
+            "xavier", "zero", {dropout: .3});
     }
 
     const [input, genSizes, output] = nnParams;
@@ -49,7 +52,7 @@ function createNn() {
     const generator = new NN.Models.Sequential(_createOptimizer(), loss);
     generator.addLayer(new NN.Layers.Dense(input));
     for (const size of genSizes) {
-        generator.addLayer(_createHiddenLayer(size));
+        generator.addLayer(_createGenHiddenLayer(size));
     }
     generator.addLayer(new NN.Layers.Dense(output, "tanh"));
     generator.compile();
@@ -57,7 +60,7 @@ function createNn() {
     const discriminator = new NN.Models.Sequential(_createOptimizer(), loss);
     discriminator.addLayer(new NN.Layers.Dense(output));
     for (const size of iter.reverse(genSizes)) {
-        discriminator.addLayer(_createHiddenLayer(size));
+        discriminator.addLayer(_createDiscriminatorHiddenLayer(size));
     }
     discriminator.addLayer(new NN.Layers.Dense(1));
     discriminator.compile();
@@ -72,18 +75,12 @@ addEventListener('message', ({data}) => {
             nnParams = data.params;
         }
 
+        nnParams[2] = trainingData[0].length;
+
         neuralNetwork = createNn();
 
         currentIteration = 0;
         batchCount = Math.ceil(trainingData.length / batchSize);
-
-        inputNoise = Array.from(
-            iter.map(iter.range(0, DRAW_GRID_DIMENSION), () =>
-                Array.from(iter.map(iter.range(0, DRAW_GRID_DIMENSION),
-                    () => Matrix.random_normal_1d(nnParams[0]))
-                )
-            )
-        );
 
         if (trainingData && trainingData.length > 0) {
             draw();
@@ -94,17 +91,22 @@ addEventListener('message', ({data}) => {
             epoch: 1,
             batchNo: 1,
             batchCount,
-            speed: 0
+            speed: 0,
+            nnParams
         });
     }
 
     switch (data.type) {
         case "refresh":
-            if (data.learningRate) {
+            if (data.learningRate > 0) {
                 learningRate = data.learningRate;
             }
             if (data?.layers?.length === 3) {
                 nnParams = data.layers;
+            }
+
+            if (data?.batchSize > 0) {
+                batchSize = data.batchSize;
             }
 
             _refresh();
@@ -161,7 +163,9 @@ function trainBatch() {
             progressLastTime = performance.now();
         }
 
-        if (++currentIteration % TRAINING_BATCH_SIZE === 0 && (performance.now() - startTime) > MAX_ITERATION_TIME) {
+        ++currentIteration;
+
+        if ((performance.now() - startTime) > MAX_ITERATION_TIME) {
             break;
         }
     }
@@ -189,9 +193,8 @@ function draw() {
     const dataSamples = drawGridSample(DRAW_GRID_DIMENSION, size,
         () => nnUtils.pickRandomItem(trainingData));
 
-    const genSamples = drawGridSample(DRAW_GRID_DIMENSION, size, (i, j) => {
-        const inputNoise = nnUtils.generateInputNoise(nnParams[0]);
-        return neuralNetwork.compute(inputNoise);
+    const genSamples = drawGridSample(DRAW_GRID_DIMENSION, size, () => {
+        return neuralNetwork.compute(Matrix.random_normal_1d(nnParams[0]));
     })
 
     postMessage({

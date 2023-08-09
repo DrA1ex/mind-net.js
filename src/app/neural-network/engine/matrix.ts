@@ -210,7 +210,7 @@ export function sum(a: Matrix1D): number {
     return sum;
 }
 
-export function transform(m: Matrix2D): Matrix2D {
+export function transpose(m: Matrix2D): Matrix2D {
     if (m.length === 0) {
         return [];
     }
