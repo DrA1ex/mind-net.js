@@ -1,5 +1,7 @@
 /// <reference lib="webworker" />
 
+import {Color, MultiPlotChart, PlotAxisScale, PlotSeriesOverflow} from "text-graph.js";
+
 import * as iter from "../../neural-network/engine/iter";
 import * as color from "../../utils/color";
 import * as nnUtils from "../../neural-network/utils";
@@ -9,14 +11,14 @@ import {LossT} from "../../neural-network/engine/loss";
 import {
     COLOR_A_BIN,
     COLOR_B_BIN,
+    DEFAULT_BATCH_SIZE,
     DEFAULT_LEARNING_RATE,
     DEFAULT_NN_PARAMS,
     DRAW_GRID_DIMENSION,
     DRAWING_DELAY,
     MAX_ITERATION_TIME,
     NetworkParams,
-    PROGRESS_DELAY,
-    DEFAULT_BATCH_SIZE
+    PROGRESS_DELAY
 } from "./gan.worker.consts"
 
 let lastDrawTime = 0;
@@ -26,14 +28,21 @@ let batchedTrainingData: number[][][];
 let batchSize = DEFAULT_BATCH_SIZE;
 let batchCount = 0;
 
+let testData: number[][];
+let testDataTrue: number[][];
+let testNoise: number[][];
+let testNoiseTrue: number[][];
+
 let nnParams: NetworkParams = DEFAULT_NN_PARAMS;
 let learningRate = DEFAULT_LEARNING_RATE;
 
 let neuralNetwork = createNn();
 
+let dashboard: MultiPlotChart;
+
 function createNn() {
     function _createOptimizer() {
-        return new NN.Optimizers.AdamOptimizer({lr: learningRate, beta1: 0.5});
+        return new NN.Optimizers.AdamOptimizer({lr: learningRate, decay: 5e-5, beta1: 0.5});
     }
 
     function _createGenHiddenLayer(size: number) {
@@ -70,6 +79,33 @@ function createNn() {
     return new NN.Models.GenerativeAdversarial(generator, discriminator, _createOptimizer(), loss);
 }
 
+function createDashboard() {
+    const chart = new MultiPlotChart();
+
+    // Loss
+    chart.addPlot({
+        xOffset: 0, yOffset: 0,
+        width: 100, height: 21
+    }, {title: "Loss", axisScale: PlotAxisScale.log});
+    chart.addPlotSeries(0, {color: Color.blue});
+    chart.addPlotSeries(0, {color: Color.green});
+
+    // Learning rate
+    chart.addPlot({
+        xOffset: chart.plots[0].width + 1, yOffset: 0,
+        width: 40, height: 10,
+    }, {title: "L. rate"});
+    chart.addPlotSeries(1, {color: Color.yellow});
+
+    // Speed
+    chart.addPlot({
+        xOffset: chart.plots[0].width + 1, yOffset: chart.plots[1].height + 1,
+        width: chart.plots[1].width, height: 10,
+    }, {title: "Speed"});
+    chart.addPlotSeries(2, {color: Color.red, overflow: PlotSeriesOverflow.clamp});
+
+    return chart;
+}
 
 addEventListener('message', ({data}) => {
     function _refresh() {
@@ -80,6 +116,7 @@ addEventListener('message', ({data}) => {
         nnParams[2] = trainingData[0].length;
 
         neuralNetwork = createNn();
+        dashboard = createDashboard();
 
         currentIteration = 0;
         batchCount = Math.ceil(trainingData.length / batchSize);
@@ -122,6 +159,11 @@ addEventListener('message', ({data}) => {
                 }
             }
 
+            testData = Array.from(iter.take(iter.shuffled(trainingData), 100));
+            testDataTrue = Matrix.one_2d(testData.length, 1);
+            testNoise = Matrix.random_normal_2d(100, nnParams[0], -1, 1);
+            testNoiseTrue = Matrix.one_2d(testNoise.length, 1);
+
             _refresh();
             break;
     }
@@ -152,14 +194,27 @@ function trainBatch() {
             const elapsed = performance.now() - progressLastTime;
             const batchTime = elapsed / batches;
             batchesCntToCheck = PROGRESS_DELAY / batchTime;
+            const speed = batchCount * 1000 / batchTime;
 
             postMessage({
                 type: "progress",
                 epoch: Math.floor(currentIteration / batchCount) + 1,
                 batchNo: currentIteration % batchCount + 1,
                 batchCount,
-                speed: batchCount * 1000 / batchTime
+                speed
             });
+
+            const {loss: noiseLoss} = neuralNetwork.ganChain.evaluate(testNoise, testNoiseTrue);
+            const {loss: realLoss} = neuralNetwork.discriminator.evaluate(testData, testDataTrue);
+
+            const loss = (noiseLoss + realLoss) / 2;
+            dashboard.plots[0].title = `Loss: ${loss.toFixed(6)}`;
+            dashboard.addSeriesEntry(0, 0, noiseLoss);
+            dashboard.addSeriesEntry(0, 1, realLoss);
+
+            dashboard.plots[1].title = `L. rate: ${neuralNetwork.generator.optimizer.lr.toFixed(6)}`;
+            dashboard.addSeriesEntry(1, 0, neuralNetwork.generator.optimizer.lr);
+            dashboard.addSeriesEntry(2, 0, speed);
 
             batches = 0;
             progressLastTime = performance.now();
@@ -183,7 +238,10 @@ function trainBatch() {
         draw();
 
         lastDrawTime = t;
-        console.log(`*** DRAW took ${(performance.now() - t).toFixed(2)}ms`)
+
+        const chart = dashboard.paint();
+        console.clear();
+        console.log(chart)
     }
 }
 

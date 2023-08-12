@@ -57,6 +57,10 @@ export abstract class ModelBase {
     }
 
     evaluate(input: matrix.Matrix1D[], expected: matrix.Matrix1D[]) {
+        this._assertInputSize2d(input);
+        this._assertExpectedSize2d(expected);
+        this._assertInputOutputSize(input, expected);
+
         const predicated = input.map((data) => this.compute(data));
 
         return {
@@ -69,6 +73,7 @@ export abstract class ModelBase {
         this._assertCompiled();
         this._assertInputSize2d(input);
         this._assertExpectedSize2d(expected);
+        this._assertInputOutputSize(input, expected);
 
         for (let i = 0; i < epochs; i++) {
             this.beforeTrain();
@@ -240,6 +245,12 @@ export abstract class ModelBase {
         const outSize = this.layers[this.layers.length - 1].size;
         if (expected[0].length !== outSize) {
             throw new Error(`Expected matrix has different size. Expected size ${outSize}, got ${expected[0].length}`);
+        }
+    }
+
+    protected _assertInputOutputSize(input: matrix.Matrix2D, expected: matrix.Matrix2D) {
+        if (input.length !== expected.length) {
+            throw new Error(`Inconsistent data length: input length ${input.length} != expected length ${expected.length}`)
         }
     }
 }

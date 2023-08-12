@@ -52,7 +52,7 @@ export class Demo2Component {
                     this.currentBatch = data.batchNo ?? this.currentBatch;
                     this.totalBatches = data.batchCount ?? this.totalBatches;
                     this.speed = data.speed ?? this.speed;
-                    this.nnGenOutSize = data.nnParams[2] ?? this.nnGenOutSize;
+                    this.nnGenOutSize = data.nnParams && data.nnParams[2] || this.nnGenOutSize;
                     break;
             }
         }

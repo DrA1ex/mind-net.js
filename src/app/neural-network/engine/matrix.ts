@@ -172,6 +172,10 @@ export function one(length: number): Matrix1D {
     return fill_value(1, length);
 }
 
+export function one_2d(rows: number, cols: number): Matrix2D {
+    return fill(() => one(cols), rows);
+}
+
 export function random_1d(length: number, from: number = 0, to: number = 1): Matrix1D {
     const dist = to - from;
     return fill(() => from + Math.random() * dist, length);
