@@ -20,9 +20,10 @@ const TrainingDashboardOptionsDefaults = {
     height: 20
 }
 
-enum PlotId {loss = 0, accuracy, lr}
 
 export class TrainingDashboard {
+    public readonly PlotId = {loss: 0, accuracy: 1, lr: 2}
+
     private _dashboard: MultiPlotChart;
     private set dashboard(value) {this._dashboard = value;}
 
@@ -44,14 +45,14 @@ export class TrainingDashboard {
 
         this.dashboard.title = `Epoch: ${this.model.epoch}`;
 
-        this.dashboard.plots[PlotId.loss].title = `Loss: ${loss.toFixed(6)}`;
-        this.dashboard.addSeriesEntry(PlotId.loss, 0, loss);
+        this.dashboard.plots[this.PlotId.loss].title = `Loss: ${loss.toFixed(6)}`;
+        this.dashboard.addSeriesEntry(this.PlotId.loss, 0, loss);
 
-        this.dashboard.plots[PlotId.lr].title = `L. Rate: ${this.model.optimizer.lr.toFixed(6)}`;
-        this.dashboard.addSeriesEntry(PlotId.lr, 0, this.model.optimizer.lr);
+        this.dashboard.plots[this.PlotId.lr].title = `L. Rate: ${this.model.optimizer.lr.toFixed(6)}`;
+        this.dashboard.addSeriesEntry(this.PlotId.lr, 0, this.model.optimizer.lr);
 
-        this.dashboard.plots[PlotId.accuracy].title = `Accuracy: ${accuracy.toFixed(2)}`;
-        this.dashboard.addSeriesEntry(PlotId.accuracy, 0, accuracy);
+        this.dashboard.plots[this.PlotId.accuracy].title = `Accuracy: ${accuracy.toFixed(2)}`;
+        this.dashboard.addSeriesEntry(this.PlotId.accuracy, 0, accuracy);
     }
 
     public chart(): string {
