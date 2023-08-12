@@ -24,7 +24,7 @@
     "jszip": "^3.8.0",
     "pngjs": "^6.0.0",
     "rxjs": "~6.6.0",
-    "text-graph.js": "^1.0.1",
+    "text-graph.js": "^1.0.3",
     "tslib": "^2.6.1",
     "zone.js": "~0.13.1"
   },

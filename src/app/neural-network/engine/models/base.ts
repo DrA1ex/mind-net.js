@@ -221,6 +221,10 @@ export abstract class ModelBase {
     }
 
     protected _assertInputSize(input: matrix.Matrix1D) {
+        if (!input) {
+            throw new Error("Input data missing or in wrong format");
+        }
+
         const inSize = this.layers[0].size;
         if (input.length !== inSize) {
             throw new Error(`Input matrix has different size. Expected size ${inSize}, got ${input.length}`);
@@ -228,6 +232,10 @@ export abstract class ModelBase {
     }
 
     protected _assertInputSize2d(input: matrix.Matrix2D) {
+        if (!input || !input[0]) {
+            throw new Error("Input data missing or in wrong format");
+        }
+
         const inSize = this.layers[0].size;
         if (input[0].length !== inSize) {
             throw new Error(`Input matrix has different size. Expected size ${inSize}, got ${input[0].length}`);
@@ -235,6 +243,10 @@ export abstract class ModelBase {
     }
 
     protected _assertExpectedSize(expected: matrix.Matrix1D) {
+        if (!expected) {
+            throw new Error("Expected data missing or in wrong format");
+        }
+
         const outSize = this.layers[this.layers.length - 1].size;
         if (expected.length !== outSize) {
             throw new Error(`Expected matrix has different size. Expected size ${outSize}, got ${expected.length}`);
@@ -242,6 +254,10 @@ export abstract class ModelBase {
     }
 
     protected _assertExpectedSize2d(expected: matrix.Matrix2D) {
+        if (!expected || !expected[0]) {
+            throw new Error("Expected data missing or in wrong format");
+        }
+
         const outSize = this.layers[this.layers.length - 1].size;
         if (expected[0].length !== outSize) {
             throw new Error(`Expected matrix has different size. Expected size ${outSize}, got ${expected[0].length}`);

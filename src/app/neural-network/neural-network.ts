@@ -30,3 +30,6 @@ export {
     BinaryCrossEntropy, CategoricalCrossEntropyLoss, MeanSquaredErrorLoss, MeanAbsoluteErrorLoss
 } from "./engine/loss"
 
+export {
+    TrainingDashboard
+} from "./chart"

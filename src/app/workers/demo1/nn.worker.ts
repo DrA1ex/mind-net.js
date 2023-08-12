@@ -22,7 +22,7 @@ import {
     UPDATE_METRICS_DELAY,
 } from "./nn.worker.consts"
 
-import NN from "../../neural-network/neural-network";
+import NN, {TrainingDashboard} from "../../neural-network/neural-network";
 
 let neuralNetwork = create_nn(DEFAULT_NN_LAYERS, DEFAULT_LEARNING_RATE);
 let points: Point[] = [];
@@ -64,37 +64,7 @@ function create_nn(sizes: number[], lr: number) {
 }
 
 function createDashboard() {
-    const chart = new MultiPlotChart();
-
-    // Loss
-    chart.addPlot({
-        xOffset: 0, yOffset: 0,
-        width: 100, height: 20
-    }, {title: "Loss", axisScale: PlotAxisScale.log});
-    chart.addPlotSeries(0, {color: Color.blue});
-
-    // Accuracy
-    chart.addPlot({
-        xOffset: chart.plots[0].width + 1, yOffset: 0,
-        width: 40, height: 6,
-    }, {title: "Accuracy"});
-    chart.addPlotSeries(1, {color: Color.red});
-
-    // Learning rate
-    chart.addPlot({
-        xOffset: chart.plots[0].width + 1, yOffset: chart.plots[1].height + 1,
-        width: chart.plots[1].width, height: 6,
-    }, {title: "L. Rate"});
-    chart.addPlotSeries(2, {color: Color.yellow});
-
-    // Speed
-    chart.addPlot({
-        xOffset: chart.plots[0].width + 1, yOffset: (chart.plots[1].height + 1) * 2,
-        width: chart.plots[1].width, height: 6,
-    }, {title: "Speed", axisScale: PlotAxisScale.logInverted});
-    chart.addPlotSeries(3, {color: Color.cyan});
-
-    return chart;
+    return new TrainingDashboard(neuralNetwork, trainingInputs, trainingOutputs);
 }
 
 addEventListener('message', ({data}) => {
@@ -115,6 +85,7 @@ addEventListener('message', ({data}) => {
             points = data.points as Point[];
             trainingInputs = points.map(point => [point.x, point.y]);
             trainingOutputs = points.map(point => point.type === 0 ? [1, 0] : [0, 1]);
+            dashboard = createDashboard();
             currentTrainIterations = 0;
             epochsFromLastMetricsUpdate = 0;
             isTraining = true;
@@ -168,22 +139,8 @@ function trainBatch() {
         accuracy = l.accuracy;
         isTraining = loss >= DESIRED_LOSS && currentTrainIterations < MAX_TRAINING_ITERATION;
 
-        const speed = points.length * epochsFromLastMetricsUpdate / metricsTime;
-
-        dashboard.plots[0].title = `Loss: ${loss.toFixed(6)}`
-        dashboard.addSeriesEntry(0, 0, loss);
-
-        dashboard.plots[1].title = `Accuracy: ${accuracy.toFixed(2)}`
-        dashboard.addSeriesEntry(1, 0, accuracy);
-
-        dashboard.plots[2].title = `L. Rate: ${neuralNetwork.optimizer.lr.toFixed(6)}`
-        dashboard.addSeriesEntry(2, 0, neuralNetwork.optimizer.lr);
-
-        dashboard.addSeriesEntry(3, 0, speed);
-        const chart = dashboard.paint();
-
-        console.clear();
-        console.log(chart)
+        dashboard.update();
+        dashboard.print();
 
         epochsFromLastMetricsUpdate = 0;
         lastUpdateMetrics = performance.now();
