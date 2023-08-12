@@ -109,6 +109,10 @@ console.log(`sqrt(${x.toFixed(2)} ** 2 + ${y.toFixed(2)} ** 2) = ${result.toFixe
 
 <img width="800" alt="star" src="https://user-images.githubusercontent.com/1194059/128631442-0a0350df-d5b1-4ac2-b3d0-030e341f68a3.png">
 
+#### Training dashboard (browser console)
+
+<img width="800" src="https://github.com/DrA1ex/text-graph.js/assets/1194059/5b5da127-4a32-4f88-9759-1bb796dda928">
+
 #### Controls:
 - To place **T1** point do _Left click_ or select **T1** switch
 - To place **T2** point do _Right click_ or _Option(Alt) + Left click_ or select **T2** switch
