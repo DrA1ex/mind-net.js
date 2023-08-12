@@ -97,6 +97,48 @@ const [result] = network.compute([x, y]);
 console.log(`sqrt(${x.toFixed(2)} ** 2 + ${y.toFixed(2)} ** 2) = ${result.toFixed(2)} (real: ${real.toFixed(2)})`);
 ```
 
+### Configuration of Training dashboard
+```javascript
+import {SequentialModel, AdamOptimizer, Dense, TrainingDashboard, Matrix} from "mind-net.js";
+
+// Create and configure model
+const network = new SequentialModel(new AdamOptimizer({lr: 0.0005, decay: 1e-3, beta: 0.5}));
+network.addLayer(new Dense(2));
+network.addLayer(new Dense(64, {activation: "leakyRelu"}));
+network.addLayer(new Dense(64, {activation: "leakyRelu"}));
+network.addLayer(new Dense(1, {activation: "linear"}));
+network.compile();
+
+// Define the input and expected output data
+const input = Matrix.fill(() => [Math.random(), Math.random()], 500);
+const expected = input.map(([x, y]) => [Math.cos(Math.PI * x) + Math.sin(-Math.PI * y)]);
+
+// Define the test data
+const tInput = input.splice(0, Math.floor(input.length / 10));
+const tExpected = expected.splice(0, tInput.length);
+
+// Optionally configure dashboard size
+const dashboardOptions = {width: 100, height: 20};
+
+// Create a training dashboard to monitor the training progress
+const dashboard = new TrainingDashboard(network, tInput, tExpected, dashboardOptions);
+
+// Train the network
+for (let i = 0; i <= 150; i++) {
+    // Train over data
+    network.train(input, expected);
+
+    // Update the dashboard
+    dashboard.update();
+
+    // Print the training metrics every 5 iterations
+    if (i % 5 === 0) dashboard.print();
+}
+```
+
+<img width="800" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/b0f85f39-f112-4246-933e-6d87c53c3cf0">
+
+
 ## Examples
 - Seuqential Network @ [implementation](src/app/neural-network/engine/models/sequential.ts)
 - Generative-adversarial Network @ [implementation](src/app/neural-network/engine/models/gan.ts)
@@ -111,7 +153,7 @@ console.log(`sqrt(${x.toFixed(2)} ** 2 + ${y.toFixed(2)} ** 2) = ${result.toFixe
 
 #### Training dashboard (browser console)
 
-<img width="800" src="https://github.com/DrA1ex/text-graph.js/assets/1194059/5b5da127-4a32-4f88-9759-1bb796dda928">
+<img width="800" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/3c2dabab-a609-4b09-95f0-fc06cf456cfd">
 
 #### Controls:
 - To place **T1** point do _Left click_ or select **T1** switch
