@@ -97,6 +97,25 @@ const [result] = network.compute([x, y]);
 console.log(`sqrt(${x.toFixed(2)} ** 2 + ${y.toFixed(2)} ** 2) = ${result.toFixed(2)} (real: ${real.toFixed(2)})`);
 ```
 
+### Saving/Loading model
+```javascript
+import {SequentialModel, Dense, ModelSerialization} from "mind-net.js";
+
+// Create and configure model
+const network = new SequentialModel();
+network.addLayer(new Dense(2));
+network.addLayer(new Dense(64, {activation: "leakyRelu"}));
+network.addLayer(new Dense(1, {activation: "linear"}));
+network.compile();
+
+// Save model
+const savedModel = ModelSerialization.save(network);
+console.log(savedModel);
+
+// Load model
+const loadedModel = ModelSerialization.load(savedModel);
+```
+
 ### Configuration of Training dashboard
 ```javascript
 import {SequentialModel, AdamOptimizer, Dense, TrainingDashboard, Matrix} from "mind-net.js";
