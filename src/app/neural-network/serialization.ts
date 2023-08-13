@@ -1,5 +1,15 @@
 import {IActivation, ILayer, ILoss, IModel, IOptimizer} from "./engine/base";
-import {Activations, Initializers, Layers, Loss, Matrix, Models, Optimizers} from "./neural-network";
+import {
+    Activations,
+    Initializers,
+    Layers,
+    Loss,
+    Matrix,
+    Models,
+    Optimizers,
+    SequentialModel,
+    GenerativeAdversarialModel,
+} from "./neural-network";
 
 const SerializationConfig = new Map<any, string[]>;
 
@@ -223,5 +233,49 @@ export class ModelSerialization {
         }
 
         return params;
+    }
+}
+
+type GanSerialized = {
+    generator: ModelSerialized,
+    discriminator: ModelSerialized,
+    epoch: number,
+    optimizer: SerializationEntry<typeof Optimizers>,
+    loss: SerializationEntry<typeof Loss>,
+}
+
+export class GanSerialization {
+    public static save(gan: GenerativeAdversarialModel) {
+        return {
+            generator: ModelSerialization.save(gan.generator),
+            discriminator: ModelSerialization.save(gan.discriminator),
+
+            epoch: gan.ganChain.epoch,
+            optimizer: ModelSerialization.saveOptimizer(gan.ganChain.optimizer),
+            loss: ModelSerialization.saveLoss(gan.ganChain.loss),
+        }
+    }
+
+    public static load(data: GanSerialized): GenerativeAdversarialModel {
+        const generator = ModelSerialization.load(data.generator);
+        const discriminator = ModelSerialization.load(data.discriminator);
+
+        const optimizerT = Optimizers[data.optimizer.key];
+        if (!optimizerT) throw new Error(`Invalid optimizer: ${data.optimizer.key}`);
+
+        const lossT = Loss[data.loss.key];
+        if (!lossT) throw new Error(`Invalid loss: ${data.loss.key}`);
+
+        const model = new GenerativeAdversarialModel(
+            generator as SequentialModel,
+            discriminator as SequentialModel,
+            new optimizerT(data.optimizer.params),
+            new lossT(data.loss.params),
+        );
+
+        // @ts-ignore
+        model.ganChain._epoch = data.epoch;
+
+        return model;
     }
 }
