@@ -76,7 +76,7 @@ function createNn() {
     discriminator.addLayer(new NN.Layers.Dense(1));
     discriminator.compile();
 
-    return new NN.Models.GenerativeAdversarial(generator, discriminator, _createOptimizer(), loss);
+    return new NN.ComplexModels.GenerativeAdversarial(generator, discriminator, _createOptimizer(), loss);
 }
 
 function createDashboard() {

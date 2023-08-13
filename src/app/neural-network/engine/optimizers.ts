@@ -1,17 +1,20 @@
-import * as matrix from "./matrix";
-import {Matrix1D, Matrix2D} from "./matrix";
+import {Param} from "../serialization";
 import {ILayer, IOptimizer} from "./base";
+import {Matrix1D, Matrix2D} from "./matrix";
+import * as matrix from "./matrix";
 
 export abstract class OptimizerBase implements IOptimizer {
     abstract readonly description: string;
+
+    @Param()
     readonly decay: number;
+
+    @Param()
+    get lr(): number {return this._lr};
 
     private _cache = new Map<ILayer, { tmp1: Matrix1D }>();
     private readonly _initialLearningRate: number;
     private _lr: number;
-
-
-    get lr(): number {return this._lr};
 
 
     protected constructor(lr: number, decay: number) {
@@ -139,6 +142,8 @@ type SgdMomentumCacheT = { mWeights: Matrix2D, mBiases: Matrix1D };
 
 export class SgdMomentumOptimizer extends PreAveragedOptimizerBase {
     readonly description: string;
+
+    @Param()
     beta: number;
 
     private cache = new Map<ILayer, SgdMomentumCacheT>();
@@ -184,6 +189,8 @@ type NesterovCacheT = { tmp1: Matrix1D, nextGrad: Matrix1D, momentum: Matrix1D }
 
 export class SgdNesterovOptimizer extends OptimizerBase {
     readonly description: string;
+
+    @Param()
     beta: number;
 
     private cache = new Map<ILayer, NesterovCacheT>();
@@ -237,7 +244,11 @@ type RMSPropCacheT = { mWeights: Matrix2D, mBiases: Matrix1D };
 
 export class RMSPropOptimizer extends PreAveragedOptimizerBase {
     readonly description: string;
+
+    @Param()
     beta: number;
+
+    @Param()
     eps: number
 
     private readonly cache = new Map<ILayer, RMSPropCacheT>();
@@ -300,8 +311,14 @@ type AdamCacheT = {
 
 export class AdamOptimizer extends PreAveragedOptimizerBase {
     readonly description: string;
+
+    @Param()
     beta1: number;
+
+    @Param()
     beta2: number;
+
+    @Param()
     eps: number;
 
     private cache = new Map<ILayer, AdamCacheT>();

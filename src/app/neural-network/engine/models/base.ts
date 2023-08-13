@@ -1,7 +1,7 @@
 import * as iter from "../iter";
 import * as matrix from "../matrix";
 
-import {ILayer, IOptimizer, ILoss} from "../base";
+import {ILayer, IOptimizer, ILoss, IModel, ModelTrainOptionsT} from "../base";
 import {buildLoss, LossT} from "../loss";
 import {buildOptimizer, OptimizerT} from "../optimizers";
 
@@ -16,7 +16,7 @@ export type LayerCache = {
     gradientCache: matrix.Matrix1D,
 };
 
-export abstract class ModelBase {
+export abstract class ModelBase implements IModel {
     protected _epoch: number = 0;
 
     protected compiled: boolean = false;
@@ -69,7 +69,10 @@ export abstract class ModelBase {
         };
     }
 
-    train(input: matrix.Matrix1D[], expected: matrix.Matrix1D[], {batchSize = 32, epochs = 1} = {}) {
+    train(
+        input: matrix.Matrix1D[], expected: matrix.Matrix1D[],
+        {batchSize = 32, epochs = 1}: Partial<ModelTrainOptionsT> = {}
+    ) {
         this._assertCompiled();
         this._assertInputSize2d(input);
         this._assertExpectedSize2d(expected);

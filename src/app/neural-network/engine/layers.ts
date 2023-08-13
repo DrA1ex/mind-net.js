@@ -3,6 +3,7 @@ import * as matrix from "./matrix";
 import {IActivation, ILayer, InitializerFn} from "./base";
 import {ActivationsMap, ActivationT} from "./activations";
 import {Initializers, InitializerT} from "./initializers";
+import {Param} from "../serialization";
 
 type DenseOptionsT = {
     dropout: number,
@@ -27,13 +28,20 @@ const DefaultDenseArgs: DenseCtorArgsT = {
 }
 
 export class Dense implements ILayer {
-    readonly size: number;
+    skipWeightsInitialization: boolean = false;
     prevSize: number = 0;
 
+    @Param()
+    readonly size: number;
+    @Param()
     readonly dropout;
+    @Param()
     readonly l1WeightRegularization;
+    @Param()
     readonly l1BiasRegularization;
+    @Param()
     readonly l2WeightRegularization;
+    @Param()
     readonly l2BiasRegularization;
 
     readonly weightInitializer: InitializerFn;
@@ -83,8 +91,11 @@ export class Dense implements ILayer {
         this.prevSize = prevSize;
 
         if (index > 0) {
-            this.weights = matrix.fill(() => this.weightInitializer(this.prevSize, this.size), this.size);
-            this.biases = this.biasInitializer(this.size, this.prevSize);
+            if (!this.skipWeightsInitialization) {
+                this.weights = matrix.fill(() => this.weightInitializer(this.prevSize, this.size), this.size);
+                this.biases = this.biasInitializer(this.size, this.prevSize);
+            }
+
             this.values = matrix.zero(this.size);
         } else {
             this.weights = [];

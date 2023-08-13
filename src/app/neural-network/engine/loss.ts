@@ -1,9 +1,11 @@
 import {ILoss} from "./base";
 import {Matrix1D} from "./matrix";
+import {Param} from "../serialization";
 import * as matrix from "./matrix";
 import * as utils from "../utils";
 
 export class MeanSquaredErrorLoss implements ILoss {
+    @Param()
     public k;
 
     constructor({k = 2.5} = {}) {
@@ -35,6 +37,7 @@ export class MeanSquaredErrorLoss implements ILoss {
 }
 
 export class MeanAbsoluteErrorLoss implements ILoss {
+    @Param()
     public k;
 
     constructor({k = 2.5} = {}) {

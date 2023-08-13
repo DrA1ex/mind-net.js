@@ -4,7 +4,7 @@ import * as iter from "../iter"
 import {SequentialModel} from "./sequential";
 import {ChainModel} from "./chain";
 import {OptimizerT} from "../optimizers";
-import {ILoss, IOptimizer} from "../base";
+import {ILoss, IModel, IOptimizer} from "../base";
 import {LossT} from "../loss";
 
 

@@ -1,7 +1,5 @@
 /// <reference lib="webworker" />
 
-import {Color, MultiPlotChart, PlotAxisScale} from "text-graph.js";
-
 import * as matrix from "../../neural-network/engine/matrix";
 import * as color from "../../utils/color";
 import * as logUtils from "../../utils/log";
