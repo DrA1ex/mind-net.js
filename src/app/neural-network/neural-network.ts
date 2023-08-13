@@ -35,5 +35,5 @@ export {
 } from "./chart"
 
 export {
-    ModelSerialization
+    ModelSerialization, GanSerialization
 } from "./serialization"

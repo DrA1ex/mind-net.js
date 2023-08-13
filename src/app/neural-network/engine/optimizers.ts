@@ -79,7 +79,11 @@ export abstract class OptimizerBase implements IOptimizer {
     }
 }
 
-export abstract class PreAveragedOptimizerBase extends OptimizerBase {
+export type MomentCacheT = { [key: string]: matrix.Matrix1D | matrix.Matrix2D };
+
+export abstract class AbstractMomentAcceleratedOptimizer<TCache extends MomentCacheT> extends OptimizerBase {
+    public moments = new Map<ILayer, TCache>();
+
     abstract updateAveragedWeights(
         layer: ILayer,
         deltaWeights: Matrix2D,
@@ -140,13 +144,11 @@ const DefaultSgdMomentumArgs: SgdMomentumCtorArgsT = {
 
 type SgdMomentumCacheT = { mWeights: Matrix2D, mBiases: Matrix1D };
 
-export class SgdMomentumOptimizer extends PreAveragedOptimizerBase {
+export class SgdMomentumOptimizer extends AbstractMomentAcceleratedOptimizer<SgdMomentumCacheT> {
     readonly description: string;
 
     @Param()
     beta: number;
-
-    private cache = new Map<ILayer, SgdMomentumCacheT>();
 
     constructor(options: Partial<SgdMomentumCtorArgsT> = DefaultSgdMomentumArgs) {
         const {lr, decay, beta}: SgdMomentumCtorArgsT = {...DefaultSgdMomentumArgs, ...options};
@@ -157,14 +159,14 @@ export class SgdMomentumOptimizer extends PreAveragedOptimizerBase {
     }
 
     updateAveragedWeights(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, epoch: number) {
-        if (!this.cache.has(layer)) {
-            this.cache.set(layer, {
+        if (!this.moments.has(layer)) {
+            this.moments.set(layer, {
                 mWeights: matrix.zero_2d(layer.size, layer.prevSize),
                 mBiases: matrix.zero(layer.size)
             })
         }
 
-        const {mWeights, mBiases} = this.cache.get(layer)!;
+        const {mWeights, mBiases} = this.moments.get(layer)!;
 
         matrix.matrix2d_binary_in_place_op(mWeights, deltaWeights, (mW, dW) => dW - this.beta * mW);
         matrix.matrix1d_binary_in_place_op(mBiases, deltaBiases, (mB, dB) => dB - this.beta * mB);
@@ -242,7 +244,7 @@ const DefaultRMSPropArgs: RMSPropCtorArgsT = {
 
 type RMSPropCacheT = { mWeights: Matrix2D, mBiases: Matrix1D };
 
-export class RMSPropOptimizer extends PreAveragedOptimizerBase {
+export class RMSPropOptimizer extends AbstractMomentAcceleratedOptimizer<RMSPropCacheT> {
     readonly description: string;
 
     @Param()
@@ -250,8 +252,6 @@ export class RMSPropOptimizer extends PreAveragedOptimizerBase {
 
     @Param()
     eps: number
-
-    private readonly cache = new Map<ILayer, RMSPropCacheT>();
 
     constructor(options: Partial<RMSPropCtorArgsT> = DefaultRMSPropArgs) {
         const {
@@ -265,14 +265,14 @@ export class RMSPropOptimizer extends PreAveragedOptimizerBase {
     }
 
     updateAveragedWeights(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, epoch: number) {
-        if (!this.cache.has(layer)) {
-            this.cache.set(layer, {
+        if (!this.moments.has(layer)) {
+            this.moments.set(layer, {
                 mWeights: matrix.zero_2d(layer.size, layer.prevSize),
                 mBiases: matrix.zero(layer.size)
             })
         }
 
-        const {mWeights, mBiases} = this.cache.get(layer)!;
+        const {mWeights, mBiases} = this.moments.get(layer)!;
 
         matrix.matrix2d_binary_in_place_op(mWeights, deltaWeights, (mW, dW) =>
             this.beta * mW + (1 - this.beta) * Math.pow(dW, 2));
@@ -309,7 +309,7 @@ type AdamCacheT = {
     cWeights: Matrix2D, cBiases: Matrix1D
 };
 
-export class AdamOptimizer extends PreAveragedOptimizerBase {
+export class AdamOptimizer extends AbstractMomentAcceleratedOptimizer<AdamCacheT> {
     readonly description: string;
 
     @Param()
@@ -320,8 +320,6 @@ export class AdamOptimizer extends PreAveragedOptimizerBase {
 
     @Param()
     eps: number;
-
-    private cache = new Map<ILayer, AdamCacheT>();
 
     constructor(options: Partial<AdamCtorArgsT> = DefaultAdamArgs) {
         const {
@@ -337,8 +335,8 @@ export class AdamOptimizer extends PreAveragedOptimizerBase {
     }
 
     updateAveragedWeights(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, epoch: number) {
-        if (!this.cache.has(layer)) {
-            this.cache.set(layer, {
+        if (!this.moments.has(layer)) {
+            this.moments.set(layer, {
                 mWeights: matrix.zero_2d(layer.size, layer.prevSize),
                 mBiases: matrix.zero(layer.size),
                 cWeights: matrix.zero_2d(layer.size, layer.prevSize),
@@ -349,7 +347,7 @@ export class AdamOptimizer extends PreAveragedOptimizerBase {
         const {
             mWeights, mBiases,
             cWeights, cBiases
-        } = this.cache.get(layer)!;
+        } = this.moments.get(layer)!;
 
         matrix.matrix2d_binary_in_place_op(mWeights, deltaWeights, (mW, dW) =>
             this.beta1 * mW + (1 - this.beta1) * dW);

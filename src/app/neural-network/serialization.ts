@@ -1,4 +1,4 @@
-import {IActivation, ILayer, ILoss, IModel, IOptimizer} from "./engine/base";
+import {IActivation, ILayer, ILoss, IModel} from "./engine/base";
 import {
     Activations,
     Initializers,
@@ -10,6 +10,7 @@ import {
     SequentialModel,
     GenerativeAdversarialModel,
 } from "./neural-network";
+import {AbstractMomentAcceleratedOptimizer, MomentCacheT} from "./engine/optimizers";
 
 const SerializationConfig = new Map<any, string[]>;
 
@@ -47,9 +48,15 @@ type LayerSerializationEntry = {
     params: SerializedParams
 }
 
+type OptimizerSerializationEntry = {
+    key: keyof typeof Optimizers,
+    params: SerializedParams,
+    moments?: object[]
+}
+
 type ModelSerialized = {
     model: keyof typeof Models,
-    optimizer: SerializationEntry<typeof Optimizers>,
+    optimizer: OptimizerSerializationEntry,
     loss: SerializationEntry<typeof Loss>,
     layers: LayerSerializationEntry[],
     epoch: number
@@ -59,7 +66,7 @@ export class ModelSerialization {
     public static save(model: IModel): ModelSerialized {
         return {
             model: this._getTypeAlias(Models, model).key,
-            optimizer: this.saveOptimizer(model.optimizer),
+            optimizer: this.saveOptimizer(model),
             loss: this.saveLoss(model.loss),
             layers: model.layers.map(l => this.saveLayer(l)),
             epoch: model.epoch
@@ -77,7 +84,8 @@ export class ModelSerialization {
         const lossT = Loss[data.loss.key];
         if (!lossT) throw new Error(`Invalid loss: ${data.loss.key}`);
 
-        const model = new modelT(new optimizerT(data.optimizer.params), new lossT(data.loss.params));
+        const optimizer = new optimizerT(data.optimizer.params);
+        const model = new modelT(optimizer, new lossT(data.loss.params));
 
         let layerIndex = 0;
         for (const layerConf of data.layers) {
@@ -115,6 +123,9 @@ export class ModelSerialization {
             ++layerIndex;
         }
 
+        if (optimizer instanceof AbstractMomentAcceleratedOptimizer && data.optimizer.moments) {
+            this.loadMoments(model, optimizer, data.optimizer.moments as any);
+        }
 
         // @ts-ignore
         //TODO: ?
@@ -124,14 +135,52 @@ export class ModelSerialization {
         return model;
     }
 
-    public static saveOptimizer(optimizer: IOptimizer): SerializationEntry<typeof Optimizers> {
+    public static loadMoments<T extends MomentCacheT>(
+        model: IModel,
+        optimizer: AbstractMomentAcceleratedOptimizer<T>,
+        moments: T[]
+    ) {
+        for (let i = 0; i < model.layers.length; i++) {
+            const moment = moments[i];
+            if (moment) {
+                optimizer.moments.set(model.layers[i], moment)
+            }
+        }
+    }
+
+    public static saveOptimizer(model: IModel): SerializationEntry<typeof Optimizers> {
+        const optimizer = model.optimizer;
+
         const type = this._getTypeAlias(Optimizers, optimizer);
         const params = this._getSerializableParams(optimizer);
 
-        return {
-            key: type.key,
-            params,
+        const result: OptimizerSerializationEntry = {key: type.key, params}
+
+        if (optimizer instanceof AbstractMomentAcceleratedOptimizer) {
+            result.moments = this.saveOptimizerMoments(model, optimizer);
         }
+
+        return result;
+    }
+
+    public static saveOptimizerMoments<T extends MomentCacheT>(model: IModel, optimizer: AbstractMomentAcceleratedOptimizer<T>): T[] {
+        const result = new Array(model.layers.length).fill(undefined);
+        for (let i = 0; i < model.layers.length; i++) {
+            const layerCache = optimizer.moments.get(model.layers[i]);
+
+            if (layerCache) {
+                result[i] = {} as T;
+                for (const [key, value] of Object.entries(layerCache)) {
+                    if (value[0] instanceof Array) {
+                        result[i][key] = Matrix.copy_2d(value as Matrix.Matrix2D);
+                    } else {
+                        result[i][key] = Matrix.copy(value as Matrix.Matrix1D);
+                    }
+                }
+            }
+        }
+
+        return result;
     }
 
     public static saveLoss(loss: ILoss): SerializationEntry<typeof Loss> {
@@ -240,7 +289,7 @@ type GanSerialized = {
     generator: ModelSerialized,
     discriminator: ModelSerialized,
     epoch: number,
-    optimizer: SerializationEntry<typeof Optimizers>,
+    optimizer: OptimizerSerializationEntry,
     loss: SerializationEntry<typeof Loss>,
 }
 
@@ -251,7 +300,7 @@ export class GanSerialization {
             discriminator: ModelSerialization.save(gan.discriminator),
 
             epoch: gan.ganChain.epoch,
-            optimizer: ModelSerialization.saveOptimizer(gan.ganChain.optimizer),
+            optimizer: ModelSerialization.saveOptimizer(gan.ganChain),
             loss: ModelSerialization.saveLoss(gan.ganChain.loss),
         }
     }
@@ -266,12 +315,17 @@ export class GanSerialization {
         const lossT = Loss[data.loss.key];
         if (!lossT) throw new Error(`Invalid loss: ${data.loss.key}`);
 
+        const optimizer = new optimizerT(data.optimizer.params);
         const model = new GenerativeAdversarialModel(
             generator as SequentialModel,
             discriminator as SequentialModel,
-            new optimizerT(data.optimizer.params),
+            optimizer,
             new lossT(data.loss.params),
         );
+
+        if (optimizer instanceof AbstractMomentAcceleratedOptimizer && data.optimizer.moments) {
+            ModelSerialization.loadMoments(model.ganChain, optimizer, data.optimizer.moments as any);
+        }
 
         // @ts-ignore
         model.ganChain._epoch = data.epoch;
