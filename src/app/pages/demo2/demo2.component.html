@@ -11,24 +11,25 @@
             </div>
         </div>
 
-        <div class="col-xl-4 col-lg-4 col-md-6 col-8 mb-2">
+        <div class="col-xl-3 col-lg-3 col-md-6 col-8 mb-2">
             <div class="input-group">
-                <span class="input-group-text">Batch Size</span>
-                <input [(ngModel)]="batchSize" class="form-control" type="text">
-                <span class="input-group-text">L. Rate</span>
-                <input [(ngModel)]="learningRate" class="form-control" min="0.00001" type="text">
+                <span class="input-group-text" title="Batch Size">N</span>
+                <input [(ngModel)]="batchSize" title="Batch Size" class="form-control" type="text">
+                <span class="input-group-text" title="Learning Rate">lr</span>
+                <input [(ngModel)]="learningRate" title="Learning Rate" class="form-control" min="0.00001" type="text">
             </div>
         </div>
 
-        <div class="col-lg-2 col-md-4 col-4 mb-2">
+        <div class="col-lg-3 col-md-4 col-4 mb-2">
             <button class="btn btn-primary fa fa-ignore-lh fa-sync me-2" title="Restart training"
                     (click)="refresh()"></button>
             <div class="btn-group">
-                <button class="btn btn-secondary fa fa-ignore-lh fa-file-upload dropdown-toggle"
+                <button class="btn btn-secondary fa fa-ignore-lh fa-file-upload dropdown-toggle me-2"
                         title="Load training data"
                         data-bs-toggle="dropdown" aria-expanded="false" [disabled]="fileLoading">
                     &nbsp;
                 </button>
+
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item pointer" (click)="loadData()">File...</a></li>
                     <li>
@@ -43,6 +44,12 @@
                     <li><a class="dropdown-item pointer"
                            (click)="loadPredefined('mnist-10000-16.json')">mnist-10000-16</a></li>
                 </ul>
+
+                <button class="btn btn-secondary fa fa-ignore-lh fa-cloud-download-alt me-2"
+                        title="Export model" [disabled]="modelLoading" (click)="saveModel()"></button>
+
+                <button class="btn btn-secondary fa fa-ignore-lh fa-cloud-upload-alt" title="Load model"
+                        [disabled]="modelLoading" (click)="loadModel()"></button>
             </div>
         </div>
     </div>

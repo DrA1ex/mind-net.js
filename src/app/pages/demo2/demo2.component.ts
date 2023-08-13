@@ -8,6 +8,7 @@ import * as fileInteraction from "../../utils/file-interaction";
 import * as image from "../../utils/image";
 import * as matrix from "../../neural-network/engine/matrix";
 import {HttpClient} from "@angular/common/http";
+import {AsyncSubject} from "rxjs";
 
 @Component({
     selector: 'app-demo2',
@@ -21,6 +22,8 @@ export class Demo2Component {
     trainingImage!: BinaryImageDrawerComponent;
 
     private nnWorker!: Worker;
+    private modelRequest?: AsyncSubject<any>;
+    modelLoading = false;
 
     nnInputSize: number = DEFAULT_NN_PARAMS[0];
     nnHiddenLayers: string = DEFAULT_NN_PARAMS[1].join(" ");
@@ -54,6 +57,17 @@ export class Demo2Component {
                     this.speed = data.speed ?? this.speed;
                     this.nnGenOutSize = data.nnParams && data.nnParams[2] || this.nnGenOutSize;
                     break;
+
+                case "model_dump":
+                    if (!this.modelRequest) {
+                        console.error("Model dump not expected");
+                        break;
+                    }
+
+                    this.modelRequest.next(data.dump);
+                    this.modelRequest.complete();
+                    this.modelRequest = undefined;
+                    break
             }
         }
     }
@@ -67,8 +81,8 @@ export class Demo2Component {
 
         this.nnWorker.postMessage({
             type: "refresh",
-            learningRate: this.learningRate,
-            batchSize: this.batchSize,
+            learningRate: +this.learningRate,
+            batchSize: +this.batchSize,
             layers: config,
         });
     }
@@ -123,5 +137,35 @@ export class Demo2Component {
         } finally {
             this.fileLoading = false;
         }
+    }
+
+    async saveModel() {
+        this.modelRequest = new AsyncSubject<any>();
+        this.nnWorker.postMessage({type: "dump"});
+
+        this.modelLoading = true;
+        try {
+            const data = await this.modelRequest.toPromise();
+            fileInteraction.saveFile(JSON.stringify(data), 'dump.json', 'application/json');
+        } finally {
+            this.modelLoading = false;
+        }
+    }
+
+    async loadModel() {
+        const file = await fileInteraction.openFile('application/json', false) as File;
+        if (!file) {
+            return;
+        }
+
+        const content = await file.text();
+        const dump = JSON.parse(content);
+
+        this.nnInputSize = dump.generator.layers[0].size;
+        this.nnHiddenLayers = dump.generator.layers.slice(1, dump.generator.layers.length - 1).map((l: any) => l.size).join(" ");
+        this.nnGenOutSize = dump.generator.layers[dump.generator.layers.length - 1].size;
+        this.learningRate = dump.optimizer.params.lr;
+
+        this.nnWorker.postMessage({type: "load_dump", dump});
     }
 }

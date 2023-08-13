@@ -5,7 +5,7 @@ import {Color, MultiPlotChart, PlotAxisScale, PlotSeriesOverflow} from "text-gra
 import * as iter from "../../neural-network/engine/iter";
 import * as color from "../../utils/color";
 import * as nnUtils from "../../neural-network/utils";
-import NN, {Matrix} from "../../neural-network/neural-network";
+import NN, {GanSerialization, Matrix} from "../../neural-network/neural-network";
 import {LossT} from "../../neural-network/engine/loss";
 
 import {
@@ -37,7 +37,6 @@ let nnParams: NetworkParams = DEFAULT_NN_PARAMS;
 let learningRate = DEFAULT_LEARNING_RATE;
 
 let neuralNetwork = createNn();
-
 let dashboard: MultiPlotChart;
 
 function createNn() {
@@ -165,6 +164,22 @@ addEventListener('message', ({data}) => {
             testNoiseTrue = Matrix.one_2d(testNoise.length, 1);
 
             _refresh();
+            break;
+
+        case "dump":
+            const modelData = GanSerialization.save(neuralNetwork);
+            postMessage({type: "model_dump", dump: modelData});
+            break;
+
+        case "load_dump":
+            neuralNetwork = GanSerialization.load(data.dump);
+            dashboard = createDashboard();
+
+            currentIteration = 0;
+            if (trainingData && trainingData.length > 0) {
+                draw();
+            }
+
             break;
     }
 });
