@@ -45,13 +45,13 @@ function createNn() {
     }
 
     function _createGenHiddenLayer(size: number) {
-        return new NN.Layers.Dense(size, {activation: "relu", weightInitializer: "xavier"});
+        return new NN.Layers.Dense(size, {activation: "relu", weightInitializer: "he"});
     }
 
     function _createDiscriminatorHiddenLayer(size: number) {
         return new NN.Layers.Dense(size, {
             activation: new NN.Activations.LeakyReluActivation({alpha: 0.2}),
-            weightInitializer: "xavier",
+            weightInitializer: "he",
             options: {dropout: .3}
         });
     }
@@ -209,7 +209,7 @@ function trainBatch() {
             const elapsed = performance.now() - progressLastTime;
             const batchTime = elapsed / batches;
             batchesCntToCheck = PROGRESS_DELAY / batchTime;
-            const speed = batchCount * 1000 / batchTime;
+            const speed = 1000 / batchTime;
 
             postMessage({
                 type: "progress",
