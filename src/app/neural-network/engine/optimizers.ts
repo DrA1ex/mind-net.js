@@ -31,7 +31,7 @@ export abstract class OptimizerBase implements IOptimizer {
         }
     }
 
-    step(layer: ILayer, activations: Matrix1D, primes: Matrix1D, error: Matrix1D, epoch: number): Matrix1D {
+    step(layer: ILayer, error: Matrix1D, epoch: number): Matrix1D {
         if (!this._cache.has(layer)) {
             this._cache.set(layer, {
                 tmp1: matrix.zero(layer.size)
@@ -40,7 +40,7 @@ export abstract class OptimizerBase implements IOptimizer {
 
         const {tmp1} = this._cache.get(layer)!;
 
-        layer.activation.moment(primes, tmp1);
+        layer.activation.moment(layer.output, tmp1);
         matrix.matrix1d_binary_in_place_op(tmp1, error, (a, e) => a * e);
 
         return tmp1;
@@ -205,7 +205,7 @@ export class SgdNesterovOptimizer extends OptimizerBase {
         this.description = `nesterov(beta: ${this.beta}, lr: ${this.lr})`;
     }
 
-    step(layer: ILayer, activations: matrix.Matrix1D, primes: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D {
+    step(layer: ILayer, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D {
         if (!this.cache.has(layer)) {
             this.cache.set(layer, {
                 tmp1: matrix.zero(layer.size),
@@ -217,7 +217,7 @@ export class SgdNesterovOptimizer extends OptimizerBase {
         const s = this.cache.get(layer)!;
 
         // next gradient
-        matrix.add(primes, s.momentum, s.nextGrad);
+        matrix.add(layer.output, s.momentum, s.nextGrad);
         layer.activation.moment(s.nextGrad, s.tmp1);
         matrix.mul_to(s.tmp1, error);
 

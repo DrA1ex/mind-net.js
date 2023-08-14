@@ -30,6 +30,7 @@ const DefaultDenseArgs: DenseCtorArgsT = {
 export class Dense implements ILayer {
     skipWeightsInitialization: boolean = false;
     prevSize: number = 0;
+    index!: number;
 
     @Param()
     readonly size: number;
@@ -49,9 +50,15 @@ export class Dense implements ILayer {
 
     biases!: matrix.Matrix1D;
     weights!: matrix.Matrix2D;
-    values!: matrix.Matrix1D;
+    output!: matrix.Matrix1D;
+    input!: matrix.Matrix1D;
+
+    activationOutput!: matrix.Matrix1D;
+    error!: matrix.Matrix1D;
 
     readonly activation: IActivation;
+
+    protected isBuilt: boolean = false;
 
     constructor(size: number, args: Partial<DenseCtorArgsT> = DefaultDenseArgs) {
         const {
@@ -88,7 +95,11 @@ export class Dense implements ILayer {
     }
 
     build(index: number, prevSize: number) {
+        if (this.isBuilt) throw new Error("Layer already used.");
+        this.isBuilt = true;
+
         this.prevSize = prevSize;
+        this.index = index;
 
         if (index > 0) {
             if (!this.skipWeightsInitialization) {
@@ -96,22 +107,39 @@ export class Dense implements ILayer {
                 this.biases = this.biasInitializer(this.size, this.prevSize);
             }
 
-            this.values = matrix.zero(this.size);
+            this.output = matrix.zero(this.size);
+            this.activationOutput = matrix.zero(this.size);
+            this.error = matrix.zero(this.prevSize);
         } else {
             this.weights = [];
             this.biases = [];
-            this.values = [];
+            this.output = [];
         }
     }
 
     step(input: matrix.Matrix1D): matrix.Matrix1D {
-        if (this.weights.length > 0) {
-            matrix.dot_2d(this.weights, input, this.values);
-            matrix.add_to(this.values, this.biases);
-            return this.values
+        this.input = input;
+        if (this.index === 0) {
+            return this.input;
         }
 
-        return input;
+        matrix.dot_2d(this.weights, this.input, this.output);
+        matrix.add_to(this.output, this.biases);
+        return this.output
+    }
+
+    backward(gradient: matrix.Matrix1D, deltaWeights: matrix.Matrix2D, deltaBiases: matrix.Matrix1D): matrix.Matrix1D {
+        for (let j = 0; j < this.size; j++) {
+            matrix.matrix1d_binary_in_place_op(deltaWeights[j], this.input,
+                (w, a) => w + a * gradient[j]);
+        }
+
+        matrix.add_to(deltaBiases, gradient);
+
+        // Input layer doesn't have any weights
+        if (this.index === 0) return this.error;
+
+        return matrix.dot_2d_translated(this.weights, gradient, this.error);
     }
 }
 

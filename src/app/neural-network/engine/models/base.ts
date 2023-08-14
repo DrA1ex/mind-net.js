@@ -5,15 +5,15 @@ import {ILayer, IOptimizer, ILoss, IModel, ModelTrainOptionsT} from "../base";
 import {buildLoss, LossT} from "../loss";
 import {buildOptimizer, OptimizerT} from "../optimizers";
 
-export type NeuralNetworkSnapshot = { weights: matrix.Matrix2D[], biases: matrix.Matrix1D[] };
+export type NeuralNetworkSnapshot = {
+    weights: matrix.Matrix2D[],
+    biases: matrix.Matrix1D[]
+};
 
-export type BackpropData = { activations: matrix.Matrix1D[], primes: matrix.Matrix1D[] };
 export type LayerCache = {
-    activation: matrix.Matrix1D,
+    deltaWeights: matrix.Matrix2D,
     deltaBiases: matrix.Matrix1D,
     mask: matrix.Matrix1D,
-    deltaWeights: matrix.Matrix2D,
-    gradientCache: matrix.Matrix1D,
 };
 
 export abstract class ModelBase implements IModel {
@@ -21,9 +21,6 @@ export abstract class ModelBase implements IModel {
 
     protected compiled: boolean = false;
     protected cache = new Map<ILayer, LayerCache>();
-
-    protected activations!: matrix.Matrix1D[]
-    protected primes!: matrix.Matrix1D[]
 
     private _lossErrorCache!: matrix.Matrix1D;
 
@@ -47,13 +44,8 @@ export abstract class ModelBase implements IModel {
         this._assertCompiled();
         this._assertInputSize(input);
 
-        let result = input;
-        for (let i = 1; i < this.layers.length; i++) {
-            const layer = this.layers[i];
-            result = layer.activation.value(layer.step(result), this.cache.get(layer)!.activation);
-        }
-
-        return result.concat();
+        const output = this._forward(input);
+        return matrix.copy(output);
     }
 
     evaluate(input: matrix.Matrix1D[], expected: matrix.Matrix1D[]) {
@@ -97,18 +89,16 @@ export abstract class ModelBase implements IModel {
 
         //TODO: Refactor
         if (this._lossErrorCache) this._lossErrorCache = matrix.zero(this.layers[this.layers.length - 1].size);
-        if (!this.activations) this.activations = new Array(this.layers.length)
-        if (!this.primes) this.primes = new Array(this.layers.length);
 
         let count = 0;
         for (const [trainInput, trainExpected] of batch) {
             this._assertInputSize(trainInput);
             this._assertExpectedSize(trainExpected);
 
-            const data = this._calculateBackpropData(trainInput);
-            const loss = this.loss.calculateError(data.activations[data.activations.length - 1], trainExpected, this._lossErrorCache);
+            const output = this._forward(trainInput, true);
+            const loss = this.loss.calculateError(output, trainExpected, this._lossErrorCache);
 
-            this._backprop(data, loss);
+            this._backprop(loss);
             ++count;
         }
 
@@ -124,22 +114,22 @@ export abstract class ModelBase implements IModel {
         this._epoch += 1;
     }
 
-    protected _calculateBackpropData(input: matrix.Matrix1D): BackpropData {
-        this.activations[0] = input;
+    protected _forward(input: matrix.Matrix1D, isTraining = false): matrix.Matrix1D {
+        let result = input;
         for (let i = 1; i < this.layers.length; i++) {
             const layer = this.layers[i];
-            const {activation, mask} = this.cache.get(layer)!;
 
-            this.primes[i] = layer.step(this.activations[i - 1]);
-            this.activations[i] = layer.activation.value(this.primes[i], activation);
+            const prime = layer.step(result);
+            result = layer.activation.value(prime, layer.activationOutput);
 
-            if (layer.dropout > 0) {
+            if (isTraining && layer.dropout > 0) {
+                const mask = this.cache.get(layer)!.mask;
                 this._calculateDropoutMask(layer, mask);
-                this._applyDropoutMask(layer, this.activations[i], mask);
+                this._applyDropoutMask(layer.activationOutput, mask);
             }
         }
 
-        return {activations: this.activations, primes: this.primes};
+        return result;
     }
 
     protected _calculateDropoutMask(layer: ILayer, dst: matrix.Matrix1D) {
@@ -158,34 +148,23 @@ export abstract class ModelBase implements IModel {
         }
     }
 
-    protected _applyDropoutMask(layer: ILayer, values: matrix.Matrix1D, mask: matrix.Matrix1D) {
+    protected _applyDropoutMask(values: matrix.Matrix1D, mask: matrix.Matrix1D) {
         matrix.mul_to(values, mask);
     }
 
-    protected _backprop(data: BackpropData, loss: matrix.Matrix1D) {
-        const {activations, primes} = data;
+    protected _backprop(loss: matrix.Matrix1D) {
         let errors = loss;
 
         for (let i = this.layers.length - 1; i > 0; i--) {
             const layer = this.layers[i];
-            const {deltaWeights, deltaBiases, gradientCache, mask} = this.cache.get(layer)!;
+            const {deltaWeights, deltaBiases, mask} = this.cache.get(layer)!;
 
             if (layer.dropout > 0) {
-                this._applyDropoutMask(layer, errors, mask);
+                this._applyDropoutMask(errors, mask);
             }
 
-            const gradient = this.optimizer.step(layer, activations[i], primes[i], errors, this.epoch);
-
-            for (let j = 0; j < layer.size; j++) {
-                matrix.matrix1d_binary_in_place_op(deltaWeights[j], activations[i - 1],
-                    (w, a) => w + a * gradient[j]);
-            }
-
-            matrix.add_to(deltaBiases, gradient);
-
-            if (i > 1) {
-                errors = matrix.dot_2d_translated(this.layers[i].weights, gradient, gradientCache);
-            }
+            const gradient = this.optimizer.step(layer, errors, this.epoch);
+            errors = layer.backward(gradient, deltaWeights, deltaBiases);
         }
     }
 

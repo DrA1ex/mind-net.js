@@ -32,11 +32,9 @@ export class SequentialModel extends ModelBase {
             const prevSize = i > 0 ? this.layers[i - 1].size : 0;
             layer.build(i, prevSize);
             this.cache.set(layer, {
-                activation: zero(layer.size),
-                mask: one(layer.size),
-                deltaBiases: zero(layer.size),
                 deltaWeights: zero_2d(layer.size, prevSize),
-                gradientCache: zero(prevSize)
+                deltaBiases: zero(layer.size),
+                mask: one(layer.size),
             });
         }
 

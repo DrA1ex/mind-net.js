@@ -33,11 +33,16 @@ export interface IActivation {
 }
 
 export interface ILayer {
+    readonly index: number;
     readonly size: number;
-    readonly prevSize: number
+    readonly prevSize: number;
 
     readonly biases: matrix.Matrix1D;
     readonly weights: matrix.Matrix2D;
+
+    readonly input: matrix.Matrix1D;
+    readonly output: matrix.Matrix1D;
+    readonly activationOutput: matrix.Matrix1D;
 
     readonly activation: IActivation;
     readonly weightInitializer: InitializerFn;
@@ -53,11 +58,12 @@ export interface ILayer {
 
     build(index: number, prevSize: number): void;
     step(input: matrix.Matrix1D): matrix.Matrix1D;
+    backward(gradient: matrix.Matrix1D, deltaWeights: matrix.Matrix2D, deltaBiases: matrix.Matrix1D): matrix.Matrix1D;
 }
 
 
 export interface IOptimizer {
-    step(layer: ILayer, activations: matrix.Matrix1D, primes: matrix.Matrix1D, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D;
+    step(layer: ILayer, error: matrix.Matrix1D, epoch: number): matrix.Matrix1D;
     updateWeights(layer: ILayer, deltaWeights: matrix.Matrix2D, deltaBiases: matrix.Matrix1D, epoch: number, batchSize: number): void
 
     beforePass(): void
