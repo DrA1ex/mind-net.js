@@ -64,7 +64,7 @@ export class MeanAbsoluteErrorLoss implements ILoss {
 
     calculateError(predicted: Matrix1D, expected: Matrix1D, dst?: Matrix1D): Matrix1D {
         return matrix.matrix1d_binary_op(predicted, expected, (p, e) =>
-            Math.sign(p - e) / predicted.length, dst);
+            Math.sign(e - p) / predicted.length, dst);
     }
 }
 
@@ -159,7 +159,7 @@ export class BinaryCrossEntropy implements ILoss {
     }
 
     private _clip(value: number, eps = 1e-7) {
-        return Math.max(eps, Math.min(value, 1 - eps))
+        return Math.max(eps, Math.min(value, 1 - eps));
     }
 }
 

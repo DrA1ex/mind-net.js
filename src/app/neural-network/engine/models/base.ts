@@ -88,7 +88,7 @@ export abstract class ModelBase implements IModel {
         this._clearDelta();
 
         //TODO: Refactor
-        if (this._lossErrorCache) this._lossErrorCache = matrix.zero(this.layers[this.layers.length - 1].size);
+        if (!this._lossErrorCache) this._lossErrorCache = matrix.zero(this.layers[this.layers.length - 1].size);
 
         let count = 0;
         for (const [trainInput, trainExpected] of batch) {

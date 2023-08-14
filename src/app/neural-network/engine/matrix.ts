@@ -27,7 +27,7 @@ export function matrix1d_binary_in_place_op(dst: Matrix1D, b: Matrix1D, op: (x1:
 
 export function matrix1d_binary_op(a: Matrix1D, b: Matrix1D, op: (x1: number, x2: number) => number, dst: OptMatrix1D = undefined): Matrix1D {
     const length = Math.min(a.length, b.length);
-    const result = dst || new Array(length);
+    const result = dst ?? new Array(length);
 
     for (let i = 0; i < length; ++i) {
         result[i] = op(a[i], b[i]);
@@ -38,7 +38,7 @@ export function matrix1d_binary_op(a: Matrix1D, b: Matrix1D, op: (x1: number, x2
 
 export function matrix1d_unary_op(a: Matrix1D, op: (x1: number, i: number) => number, dst: OptMatrix1D = undefined): Matrix1D {
     const length = a.length;
-    const result = dst || new Array(length);
+    const result = dst ?? new Array(length);
 
     for (let i = 0; i < length; ++i) {
         result[i] = op(a[i], i);
@@ -84,7 +84,7 @@ export function matrix2d_binary_in_place_op(dst: Matrix2D, b: Matrix2D, op: (x1:
 export function matrix2d_binary_op(a: Matrix2D, b: Matrix2D, op: (x1: number, x2: number) => number, dst: OptMatrix2D = undefined) {
     const rows = Math.min(a.length, b.length);
     const columns = Math.min(a[0].length, b[0].length);
-    const result = dst || zero_2d(rows, columns);
+    const result = dst ?? zero_2d(rows, columns);
 
     for (let i = 0; i < rows; ++i) {
         for (let j = 0; j < columns; j++) {
@@ -240,7 +240,7 @@ export function random_normal_2d(rows: number, cols: number, from: number = 0, t
 
 export function dot_2d(x1: Matrix2D, x2: Matrix1D, dst: OptMatrix1D = undefined): Matrix1D {
     const length = x1.length;
-    const result = dst || new Array(length);
+    const result = dst ?? new Array(length);
     for (let i = 0; i < length; i++) {
         result[i] = dot(x1[i], x2);
     }
