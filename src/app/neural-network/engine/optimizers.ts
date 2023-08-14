@@ -239,7 +239,7 @@ const DefaultRMSPropArgs: RMSPropCtorArgsT = {
     lr: 0.001,
     decay: 0,
     beta: 0.9,
-    eps: 1e-8,
+    eps: 1e-7,
 };
 
 type RMSPropCacheT = { mWeights: Matrix2D, mBiases: Matrix1D };
@@ -301,7 +301,7 @@ const DefaultAdamArgs: AdamCtorArgsT = {
     decay: 0,
     beta1: 0.9,
     beta2: 0.999,
-    eps: 1e-8,
+    eps: 1e-7,
 };
 
 type AdamCacheT = {
