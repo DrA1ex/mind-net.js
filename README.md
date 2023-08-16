@@ -1,11 +1,10 @@
-<p align="center">
-<img alt="Logo" width="128" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/6d2ce44b-f435-4cbc-902e-0d60eaf15dc1"/>
-</p>
-
-
 # mind-net.js
 
 Simple to use neural network implementation in pure TypeScript.
+
+<p align="center">
+<img alt="Logo" width="128" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/6d2ce44b-f435-4cbc-902e-0d60eaf15dc1"/>
+</p>
 
 ## About
 mind-net.js is a lightweight library that offers the necessary tools to train and execute neural networks. By using mind-net.js, developers can conveniently create and explore neural networks, gaining practical knowledge in the domain of machine learning.
