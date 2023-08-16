@@ -38,22 +38,32 @@ describe("Activation.moment", () => {
     });
 });
 
-describe("Should create new Array if dst is empty ::value", () => {
+describe("Should use destination array if specified ::value", () => {
     test.each(
         Object.values(Activations)
     )("%p", (type) => {
         const obj = new type();
+
         const dst = new Array(ActivationValueTestInput.length);
-        expect(obj.value(ActivationValueTestInput, dst)).toStrictEqual(obj.value(ActivationValueTestInput));
+        const withDst = obj.value(ActivationValueTestInput, dst);
+        const withoutDst = obj.value(ActivationValueTestInput);
+
+        expect(withDst).toStrictEqual(withoutDst);
+        expect(withDst).toBe(dst);
     });
 });
 
-describe("Should create new Array if dst is empty ::moment", () => {
+describe("Should use destination array if specified ::moment", () => {
     test.each(
         Object.values(Activations)
     )("%p", (type) => {
         const obj = new type();
+
         const dst = new Array(ActivationValueTestInput.length);
-        expect(obj.moment(ActivationValueTestInput, dst)).toStrictEqual(obj.moment(ActivationValueTestInput));
+        const withDst = obj.moment(ActivationValueTestInput, dst);
+        const withoutDst = obj.moment(ActivationValueTestInput);
+
+        expect(withDst).toStrictEqual(withoutDst);
+        expect(withDst).toBe(dst);
     });
 });
