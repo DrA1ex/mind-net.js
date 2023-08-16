@@ -162,16 +162,41 @@ export class SgdMomentumOptimizer extends AbstractMomentAcceleratedOptimizer<Sgd
         if (!this.moments.has(layer)) {
             this.moments.set(layer, {
                 mWeights: matrix.zero_2d(layer.size, layer.prevSize),
-                mBiases: matrix.zero(layer.size)
+                mBiases: matrix.zero(layer.size),
             })
         }
 
         const {mWeights, mBiases} = this.moments.get(layer)!;
 
-        matrix.matrix2d_binary_in_place_op(mWeights, deltaWeights, (mW, dW) => dW - this.beta * mW);
-        matrix.matrix1d_binary_in_place_op(mBiases, deltaBiases, (mB, dB) => dB - this.beta * mB);
+        // In the original formula, we add the moment to the weights, but in other optimizers, we subtract it.
+        // To achieve this in our optimizer, we need to copy the moment and negate it.
+        // However, this approach can degrade performance.
+        // To avoid degradation, we modify the formula to return the already negated value.
+        // But this modification also affects the moment by making it negated.
+        // To revert the negation of the moment, we should negate it in the subsequent iterations.
+        //
+        // Mathematically, for each epoch:
+        // 0 epoch: mW_1 = (beta * mW_0 - dW), we modify this to: mW_1 = -(beta * mW_0 - dW)
+        // 1 epoch: mW_2 = (beta * mW_1 - dW), we modify this to: mW_2 = -(beta * mW_1 - dW)
+        //          We further simplify: mW_2 = -(beta * -mW_1 - dW) = (beta * mW_1 + dW)
+        // 3 epoch: mW_2 = -(beta * -mW_2 - dW), which simplifies to: (beta * mW_2 + dW) and so on
 
-        return {dW: mWeights, dB: deltaBiases};
+        matrix.matrix2d_binary_in_place_op(mWeights, deltaWeights, (mW, dW) => {
+            if (epoch === 0) {
+                return dW - this.beta * mW;
+            } else {
+                return dW + this.beta * mW;
+            }
+        });
+        matrix.matrix1d_binary_in_place_op(mBiases, deltaBiases, (mB, dB) => {
+            if (epoch === 0) {
+                return dB - this.beta * mB;
+            } else {
+                return dB + this.beta * mB;
+            }
+        });
+
+        return {dW: mWeights, dB: mBiases};
     }
 }
 
