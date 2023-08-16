@@ -104,3 +104,12 @@ test.failing("Should throw error if call build for second time", () => {
     layer.build(1, 1);
     layer.build(1, 1);
 });
+
+describe("Should throw if pass invalid initializer name", () => {
+    test.failing.each([
+        {weights: "zero", biases: "any"},
+        {weights: "any", biases: "zero"},
+    ])("%p", ({weights, biases}) => {
+        const layer = new Dense(1, {weightInitializer: weights as any, biasInitializer: biases as any});
+    })
+})
