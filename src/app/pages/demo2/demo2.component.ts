@@ -1,6 +1,6 @@
 import {Component, ViewChild} from '@angular/core';
 
-import * as JSZip from "jszip";
+import JSZip from "jszip";
 import {BinaryImageDrawerComponent} from "../../components/binary-image-drawer/binary-image-drawer.component";
 import {DEFAULT_BATCH_SIZE, DEFAULT_LEARNING_RATE, DEFAULT_NN_PARAMS} from "../../workers/demo2/gan.worker.consts";
 
