@@ -1,5 +1,5 @@
 import {Initializers} from "../src/app/neural-network/neural-network";
-import {MockRandom} from "./mock/common";
+import {SetupMockRandom} from "./mock/common";
 
 const InitializerSize = 5;
 const InitializerRandomValues = [
@@ -7,9 +7,7 @@ const InitializerRandomValues = [
     0.4, 0.01, 0.95, 0.4, 0.15
 ];
 
-let randomMock: jest.SpiedFunction<() => number>;
-beforeEach(() => (randomMock = MockRandom(InitializerRandomValues)));
-afterEach(() => randomMock.mockRestore());
+SetupMockRandom(InitializerRandomValues);
 
 describe("Should generate correct data", () => {
     test.each(
