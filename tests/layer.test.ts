@@ -2,6 +2,8 @@ import {SetupMockRandom} from "./mock/common";
 // noinspection ES6PreferShortImport
 import {Dense, Matrix} from "../src/app/neural-network/neural-network";
 import {InitializerT} from "../src/app/neural-network/engine/initializers";
+import {IActivation} from "../src/app/neural-network/engine/base";
+import {Matrix1D} from "../src/app/neural-network/engine/matrix";
 
 const LayerRandomValues = [
     0.1, 0.3, 0.2, 0.99, 0.5, 0.4, 0.01, 0.95, 0.4, 0.15,
@@ -91,12 +93,21 @@ describe("Should correctly initialize weights", () => {
     });
 });
 
-test("Should skip weights initialization for index=0", () => {
+test("Should skip weights initialization for index = 0", () => {
     const layer = new Dense(1);
     layer.build(0, 1);
 
     expect(layer.weights).toHaveLength(0);
     expect(layer.biases).toHaveLength(0);
+});
+
+test("Should skip activation call for index = 0", () => {
+    const layer = new Dense(1);
+    layer.build(0, 1);
+
+    const input = [1, 2, 3];
+    const output = layer.step(input);
+    expect(output).toStrictEqual(input);
 });
 
 test.failing("Should throw error if call build for second time", () => {
@@ -112,4 +123,42 @@ describe("Should throw if pass invalid initializer name", () => {
     ])("%p", ({weights, biases}) => {
         const layer = new Dense(1, {weightInitializer: weights as any, biasInitializer: biases as any});
     })
+})
+
+test.failing("Should throw if pass invalid activation name", () => {
+    const layer = new Dense(1, {activation: "any" as any});
+})
+
+test.each([
+    "weightInitializer",
+    "biasInitializer"
+])("Should works with custom initialization: %p", (key) => {
+    const layer = new Dense(3, {[key]: (size: number, prevSize: number) => Matrix.fill_value(0.5, size)});
+    layer.build(1, 3);
+
+    if (key === "biasInitializer") {
+        expect(layer.biases[0]).toStrictEqual(0.5);
+    } else {
+        expect(layer.weights[0][0]).toStrictEqual(0.5);
+    }
+});
+
+test("Should works with custom activation", () => {
+    class CustomActivation implements IActivation {
+        moment(input: Matrix1D, dst?: Matrix1D): Matrix1D {
+            return Matrix.matrix1d_unary_op(input, () => 0.5, dst);
+        }
+        value(input: Matrix1D, dst?: Matrix1D): Matrix1D {
+            return Matrix.matrix1d_unary_op(input, () => -0.5, dst);
+        }
+    }
+
+    const layer = new Dense(3, {activation: new CustomActivation()});
+    layer.build(1, 3);
+
+    layer.step([1, 2, 3]);
+    expect(layer.output).toStrictEqual([-1.9629909152447278, 0.21939310229205783, 0.1270170592217174]);
+
+    layer.backward([1, 1, 1], Matrix.zero_2d(3, 3), Matrix.zero(3));
+    expect(layer.error).toStrictEqual([-0.4618802153517006, 0.2886751345948127, -0.5773502691896257]);
 })
