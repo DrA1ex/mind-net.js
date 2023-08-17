@@ -54,6 +54,9 @@ export abstract class ModelBase implements IModel {
         this._assertInputOutputSize(input, expected);
 
         const predicated = input.map((data) => this.compute(data));
+        for (const data of expected) {
+            this._assertExpectedSize(data);
+        }
 
         return {
             loss: this.loss.loss(predicated, expected),

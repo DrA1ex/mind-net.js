@@ -1,13 +1,22 @@
 import {jest} from '@jest/globals'
 
-export function SetupMockRandom(values: number[]) {
+export function SetupMockRandom(values: number[], loop = false) {
     function _mock() {
-        const randomValues = values.concat();
-        return jest.spyOn(Math, "random").mockImplementation(() => {
-            const nextValue = randomValues.shift()
-            if (nextValue === undefined) throw new Error("Too many values")
+        let randomValues = values.concat();
 
-            return nextValue
+        return jest.spyOn(Math, "random").mockImplementation(() => {
+            let nextValue = randomValues.shift()
+
+            if (nextValue === undefined && loop) {
+                randomValues = values.concat();
+                nextValue = randomValues.shift();
+            }
+
+            if (nextValue === undefined) {
+                throw new Error("Too many values")
+            }
+
+            return nextValue;
         });
     }
 
