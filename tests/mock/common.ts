@@ -21,3 +21,14 @@ export function SetupMockRandom(values: number[]) {
         randomMock.mockRestore();
     });
 }
+
+export function MockFunctionSequential<T>(values: T[]) {
+    const _values = values.concat();
+
+    return jest.fn().mockImplementation((...args: any[]) => {
+        const nextValue = _values.shift();
+        if (nextValue === undefined) throw new Error("Too many values")
+
+        return structuredClone(nextValue);
+    });
+}
