@@ -41,6 +41,23 @@ for (let i = 0; i < 20000; i++) {
 console.log(network.compute([1, 0])); // 0.99
 ```
 
+### Use in browser:
+
+1. Install packages and build bundle:
+```bash
+# Install required packages
+npm install browserify esmify --save-dev
+
+# Use browserify and esmify to build the bundle
+# Assumes that your entry file is index.js 
+browserify index.js -p esmify -o bundle.js
+```
+
+2. Import the bundle script in your HTML:
+```html
+<script type="module" src="./bundle.js"></script>
+```
+
 ### More complex examples
 #### Approximation of distance function
 ```javascript
