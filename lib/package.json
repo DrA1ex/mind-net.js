@@ -1,11 +1,13 @@
 {
   "name": "mind-net.js",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "author": "DrA1ex",
   "license": "BSD-3",
   "type": "module",
   "main": "main.js",
-  "dependencies": {},
+  "dependencies": {
+    "text-graph.js": "~1.0.3"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/DrA1ex/mind-net.js.git"

@@ -1,10 +1,19 @@
 import path from "path";
 import url from "url";
 
+import nodeExternals from 'webpack-node-externals';
+
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 export default {
     mode: "production",
+    externals: [nodeExternals({
+        allowlist: ["tslib"],
+        importType: "module",
+    })],
+    externalsPresets: {
+        node: true
+    },
     entry: {
         "main": {
             import: [
@@ -14,9 +23,6 @@ export default {
     },
     optimization: {
         minimize: false
-    },
-    experiments: {
-        outputModule: true,
     },
     module: {
         rules: [
@@ -35,11 +41,16 @@ export default {
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
     },
+    experiments: {
+        outputModule: true,
+    },
     output: {
         path: path.resolve(__dirname, "lib"),
         filename: '[name].js',
         library: {
             type: "module"
-        }
+        },
+        chunkFormat: "module",
+        module: true,
     },
 };

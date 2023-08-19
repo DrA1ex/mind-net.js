@@ -7,7 +7,7 @@
     "build": "ng build && cp ./dist/index.html ./dist/404.html",
     "watch": "ng build --watch --configuration development",
     "test": "NODE_OPTIONS=--experimental-vm-modules npx jest",
-    "lib": "npm run test && webpack && mv ./lib/neural-network.d.ts ./lib/main.d.ts && cp ./README.md ./lib/"
+    "lib": "npm run test && (find ./lib ! -path './lib' ! -path './lib/package.json' -mindepth 1 -delete) && webpack && mv ./lib/neural-network.d.ts ./lib/main.d.ts && cp ./README.md ./lib/"
   },
   "type": "module",
   "private": true,
@@ -41,6 +41,7 @@
     "ts-loader": "^9.4.4",
     "typescript": "~5.1.6",
     "webpack": "^5.88.2",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "webpack-node-externals": "^3.0.0"
   }
 }
