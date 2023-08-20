@@ -47,39 +47,68 @@ export abstract class OptimizerBase implements IOptimizer {
     }
 
     updateWeights(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, epoch: number, batchSize: number) {
+        this.applyBatchSize(layer, deltaWeights, deltaBiases, batchSize);
+        this.applyRegularization(layer, deltaWeights, deltaBiases);
+        this.applyDelta(layer, deltaWeights, deltaBiases);
+    }
+
+    protected applyBatchSize(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, batchSize: number) {
+        if (batchSize === 1) return;
+
+        matrix.matrix2d_unary_in_place_op(deltaWeights, (dW) => dW / batchSize);
+        matrix.matrix1d_unary_in_place_op(deltaBiases, (dB) => dB / batchSize);
+    }
+
+    protected applyRegularization(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D) {
+        if (layer.l1BiasRegularization > 0 || layer.l2BiasRegularization > 0) {
+            matrix.matrix1d_binary_in_place_op(deltaBiases, layer.biases, (dB, b) => {
+                let L1Regularization = 0;
+                if (layer.l1BiasRegularization > 0) {
+                    L1Regularization = Math.sign(b) * layer.l1BiasRegularization
+                }
+
+                let l2Regularization = 0;
+                if (layer.l2BiasRegularization > 0) {
+                    l2Regularization = 2 * b * layer.l2BiasRegularization
+                }
+
+                return dB + (L1Regularization + l2Regularization);
+            });
+        }
+
+        if (layer.l1WeightRegularization > 0 || layer.l2WeightRegularization > 0) {
+            for (let j = 0; j < layer.size; j++) {
+                matrix.matrix1d_binary_in_place_op(deltaWeights[j], layer.weights[j], (dW, w) => {
+                    let L1Regularization = 0;
+                    if (layer.l1WeightRegularization > 0) {
+                        L1Regularization = Math.sign(w) * layer.l1WeightRegularization
+                    }
+
+                    let l2Regularization = 0;
+                    if (layer.l2WeightRegularization > 0) {
+                        l2Regularization = 2 * w * layer.l2WeightRegularization
+                    }
+
+                    return dW + (L1Regularization + l2Regularization);
+                });
+            }
+        }
+    }
+
+    protected applyDelta(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D) {
         matrix.matrix1d_binary_in_place_op(layer.biases, deltaBiases, (b, dB) => {
-            let L1Regularization = 0;
-            if (layer.l1BiasRegularization > 0) {
-                L1Regularization = Math.sign(b) * layer.l1BiasRegularization
-            }
-
-            let l2Regularization = 0;
-            if (layer.l2BiasRegularization > 0) {
-                l2Regularization = 2 * b * layer.l2BiasRegularization
-            }
-
-            return b - this.lr * (L1Regularization + l2Regularization + dB / batchSize)
+            return b - this.lr * dB;
         });
 
         for (let j = 0; j < layer.size; j++) {
             matrix.matrix1d_binary_in_place_op(layer.weights[j], deltaWeights[j], (w, dW) => {
-                let L1Regularization = 0;
-                if (layer.l1WeightRegularization > 0) {
-                    L1Regularization = Math.sign(w) * layer.l1WeightRegularization
-                }
-
-                let l2Regularization = 0;
-                if (layer.l2WeightRegularization > 0) {
-                    l2Regularization = 2 * w * layer.l2WeightRegularization
-                }
-
-                return w - this.lr * (L1Regularization + l2Regularization + dW / batchSize);
+                return w - this.lr * dW;
             });
         }
     }
 }
 
-export type MomentCacheT = { [key: string]: matrix.Matrix1D | matrix.Matrix2D };
+export type MomentCacheT = { [key: string]: any };
 
 export abstract class AbstractMomentAcceleratedOptimizer<TCache extends MomentCacheT> extends OptimizerBase {
     public moments = new Map<ILayer, TCache>();
@@ -98,14 +127,13 @@ export abstract class AbstractMomentAcceleratedOptimizer<TCache extends MomentCa
         epoch: number,
         batchSize: number
     ) {
-        // Applying delta averaging to ensure that any batch size equally affects the moment
-        matrix.matrix2d_unary_in_place_op(deltaWeights, (dW) => dW / batchSize);
-        matrix.matrix1d_unary_in_place_op(deltaBiases, (dB) => dB / batchSize);
+        // Apply delta averaging to ensure that any batch size equally affects the moment
+        this.applyBatchSize(layer, deltaWeights, deltaBiases, batchSize);
+        this.applyRegularization(layer, deltaWeights, deltaBiases);
 
         const {dW, dB} = this.updateAveragedWeights(layer, deltaWeights, deltaBiases, epoch);
 
-        // Pass bachSize = 1, since we already apply averaging to deltas
-        super.updateWeights(layer, dW, dB, epoch, 1);
+        this.applyDelta(layer, dW, dB);
     }
 }
 
@@ -142,7 +170,7 @@ const DefaultSgdMomentumArgs: SgdMomentumCtorArgsT = {
     beta: 0.5,
 };
 
-type SgdMomentumCacheT = { mWeights: Matrix2D, mBiases: Matrix1D };
+type SgdMomentumCacheT = { mWeights: Matrix2D, mBiases: Matrix1D, meta: { callCount: number } };
 
 export class SgdMomentumOptimizer extends AbstractMomentAcceleratedOptimizer<SgdMomentumCacheT> {
     readonly description: string;
@@ -163,10 +191,11 @@ export class SgdMomentumOptimizer extends AbstractMomentAcceleratedOptimizer<Sgd
             this.moments.set(layer, {
                 mWeights: matrix.zero_2d(layer.size, layer.prevSize),
                 mBiases: matrix.zero(layer.size),
+                meta: {callCount: 0}
             })
         }
 
-        const {mWeights, mBiases} = this.moments.get(layer)!;
+        const {mWeights, mBiases, meta} = this.moments.get(layer)!;
 
         // In the original formula, we add the moment to the weights, but in other optimizers, we subtract it.
         // To achieve this in our optimizer, we need to copy the moment and negate it.
@@ -176,27 +205,36 @@ export class SgdMomentumOptimizer extends AbstractMomentAcceleratedOptimizer<Sgd
         // To revert the negation of the moment, we should negate it in the subsequent iterations.
         //
         // Mathematically, for each epoch:
-        // 0 epoch: mW_1 = (beta * mW_0 - dW), we modify this to: mW_1 = -(beta * mW_0 - dW)
-        // 1 epoch: mW_2 = (beta * mW_1 - dW), we modify this to: mW_2 = -(beta * mW_1 - dW)
+        // 0 call: mW_1 = (beta * mW_0 - dW), we modify this to: mW_1 = -(beta * mW_0 - dW)
+        // 1 call: mW_2 = (beta * mW_1 - dW), we modify this to: mW_2 = -(beta * mW_1 - dW)
         //          We further simplify: mW_2 = -(beta * -mW_1 - dW) = (beta * mW_1 + dW)
-        // 3 epoch: mW_2 = -(beta * -mW_2 - dW), which simplifies to: (beta * mW_2 + dW) and so on
+        // 3 call: mW_2 = -(beta * -mW_2 - dW), which simplifies to: (beta * mW_2 + dW) and so on
 
         matrix.matrix2d_binary_in_place_op(mWeights, deltaWeights, (mW, dW) => {
-            if (epoch === 0) {
-                return dW - this.beta * mW;
+            if (meta.callCount === 0) {
+                return dW;
             } else {
-                return dW + this.beta * mW;
-            }
-        });
-        matrix.matrix1d_binary_in_place_op(mBiases, deltaBiases, (mB, dB) => {
-            if (epoch === 0) {
-                return dB - this.beta * mB;
-            } else {
-                return dB + this.beta * mB;
+                return -(this.beta * -mW - dW)
             }
         });
 
-        return {dW: mWeights, dB: mBiases};
+        matrix.matrix1d_binary_in_place_op(mBiases, deltaBiases, (mB, dB) => {
+            if (meta.callCount === 0) {
+                return dB;
+            } else {
+                return -(this.beta * -mB - dB)
+            }
+        });
+
+        matrix.matrix2d_binary_in_place_op(deltaWeights, mWeights, (dW, mW) => {
+            return mW;
+        });
+        matrix.matrix1d_binary_in_place_op(deltaBiases, mBiases, (dB, mB) => {
+            return mB;
+        });
+
+        ++meta.callCount;
+        return {dW: deltaWeights, dB: deltaBiases};
     }
 }
 
