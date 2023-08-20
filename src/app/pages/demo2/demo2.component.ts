@@ -107,11 +107,16 @@ export class Demo2Component {
                 .map(f => ({match: f.name.match(/.*.png$/), file: f}))
                 .filter(p => p.match);
 
-            const result: matrix.Matrix1D[] = new Array(items.length);
+            const result: matrix.Matrix1D[] = new Array();
             this.fileProcessingTotal = items.length;
             for (let i = 0; i < items.length; i++) {
                 const item = items[i];
-                result[i] = await image.getTrainingDataFromImage(await item.file.async("arraybuffer"))
+                try {
+                    const imgData = await image.getTrainingDataFromImage(await item.file.async("arraybuffer"))
+                    result.push(imgData);
+                } catch (e) {
+                    console.warn(`Unable to load file: ${item.match}`)
+                }
 
                 if (i % 30 === 0) {
                     this.fileProcessingCurrent = i;
