@@ -137,16 +137,16 @@ export abstract class ModelBase implements IModel {
 
     protected _calculateDropoutMask(layer: ILayer, dst: matrix.Matrix1D) {
         const rate = 1 - layer.dropout;
-        const maxZeros = Math.floor(layer.size * (1 - rate));
+        const scale = 1 / rate;
+        const maxZeros = Math.floor(layer.size * layer.dropout);
 
         let count = 0;
         for (let i = 0; i < layer.size; i++) {
-            let v;
-            if (count < maxZeros && (v = Math.random() < rate ? 1 : 0) === 0) {
-                dst[i] = v;
+            if (count < maxZeros && Math.random() >= rate) {
+                dst[i] = 0;
                 count++;
             } else {
-                dst[i] = 1 / rate;
+                dst[i] = scale;
             }
         }
     }

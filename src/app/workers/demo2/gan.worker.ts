@@ -32,6 +32,7 @@ let testData: number[][];
 let testDataTrue: number[][];
 let testNoise: number[][];
 let testNoiseTrue: number[][];
+let exampleNoise: number[][][];
 
 let nnParams: NetworkParams = DEFAULT_NN_PARAMS;
 let learningRate = DEFAULT_LEARNING_RATE;
@@ -45,14 +46,20 @@ function createNn() {
     }
 
     function _createGenHiddenLayer(size: number) {
-        return new NN.Layers.Dense(size, {activation: "relu", weightInitializer: "he"});
+        return new NN.Layers.Dense(size, {activation: "relu", weightInitializer: "xavier"});
     }
 
     function _createDiscriminatorHiddenLayer(size: number) {
         return new NN.Layers.Dense(size, {
             activation: new NN.Activations.LeakyReluActivation({alpha: 0.2}),
-            weightInitializer: "he",
-            options: {dropout: .3}
+            weightInitializer: "xavier",
+            options: {
+                dropout: .3,
+                l1WeightRegularization: 1e-5,
+                l1BiasRegularization: 1e-5,
+                l2WeightRegularization: 1e-4,
+                l2BiasRegularization: 1e-4,
+            }
         });
     }
 
@@ -108,11 +115,13 @@ function createDashboard() {
 
 addEventListener('message', ({data}) => {
     function _refresh() {
-        if (data.params) {
-            nnParams = data.params;
-        }
-
         nnParams[2] = trainingData[0].length;
+
+        testData = Array.from(iter.take(iter.shuffled(trainingData), 100));
+        testDataTrue = Matrix.one_2d(testData.length, 1);
+        testNoise = Matrix.random_normal_2d(100, nnParams[0], -1, 1);
+        testNoiseTrue = Matrix.one_2d(testNoise.length, 1);
+        exampleNoise = Matrix.fill(() => Matrix.random_normal_2d(10, nnParams[0], -1, 1), 10);
 
         neuralNetwork = createNn();
         dashboard = createDashboard();
@@ -157,11 +166,6 @@ addEventListener('message', ({data}) => {
                     trainingData[i][j] = (0.5 - trainingData[i][j]) * 2;
                 }
             }
-
-            testData = Array.from(iter.take(iter.shuffled(trainingData), 100));
-            testDataTrue = Matrix.one_2d(testData.length, 1);
-            testNoise = Matrix.random_normal_2d(100, nnParams[0], -1, 1);
-            testNoiseTrue = Matrix.one_2d(testNoise.length, 1);
 
             _refresh();
             break;
@@ -268,8 +272,8 @@ function draw() {
     const dataSamples = drawGridSample(DRAW_GRID_DIMENSION, size,
         () => nnUtils.pickRandomItem(trainingData));
 
-    const genSamples = drawGridSample(DRAW_GRID_DIMENSION, size, () => {
-        return neuralNetwork.compute(Matrix.random_normal_1d(nnParams[0]));
+    const genSamples = drawGridSample(DRAW_GRID_DIMENSION, size, (i, j) => {
+        return neuralNetwork.compute(exampleNoise[i][j]);
     })
 
     postMessage({
