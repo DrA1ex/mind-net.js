@@ -20,6 +20,7 @@ const TrainingDashboardOptionsDefaults = {
     height: 20
 }
 
+type DataFn = () => Matrix2D;
 
 export class TrainingDashboard {
     public readonly PlotId = {loss: 0, accuracy: 1, lr: 2}
@@ -32,8 +33,8 @@ export class TrainingDashboard {
 
     constructor(
         public readonly model: ModelBase,
-        public readonly testInput: Matrix2D,
-        public readonly testTrue: Matrix2D,
+        public readonly testInput: (Matrix2D | DataFn),
+        public readonly testTrue: (Matrix2D | DataFn),
         options: Partial<TrainingDashboardOptionsT> = {}
     ) {
         this.options = {...TrainingDashboardOptionsDefaults, ...options};
@@ -41,7 +42,10 @@ export class TrainingDashboard {
     }
 
     public update() {
-        const {loss, accuracy} = this.model.evaluate(this.testInput, this.testTrue);
+        const inputData = (typeof this.testInput === "function") ? this.testInput() : this.testInput;
+        const expectedData = (typeof this.testTrue === "function") ? this.testTrue() : this.testTrue;
+
+        const {loss, accuracy} = this.model.evaluate(inputData, expectedData);
 
         this.dashboard.title = `Epoch: ${this.model.epoch}`;
 
@@ -90,7 +94,12 @@ export class TrainingDashboard {
         chart.addPlot({
             xOffset: 0, yOffset: 0,
             width: c1Width, height: options.height
-        }, {title: "Loss", axisScale: PlotAxisScale.log, aggregation: PlotSeriesAggregationFn.mean, axisLabelsFraction: 4});
+        }, {
+            title: "Loss",
+            axisScale: PlotAxisScale.log,
+            aggregation: PlotSeriesAggregationFn.mean,
+            axisLabelsFraction: 4
+        });
         chart.addPlotSeries(0, {color: Color.blue, overflow: PlotSeriesOverflow.logScale});
 
         // Accuracy
