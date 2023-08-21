@@ -115,6 +115,34 @@ const [result] = network.compute([x, y]);
 console.log(`sqrt(${x.toFixed(2)} ** 2 + ${y.toFixed(2)} ** 2) = ${result.toFixed(2)} (real: ${real.toFixed(2)})`);
 ```
 
+### Generative Adversarial network (GAN) for Colorful Cartoon generation
+
+```javascript
+// Full code see in ./examples/src/cartoon_colorful_example.js
+
+// Fetch dataset
+const zipData = await fetch("https://github.com/DrA1ex/mind-net.js/files/12394478/cartoon-500-28.zip").then(r => r.arrayBuffer());
+
+// Transform dataset
+const trainData = (await DatasetUtils.loadDataset(zipData)).splice(0, 500);
+
+// ...
+
+// Build model
+const ganModel = new GenerativeAdversarialModel(generator, discriminator, createOptimizer(), loss);
+
+// Train network
+for (let i = 0; i < epochs; i++) {
+    console.log("Epoch:", ganModel.ganChain.epoch + 1);
+    
+    // Train epoch
+    ganModel.train(trainData, {batchSize});
+
+    // Save generated image
+    await ImageUtils.saveSnapshot(ganModel.generator, ganModel.ganChain.epoch, 10, 3);
+}
+```
+
 ### Saving/Loading model
 ```javascript
 import {SequentialModel, Dense, ModelSerialization} from "mind-net.js";
@@ -177,8 +205,20 @@ for (let i = 0; i <= 150; i++) {
 
 
 ## Examples
-- Seuqential Network @ [implementation](src/app/neural-network/engine/models/sequential.ts)
-- Generative-adversarial Network @ [implementation](src/app/neural-network/engine/models/gan.ts)
+
+See examples [here](examples/)
+
+To run examples, follow these steps:
+```shell
+# Go to examples folder
+cd ./examples
+
+# Install packages
+npm install
+
+# Run example
+node ./src/cartoon_colorful_example.js
+```
 
 # Demo
 ## [Sequential demo](https://dra1ex.github.io/mind-net.js/demo1/)
