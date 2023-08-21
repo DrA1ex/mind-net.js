@@ -119,6 +119,11 @@ console.log(`sqrt(${x.toFixed(2)} ** 2 + ${y.toFixed(2)} ** 2) = ${result.toFixe
 
 ### Generative Adversarial network (GAN) for Colorful Cartoon generation with VAE filtering
 
+<img width="480" alt="animation" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/e3c4a943-036d-4bd8-8e04-035cebb579aa">
+
+Generated images grid (20x20): [link](https://github.com/DrA1ex/mind-net.js/assets/1194059/8866fc09-823b-4a13-be8e-de81d4fbafd5)
+
+
 ```javascript
 // Full code see in ./examples/src/cartoon_colorful_example.js
 
@@ -273,14 +278,22 @@ node ./src/cartoon_colorful_example.js
 
 <img width="800" alt="checkmarks" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/0ff74201-6866-4613-a8d9-5a52fe932179">
 
-
-
-**Example training datasets**: 
-- [mnist-500-16.zip](https://github.com/DrA1ex/mind-net.js/files/7082675/mnist-16.zip)
-- [check-mark-10-16.zip](https://github.com/DrA1ex/mind-net.js/files/7082841/check-mark-16.zip)
-- [fashion-mnist-300-28.zip](https://github.com/DrA1ex/mind-net.js/files/12293875/fashion-mnist-dataset.zip)
-
 **Source code**: [src/app/pages/demo2](/src/app/pages/demo2)
+
+
+### Datasets used in examples
+
+_Black & White:_
+- [mnist-500-16.zip](https://github.com/DrA1ex/mind-net.js/files/7082675/mnist-16.zip) ([source](https://www.kaggle.com/competitions/digit-recognizer))
+- [check-mark-10-16.zip](https://github.com/DrA1ex/mind-net.js/files/7082841/check-mark-16.zip) (original)
+- [fashion-mnist-300-28.zip](https://github.com/DrA1ex/mind-net.js/files/12293875/fashion-mnist-dataset.zip) ([source](https://www.kaggle.com/datasets/zalando-research/fashionmnist))
+
+_Colorful:_
+- [cartoon-500-28.zip](https://github.com/DrA1ex/mind-net.js/files/12394478/cartoon-500-28.zip) ([source](https://google.github.io/cartoonset/))
+- [cartoon-2500-28.zip](https://github.com/DrA1ex/mind-net.js/files/12407792/cartoon-2500-28.zip) ([source](https://google.github.io/cartoonset/))
+- [cartoon-2500-64.zip](https://github.com/DrA1ex/mind-net.js/files/12398103/cartoon-2500-64.zip) ([source](https://google.github.io/cartoonset/))
+
+
 
 ## License
 This project is licensed under the BSD 3 License. See the [LICENSE](LICENSE) file for more information.
