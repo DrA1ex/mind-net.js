@@ -1,4 +1,5 @@
 // Importing necessary modules and libraries
+import fs from "fs";
 import tqdm from "tqdm";
 import {
     Dense,
@@ -6,7 +7,7 @@ import {
     LeakyReluActivation,
     SequentialModel,
     AdamOptimizer,
-    Iter,
+    Iter, ModelSerialization, GanSerialization, Matrix,
 } from "mind-net.js";
 import * as DatasetUtils from "./utils/dataset.js";
 import * as ImageUtils from "./utils/image.js";
@@ -22,7 +23,7 @@ console.log("Fetching dataset...");
 const zipData = await fetch(DatasetUrl).then(r => r.arrayBuffer());
 
 
-console.log("Preparing dataset...");
+console.log("Preparing...");
 
 // Loading the dataset from the zip file
 const trainData = await DatasetUtils.loadDataset(zipData);
@@ -32,16 +33,16 @@ const gsTrainData = grayscaleDataset(trainData, 3);
 
 
 // Setting up necessary parameters and dimensions
-const inputDim = 64;
+const inputDim = 16;
 const imageDim = trainData[0].length;
 const gsImageDim = gsTrainData[0].length;
 const imageSize = Math.sqrt(trainData[0].length / 3);
 
-const epochs = 100;
+const epochs = 40;
 const batchSize = 64;
 
-const lr = 0.002;
-const decay = 5e-5;
+const lr = 0.005;
+const decay = 5e-4;
 const beta = 0.5;
 const dropout = 0.3;
 const loss = "binaryCrossEntropy";
@@ -98,6 +99,31 @@ function _filterWithVAE(input) {
     return gen;
 }
 
+async function _saveModel() {
+    console.log("Saving models...")
+
+    const time = new Date().toISOString();
+
+    const vaeDump = ModelSerialization.save(vae);
+    const vaeFileName = `./out/vae_${time}_${vae.epoch}.json`
+    fs.writeFileSync(vaeFileName, JSON.stringify(vaeDump));
+    console.log(`Saved ${vaeFileName}`);
+
+    const ganDump = GanSerialization.save(ganModel);
+    const ganFileName = `./out/gan_${time}_${ganModel.ganChain.epoch}.json`
+    fs.writeFileSync(ganFileName, JSON.stringify(ganDump));
+    console.log(`Saved ${ganFileName}`);
+
+    const finalGridFileName = `./out/final_${time}.png`;
+    await ImageUtils.saveImageGrid(() => _filterWithVAE(Matrix.random_1d(inputDim)),
+        finalGridFileName, imageSize, 25, 3);
+}
+
+// Save model on exit
+process.on("SIGINT", async () => {
+    await _saveModel();
+    process.exit();
+})
 
 console.log("Training...");
 
@@ -126,3 +152,6 @@ for (const _ of tqdm(Array.from(Iter.range(0, epochs)))) {
 
     console.log("\n");
 }
+
+// Save trained models
+await _saveModel();
