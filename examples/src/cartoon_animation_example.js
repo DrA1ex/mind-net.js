@@ -5,7 +5,7 @@ import * as ModelUtils from "./utils/model.js";
 
 
 const name = "2023-08-22T12:45:42.929Z_40";
-const path = "./_out/_models";
+const path = "./out/models";
 
 const vaeDump = fs.readFileSync(`${path}/vae_${name}.json`);
 const upscalerDump = fs.readFileSync(`${path}/upscaler_${name}.json`);
@@ -15,8 +15,9 @@ const vae = ModelSerialization.load(JSON.parse(vaeDump.toString()));
 const upscaler = ModelSerialization.load(JSON.parse(upscalerDump.toString()));
 const gan = GanSerialization.load(JSON.parse(ganDump.toString()));
 
-const count = 20;
-const framesPerSample = 4;
+const count = 10;
+const framesPerSample = 6;
+const scale = 2;
 
 const inSize = gan.generator.layers[0].size;
 const outSize = Math.sqrt(upscaler.layers[upscaler.layers.length - 1].size);
@@ -40,7 +41,7 @@ for (let k = 0; k <= count; k++) {
                 return ModelUtils.processMultiChannelData(upscaler, filtered, 3);
             },
             `./out/animation/animation_${(k * framesPerSample + i).toString().padStart(6, "0")}.png`,
-            outSize, 1, 3, 0, 1
+            outSize, 1, 3, 0, scale
         );
     }
 
