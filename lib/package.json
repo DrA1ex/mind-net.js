@@ -20,6 +20,14 @@
     "neural-network",
     "neural-network-engine",
     "gan",
-    "generative-adversarial-network"
+    "generative-adversarial-network",
+    "artificial-intelligence",
+    "classification",
+    "regression",
+    "image-processing",
+    "unsupervised-learning",
+    "supervised-learning",
+    "vae",
+    "variational-autoencoder"
   ]
 }
