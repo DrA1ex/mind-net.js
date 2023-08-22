@@ -5,13 +5,15 @@ Simple to use neural network implementation in pure TypeScript.
 [![npm version](https://badge.fury.io/js/mind-net.js.svg)](https://badge.fury.io/js/mind-net.js) [![Tests](https://github.com/DrA1ex/mind-net.js/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/DrA1ex/mind-net.js/actions/workflows/tests.yml) [![GitHub Pages](https://github.com/DrA1ex/mind-net.js/actions/workflows/jekyll-gh-pages.yml/badge.svg?branch=main)](https://github.com/DrA1ex/mind-net.js/actions/workflows/jekyll-gh-pages.yml)
 
 <p align="center">
-<img alt="Logo" width="128" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/6d2ce44b-f435-4cbc-902e-0d60eaf15dc1"/>
+<img alt="Logo" width="128" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/6ab40587-17a2-4ca9-bf4a-41d2f4d92549"/>
 </p>
+
+
 
 ## About
 mind-net.js is a lightweight library that offers the necessary tools to train and execute neural networks. By using mind-net.js, developers can conveniently create and explore neural networks, gaining practical knowledge in the domain of machine learning.
 
-**Note:** This library is primarily intended for educational purposes and is best suited for small to medium-sized projects. It may not be suitable for high-performance or large-scale applications.
+**Note:** This library is primarily intended for small to medium-sized projects or educational purposes. It may not be suitable for high-performance or large-scale applications.
 ## Installation 
 
 ```bash
