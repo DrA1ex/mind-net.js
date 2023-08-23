@@ -1,5 +1,3 @@
-// Importing necessary modules and libraries
-import fs from "fs";
 import tqdm from "tqdm";
 
 import {
@@ -8,7 +6,7 @@ import {
     LeakyReluActivation,
     SequentialModel,
     AdamOptimizer,
-    Iter, ModelSerialization, GanSerialization, Matrix,
+    Iter, Matrix,
 } from "mind-net.js";
 
 import * as DatasetUtils from "./utils/dataset.js";
@@ -48,7 +46,7 @@ const upscaleTrainData = ImageUtils.grayscaleDataset(bigTrainData);
 
 
 // Setting up necessary parameters and dimensions
-const inputDim = 16;
+const inputDim = 32;
 const imageDim = trainData[0].length;
 const gsImageDim = gsTrainData[0].length;
 const upscaleImageDim = upscaleTrainData[0].length;
@@ -58,8 +56,7 @@ const upscaledImageSize = Math.sqrt(upscaleImageDim);
 const epochs = 40;
 const batchSize = 64;
 
-const lr = 0.001;
-const lrGan = 0.005;
+const lr = 0.005;
 const decay = 5e-4;
 const beta = 0.5;
 const dropout = 0.3;
@@ -79,21 +76,21 @@ const createHiddenLayer = (size) => new Dense(size, {
 });
 
 // Creating the generator model
-const generator = new SequentialModel(createOptimizer(lrGan), loss);
+const generator = new SequentialModel(createOptimizer(lr), loss);
 generator.addLayer(new Dense(inputDim));
 generator.addLayer(createHiddenLayer(64));
 generator.addLayer(createHiddenLayer(128));
 generator.addLayer(new Dense(imageDim, {activation: "tanh", weightInitializer: initializer}));
 
 // Creating the discriminator model
-const discriminator = new SequentialModel(createOptimizer(lrGan), loss);
+const discriminator = new SequentialModel(createOptimizer(lr), loss);
 discriminator.addLayer(new Dense(imageDim));
 discriminator.addLayer(createHiddenLayer(128));
 discriminator.addLayer(createHiddenLayer(64));
 discriminator.addLayer(new Dense(1, {activation: "sigmoid", weightInitializer: initializer}));
 
 // Creating the generative adversarial (GAN) model
-const ganModel = new GenerativeAdversarialModel(generator, discriminator, createOptimizer(lrGan), loss);
+const ganModel = new GenerativeAdversarialModel(generator, discriminator, createOptimizer(lr), loss);
 
 // Creating the variational autoencoder (VAE) model
 const vae = new SequentialModel(createOptimizer(lr), "mse");
@@ -124,41 +121,20 @@ function _upscale(input) {
 }
 
 async function _saveModel() {
-    console.log("Saving models...")
+    const outPath = "./out/models";
+    await ModelUtils.saveModels({
+        vae,
+        upscaler,
+        gan: ganModel,
+    }, outPath);
 
-    const time = new Date().toISOString();
-    const epoch = ganModel.ganChain.epoch;
-
-    if (!fs.existsSync("./out/models")) {
-        fs.mkdirSync("./out/models");
-    }
-
-    const vaeDump = ModelSerialization.save(vae);
-    const vaeFileName = `./out/models/vae_${time}_${epoch}.json`
-    fs.writeFileSync(vaeFileName, JSON.stringify(vaeDump));
-    console.log(`Saved ${vaeFileName}`);
-
-    const upscalerDump = ModelSerialization.save(upscaler);
-    const upscalerFilename = `./out/models/upscaler_${time}_${epoch}.json`
-    fs.writeFileSync(upscalerFilename, JSON.stringify(upscalerDump));
-    console.log(`Saved ${upscalerFilename}`);
-
-    const ganDump = GanSerialization.save(ganModel);
-    const ganFileName = `./out/models/gan_${time}_${epoch}.json`
-    fs.writeFileSync(ganFileName, JSON.stringify(ganDump));
-    console.log(`Saved ${ganFileName}`);
-
-    const finalGridFileName = `./out/models/sample_${time}_${epoch}.png`;
-    await ImageUtils.saveImageGrid(() =>
-            _upscale(Matrix.random_normal_1d(inputDim, -1, 1)),
-        finalGridFileName, upscaledImageSize, 20, 3, 4, 1);
+    await ModelUtils.saveModelsSamples("cartoon", outPath, upscaledImageSize,
+        () => _upscale(Matrix.random_normal_1d(inputDim, -1, 1)),
+        {channel: 3});
 }
 
-// Save model on exit
-process.on("SIGINT", async () => {
-    await _saveModel();
-    process.exit();
-})
+let quitRequested = false;
+process.on("SIGINT", async () => quitRequested = true);
 
 console.log("Training...");
 
@@ -205,6 +181,7 @@ for (const _ of tqdm(Array.from(Iter.range(0, epochs)))) {
         `./out/filtered_upscaled_${vae.epoch.toString().padStart(6, "0")}.png`, upscaledImageSize, 5, 3, 4, 2);
 
     console.log("\n");
+    if (quitRequested) break;
 }
 
 // Save trained models

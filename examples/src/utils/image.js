@@ -114,3 +114,73 @@ function getColor(data, index, channel) {
 
     throw new Error("Unsupported channel count");
 }
+
+export function splitChunks(data, imageSize, cropSize) {
+    if (data.length !== imageSize * imageSize) throw new Error("Invalid image size")
+
+    const dimFactor = imageSize / cropSize;
+    if (dimFactor % 1 !== 0) throw new Error("Sizes must be multiples of each other");
+
+    const chunkCount = dimFactor * dimFactor;
+    const result = new Array(chunkCount);
+
+    for (let y = 0; y < dimFactor; y++) {
+        for (let x = 0; x < dimFactor; x++) {
+            result[y * dimFactor + x] = crop(data, x * cropSize, y * cropSize, imageSize, cropSize);
+        }
+    }
+
+    return result;
+}
+
+export function crop(data, x, y, imageSize, cropSize) {
+    if (x + cropSize > imageSize) throw new Error("Invalid x offset");
+    if (y + cropSize > imageSize) throw new Error("Invalid y offset");
+
+    const chunk = new Array(cropSize * cropSize);
+    for (let i = 0; i < cropSize; i++) {
+        const yOffset = (y + i) * imageSize;
+        for (let j = 0; j < cropSize; j++) {
+            chunk[i * cropSize + j] = data[yOffset + x + j];
+        }
+    }
+
+    return chunk;
+}
+
+export function joinChunks(chunks) {
+    const chunkCount = chunks.length
+    const chunkLength = chunks[0].length;
+    const totalSize = chunkLength * chunkCount;
+
+    const imageSize = Math.sqrt(totalSize);
+    const cropSize = Math.sqrt(chunkLength);
+
+    if (!Number.isFinite(cropSize) || cropSize % 1 !== 0) throw new Error("Invalid chunk size");
+    if (!Number.isFinite(imageSize) || imageSize % 1 !== 0) throw new Error("Invalid chunk count");
+
+    const dimFactor = imageSize / cropSize;
+    if (dimFactor % 1 !== 0) throw new Error("Sizes must be multiples of each other");
+
+    const result = new Array(totalSize);
+    for (let y = 0; y < dimFactor; y++) {
+        for (let x = 0; x < dimFactor; x++) {
+            setCroppedImage(chunks[y * dimFactor + x], result,
+                x * cropSize, y * cropSize, imageSize, cropSize);
+        }
+    }
+
+    return result;
+}
+
+export function setCroppedImage(chunk, dst, x, y, imageSize, cropSize) {
+    if (x + cropSize > imageSize) throw new Error("Invalid x offset");
+    if (y + cropSize > imageSize) throw new Error("Invalid y offset");
+
+    for (let i = 0; i < cropSize; i++) {
+        const yOffset = (y + i) * imageSize;
+        for (let j = 0; j < cropSize; j++) {
+            dst[yOffset + x + j] = chunk[i * cropSize + j];
+        }
+    }
+}
