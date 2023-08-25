@@ -1,17 +1,32 @@
 import MindNet, {Matrix} from "mind-net.js";
 import * as TimeUtils from "./utils/time.js";
 
-const input = Matrix.random_1d(28 * 28);
+const Sizes = [128, 256, 512];
 
 const model = new MindNet.Models.Sequential();
-model.addLayer(new MindNet.Layers.Dense(28 * 28, {activation: "relu"}));
-model.addLayer(new MindNet.Layers.Dense(1024, {activation: "relu"}));
-model.addLayer(new MindNet.Layers.Dense(2048, {activation: "relu"}));
-model.addLayer(new MindNet.Layers.Dense(64 * 64, {activation: "relu"}));
+for (const size of Sizes) {
+    model.addLayer(new MindNet.Layers.Dense(size, {activation: "relu"}));
+}
+
 model.compile();
 
-const Iters = 1000;
+const ComputeIters = 10000;
+const TrainIters = 5000;
+const FullTrainIters = 100;
+const Count = 100;
+
+const computeInput = Matrix.random_1d(Sizes[0]);
+
+const trainData = Matrix.random_2d(Count, Sizes[0]);
+const trainExcepted = Matrix.random_2d(Count, Sizes[Sizes.length - 1]);
+
+const singleTrainData = trainData.slice(0, 1);
+const singleTrainExpected = trainExcepted.slice(0, 1);
 
 for (let i = 0; i < 10; i++) {
-    TimeUtils.timeIt(() => model.compute(input), `Compute #${i}`, Iters);
+    TimeUtils.timeIt(() => model.compute(computeInput), `Compute #${i}`, ComputeIters);
+    TimeUtils.timeIt(() => model.train(singleTrainData, singleTrainExpected), `Train (Single) #${i}`, TrainIters);
+    TimeUtils.timeIt(() => model.train(trainData, trainExcepted), `Train (Full) #${i}`, FullTrainIters);
+
+    console.log();
 }
