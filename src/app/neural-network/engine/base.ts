@@ -25,6 +25,7 @@ export interface IModel {
 
     beforeTrain(): void;
     afterTrain(): void;
+    compile(): void;
 }
 
 export interface IActivation {

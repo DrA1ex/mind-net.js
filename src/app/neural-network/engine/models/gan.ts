@@ -1,18 +1,17 @@
 import * as matrix from "../matrix"
 import * as iter from "../iter"
 
-import {SequentialModel} from "./sequential";
 import {ChainModel} from "./chain";
 import {OptimizerT} from "../optimizers";
-import {ILoss, IOptimizer} from "../base";
+import {ILoss, IModel, IOptimizer} from "../base";
 import {LossT} from "../loss";
 
 
 export class GenerativeAdversarialModel {
     readonly ganChain: ChainModel;
 
-    constructor(public generator: SequentialModel,
-                public discriminator: SequentialModel,
+    constructor(public generator: IModel,
+                public discriminator: IModel,
                 optimizer: OptimizerT | IOptimizer = 'sgd',
                 loss: LossT | ILoss = "mse") {
         if (discriminator.layers[discriminator.layers.length - 1].size !== 1) {

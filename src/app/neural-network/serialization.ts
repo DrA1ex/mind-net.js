@@ -54,7 +54,7 @@ type OptimizerSerializationEntry = {
     moments?: object[]
 }
 
-type ModelSerialized = {
+export type ModelSerialized = {
     model: keyof typeof Models,
     optimizer: OptimizerSerializationEntry,
     loss: SerializationEntry<typeof Loss>,
@@ -285,7 +285,7 @@ export class ModelSerialization {
     }
 }
 
-type GanSerialized = {
+export type GanSerialized = {
     generator: ModelSerialized,
     discriminator: ModelSerialized,
     epoch: number,

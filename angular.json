@@ -109,7 +109,6 @@
       }
     }
   },
-  "defaultProject": "neural-network",
   "cli": {
     "analytics": false
   }

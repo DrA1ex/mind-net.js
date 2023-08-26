@@ -9,13 +9,13 @@ function toFixed(value, fraction = 2) {
     return label.slice(0, trimIndex);
 }
 
-export function timeIt(fn, label = "time_it", count = 1) {
+export async function timeIt(fn, label = "time_it", count = 1) {
     const t = performance.now();
 
     const times = [];
     for (let i = 0; i < count; i++) {
         const localT = performance.now();
-        fn();
+        await fn();
 
         times.push(performance.now() - localT);
     }

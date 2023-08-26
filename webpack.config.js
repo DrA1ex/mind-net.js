@@ -5,25 +5,38 @@ import nodeExternals from 'webpack-node-externals';
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
-export default {
+const common = {
     mode: "production",
+    externalsPresets: {
+        node: true
+    },
+    optimization: {
+        minimize: false,
+    },
+    experiments: {
+        outputModule: true,
+    },
+}
+
+const commonOutput = {
+    path: path.resolve(__dirname, "lib"),
+    chunkFormat: "module",
+    library: {
+        type: "module"
+    },
+    module: true,
+}
+
+const main = {
+    ...common,
+    name: "main",
+    entry: {
+        "main": "./src/app/neural-network/neural-network.ts"
+    },
     externals: [nodeExternals({
         allowlist: ["tslib"],
         importType: "module",
     })],
-    externalsPresets: {
-        node: true
-    },
-    entry: {
-        "main": {
-            import: [
-                "./src/app/neural-network/neural-network.ts",
-            ]
-        },
-    },
-    optimization: {
-        minimize: false
-    },
     module: {
         rules: [
             {
@@ -35,22 +48,41 @@ export default {
                     }
                 },
                 exclude: /node_modules/,
-            },
+            }
         ],
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
     },
-    experiments: {
-        outputModule: true,
-    },
     output: {
-        path: path.resolve(__dirname, "lib"),
+        ...commonOutput,
         filename: '[name].js',
-        library: {
-            type: "module"
+        clean: {
+            keep: /package\.json/
         },
-        chunkFormat: "module",
-        module: true,
+        assetModuleFilename: (pathData) => {
+            const {filename} = pathData;
+
+            if (filename.endsWith('.ts')) {
+                return '[name].js';
+            } else {
+                return '[name][ext]';
+            }
+        },
     },
-};
+}
+
+const worker = {
+    ...common,
+    entry: ["./lib/parallel.worker.js"],
+    dependencies: ["main"],
+    output: {
+        ...commonOutput,
+        filename: "parallel.worker.js"
+    },
+    externals: {
+        "../../neural-network": "./main.js",
+    }
+}
+
+export default [main, worker];

@@ -1,16 +1,16 @@
 import {one, zero, zero_2d} from "../matrix";
 
-import {ILayer} from "../base";
+import {ILayer, IModel} from "../base";
 import {ModelBase} from "./base";
 
 export class ChainModel extends ModelBase {
     layers: ILayer[] = [];
     private trainable: boolean[] = [];
-    private modelByLayer = new Map<ILayer, [ModelBase, boolean]>();
+    private modelByLayer = new Map<ILayer, [IModel, boolean]>();
 
-    readonly models: ModelBase[] = [];
+    readonly models: IModel[] = [];
 
-    addModel(model: ModelBase, trainable = true): this {
+    addModel(model: IModel, trainable = true): this {
         this.compiled = false;
 
         this.models.push(model);

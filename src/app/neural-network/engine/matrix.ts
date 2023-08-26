@@ -1,10 +1,12 @@
 import * as iter from './iter';
 
+//TODO: Add support for Float64Array
+
 export type Matrix1D = number[];
 export type Matrix2D = number[][];
 
-export type OptMatrix1D = number[] | undefined;
-export type OptMatrix2D = number[][] | undefined;
+export type OptMatrix1D = Matrix1D | undefined;
+export type OptMatrix2D = Matrix2D | undefined;
 
 
 export function fill<T>(value_fn: (i: number) => T, length: number): T[] {
@@ -130,6 +132,19 @@ export function div(a: Matrix1D, b: Matrix1D, dst: OptMatrix1D = undefined): Mat
 export function copy_to(src: Matrix1D, dst: Matrix1D): Matrix1D {
     for (let i = 0; i < src.length; i++) {
         dst[i] = src[i];
+    }
+
+    return dst;
+}
+
+export function copy_to_2d(src: Matrix2D, dst: Matrix2D): Matrix2D {
+    const rows = src.length;
+    const cols = src[0].length;
+
+    for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+            dst[i][j] = src[i][j];
+        }
     }
 
     return dst;

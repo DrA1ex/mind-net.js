@@ -37,3 +37,7 @@ export {
 export {
     ModelSerialization, GanSerialization
 } from "./serialization"
+
+export {
+    ParallelModelWrapper, ParallelUtils
+} from "./engine/wrapper/parallel"

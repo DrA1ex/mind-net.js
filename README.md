@@ -47,17 +47,28 @@ console.log(network.compute([1, 0])); // 0.99
 
 1. Install packages and build bundle:
 ```bash
-# Install required packages
-npm install browserify esmify --save-dev
+# Step 1: Install the required packages
+npm install esbuild --save-dev
 
-# Use browserify and esmify to build the bundle
-# Assumes that your entry file is index.js 
-browserify index.js -p esmify -o bundle.js
+# Option 1: Building the single file bundle
+# (Assuming your entry file is index.js)
+# This command creates bundle.js as the output bundle
+npx esbuild index.js --bundle --format=esm --outfile=bundle.js
+
+# Option 2: Building the bundle with the worker script for ParallelModelWrapper
+# Use this command if you want to include the worker script
+# (Assuming your entry file is index.js)
+# This command creates a bundle directory with the built bundle set
+esbuild index=index.js parallel.worker=node_modules/mind-net.js/parallel.worker.js --bundle --splitting --format=esm --outdir=./bundle
 ```
 
 2. Import the bundle script in your HTML:
 ```html
+<!-- Option 1: -->
 <script type="module" src="./bundle.js"></script>
+
+<!-- Option 2: -->
+<script type="module" src="./bundle/index.js"></script>
 ```
 
 ### More complex examples

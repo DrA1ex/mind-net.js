@@ -7,8 +7,8 @@ import {
     PlotSeriesOverflow
 } from "text-graph.js";
 
-import {ModelBase} from "./engine/models/base";
 import {Matrix2D} from "./engine/matrix";
+import {IModel} from "./engine/base";
 
 type TrainingDashboardOptionsT = {
     width: number,
@@ -32,7 +32,7 @@ export class TrainingDashboard {
     public readonly options: TrainingDashboardOptionsT;
 
     constructor(
-        public readonly model: ModelBase,
+        public readonly model: IModel,
         public readonly testInput: (Matrix2D | DataFn),
         public readonly testTrue: (Matrix2D | DataFn),
         options: Partial<TrainingDashboardOptionsT> = {}
