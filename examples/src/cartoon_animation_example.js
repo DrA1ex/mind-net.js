@@ -19,8 +19,8 @@ const count = 10;
 const framesPerSample = 6;
 const scale = 2;
 
-const inSize = gan.generator.layers[0].size;
-const outSize = Math.sqrt(upscaler.layers[upscaler.layers.length - 1].size);
+const inSize = gan.generator.inputSize;
+const outSize = Math.sqrt(upscaler.outputSize);
 
 const beginning = Matrix.random_normal_1d(inSize, -1, 1);
 let start = beginning;

@@ -6,8 +6,8 @@ export const InputCache = new Map();
 export async function saveSnapshot(network, version, {
     label = "out", count = 10, channel = 1, border = 2, scale = 4
 }) {
-    const inSize = network.layers[0].size;
-    const outSize = Math.sqrt(network.layers[network.layers.length - 1].size / channel);
+    const inSize = network.inputSize;
+    const outSize = Math.sqrt(network.outputSize / channel);
 
     if (!InputCache.has(network)) InputCache.set(network, {});
     const networkCache = InputCache.get(network);

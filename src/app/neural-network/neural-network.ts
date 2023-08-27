@@ -41,3 +41,7 @@ export {
 export {
     ParallelModelWrapper, ParallelUtils
 } from "./engine/wrapper/parallel"
+
+export {
+    ParallelGanWrapper
+} from "./engine/wrapper/parallel-gan";

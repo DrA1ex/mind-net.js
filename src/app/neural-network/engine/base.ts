@@ -17,6 +17,9 @@ export interface IModel {
     readonly optimizer: IOptimizer;
     readonly loss: ILoss;
 
+    readonly inputSize: number;
+    readonly outputSize: number;
+
     compute(input: matrix.Matrix1D): matrix.Matrix1D;
     train(input: matrix.Matrix1D[], expected: matrix.Matrix1D[], options: Partial<ModelTrainOptionsT>): void;
     trainBatch(batch: Iterable<[matrix.Matrix1D, matrix.Matrix1D]>): void;

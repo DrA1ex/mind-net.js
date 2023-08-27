@@ -1,7 +1,7 @@
 // Importing necessary modules and libraries
 import tqdm from "tqdm";
 
-import {SequentialModel, AdamOptimizer, Dense, Iter, ParallelModelWrapper,} from "mind-net.js";
+import {SequentialModel, AdamOptimizer, Dense, Iter, Matrix, ParallelModelWrapper,} from "mind-net.js";
 
 import * as DatasetUtils from "./utils/dataset.js";
 import * as ImageUtils from "./utils/image.js";
@@ -48,12 +48,15 @@ const initializer = "xavier";
 const epochs = 40;
 const batchSize = 64;
 const upscalerChunksDivider = 4;
+const imageChannel = 3;
+const epochSampleSize = 5;
+const finalSampleSize = 10;
 const upscalerChunks = upscalerChunksDivider * upscalerChunksDivider;
 
 const imageDim = trainData[0].length;
 const gsImageDim = gsTrainData[0].length;
 const upscaleImageDim = upscaleTrainData[0].length;
-const imageSize = Math.sqrt(imageDim / 3);
+const imageSize = Math.sqrt(imageDim / imageChannel);
 const upscaledImageSize = Math.sqrt(upscaleImageDim);
 
 // Create chunked training set
@@ -77,18 +80,38 @@ upscaler.addLayer(createHiddenLayer(128));
 upscaler.addLayer(new Dense(upscaleImageDim / upscalerChunks, {activation: "tanh", weightInitializer: initializer}));
 upscaler.compile();
 
-function _upscale(input) {
-    const result = new Array(upscaleImageDim * 3);
+async function _upscaleBatch(inputs) {
+    const oSize = upscaleImageDim * imageChannel;
+    const result = new Float64Array(inputs.length * oSize);
 
-    for (let c = 0; c < 3; c++) {
-        const channel = ImageUtils.getChannel(input, c, 3);
-        const chunks = ImageUtils.splitChunks(channel, imageSize, imageSize / upscalerChunksDivider);
-        const outChunks = chunks.map(chunk => upscaler.compute(chunk));
-        const upscaled = ImageUtils.joinChunks(outChunks);
-        ImageUtils.setChannel(result, upscaled, c, 3);
+    const chunks = inputs.map(input =>
+        Array.from(Iter.map(
+            Iter.range(0, imageChannel), c =>
+                ImageUtils.splitChunks(
+                    ImageUtils.getChannel(input, c, imageChannel),
+                    imageSize, imageSize / upscalerChunksDivider
+                )
+        )).flat()
+    ).flat();
+
+    const outChunks = await pUpscaler.compute(chunks, {batchSize: 128});
+    const chunksPerInput = chunks.length / inputs.length;
+    const chunkPerChannel = chunksPerInput / imageChannel;
+
+    const outputs = new Array(inputs.length);
+    for (let i = 0; i < inputs.length; i++) {
+        const slice = result.subarray(i * oSize, (i + 1) * oSize);
+        outputs[i] = slice;
+
+        const chunksOffset = i * chunksPerInput;
+        for (let c = 0; c < imageChannel; c++) {
+            const chunkSlice = outChunks.slice(chunksOffset + c * chunkPerChannel, chunksOffset + (c + 1) * chunkPerChannel);
+            const upscaled = ImageUtils.joinChunks(chunkSlice);
+            ImageUtils.setChannel(slice, upscaled, c, imageChannel);
+        }
     }
 
-    return result;
+    return outputs;
 }
 
 async function _saveModel() {
@@ -96,9 +119,16 @@ async function _saveModel() {
     const outPath = "./out/models/";
 
     await ModelUtils.saveModels(models, outPath);
+
+    const generated = await _upscaleBatch(Matrix.fill(
+        () => trainData[Math.floor(Math.random() * trainData.length)],
+        finalSampleSize * finalSampleSize
+    ));
+
     await ModelUtils.saveModelsSamples("chunked_upscaler", outPath, upscaledImageSize,
-        () => _upscale(trainData[Math.floor(Math.random() * trainData.length)]),
-        {channel: 3, count: 10});
+        (x, y) => generated[x + y * finalSampleSize],
+        {channel: imageChannel, count: finalSampleSize}
+    );
 }
 
 let quitRequested = false;
@@ -118,11 +148,14 @@ for (const _ of tqdm(Array.from(Iter.range(0, epochs)))) {
 
     console.log("Saving output...");
 
+    const inputs = Matrix.fill(() => trainData[Math.floor(Math.random() * trainData.length)],
+        epochSampleSize * epochSampleSize);
+    const generated = await _upscaleBatch(inputs);
+
     // Saving an image grid with GAN images filtered with VAE model and upscaled
-    await ImageUtils.saveImageGrid(() =>
-            _upscale(trainData[Math.floor(Math.random() * trainData.length)]),
+    await ImageUtils.saveImageGrid((x, y) => generated[x + y * epochSampleSize],
         `./out/chunked_upscaler_${upscaler.epoch.toString().padStart(6, "0")}.png`,
-        upscaledImageSize, 5, 3, 4, 2);
+        upscaledImageSize, epochSampleSize, imageChannel, 4, 2);
 
     console.log("\n");
     if (quitRequested) break;

@@ -8,7 +8,7 @@ export function processMultiChannelData(network, src, channels = 3, dst = null) 
     const channelSize = src.length / channels;
     if (channelSize % 1 !== 0) throw new Error(`Invalid input data size`);
 
-    const outSize = network.layers[network.layers.length - 1].size;
+    const outSize = network.outputSize;
     const result = dst ?? new Array(outSize * channels);
 
     const channelData = new Array(channelSize);

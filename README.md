@@ -194,7 +194,8 @@ const input = [[1, 2], [3, 4], [5, 6]];
 const expected = [[3], [7], [11]];
 
 // Create and initialize wrapper
-const pModel = new ParallelModelWrapper(network);
+const parallelism = 4;
+const pModel = new ParallelModelWrapper(network, parallelism);
 await pModel.init();
 
 // Train model

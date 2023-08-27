@@ -7,6 +7,7 @@ import {
     SequentialModel,
     AdamOptimizer,
     ParallelModelWrapper,
+    ParallelGanWrapper,
     Iter, Matrix,
 } from "mind-net.js";
 
@@ -92,6 +93,7 @@ discriminator.addLayer(new Dense(1, {activation: "sigmoid", weightInitializer: i
 
 // Creating the generative adversarial (GAN) model
 const ganModel = new GenerativeAdversarialModel(generator, discriminator, createOptimizer(lr), loss);
+const pGan = new ParallelGanWrapper(ganModel);
 
 // Creating the variational autoencoder (VAE) model
 const vae = new SequentialModel(createOptimizer(lr), "mse");
@@ -141,7 +143,7 @@ async function _saveModel() {
 let quitRequested = false;
 process.on("SIGINT", async () => quitRequested = true);
 
-await Promise.all([pVae.init(), pUpscaler.init()]);
+await Promise.all([pVae.init(), pUpscaler.init(), pGan.init()]);
 
 console.log("Training...");
 
@@ -149,14 +151,11 @@ console.log("Training...");
 for (const _ of tqdm(Array.from(Iter.range(0, epochs)))) {
     console.log("Epoch:", ganModel.ganChain.epoch + 1);
 
-
     // Train models
+    console.log("Model train step...");
 
-    console.log("GAN train step...");
-    ganModel.train(trainData, {batchSize});
-
-    console.log("Wait aux models train step...");
     await Promise.all([
+        pGan.train(trainData, {batchSize}),
         pVae.train(gsTrainData, gsTrainData, {batchSize}),
         pUpscaler.train(gsTrainData, upscaleTrainData, {batchSize})
     ]);
@@ -194,4 +193,4 @@ for (const _ of tqdm(Array.from(Iter.range(0, epochs)))) {
 // Save trained models
 await _saveModel();
 
-await Promise.all([pVae.terminate(), pUpscaler.terminate()]);
+await Promise.all([pVae.terminate(), pUpscaler.terminate(), pGan.terminate()]);
