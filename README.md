@@ -178,6 +178,35 @@ for (let i = 0; i < epochs; i++) {
 }
 ```
 
+### Multithreading
+```javascript
+import {SequentialModel, Dense, ModelSerialization, ParallelModelWrapper} from "mind-net.js";
+
+// Create and configure model
+const network = new SequentialModel();
+network.addLayer(new Dense(2));
+network.addLayer(new Dense(64, {activation: "leakyRelu"}));
+network.addLayer(new Dense(1, {activation: "linear"}));
+network.compile();
+
+// Define the input and expected output data
+const input = [[1, 2], [3, 4], [5, 6]];
+const expected = [[3], [7], [11]];
+
+// Create and initialize wrapper
+const pModel = new ParallelModelWrapper(network);
+await pModel.init();
+
+// Train model
+await pModel.train(input, expected);
+
+// Compute predictions
+const predictions = await pModel.compute(input);
+
+// Terminate workers
+await pModel.terminate();
+```
+
 ### Saving/Loading model
 ```javascript
 import {SequentialModel, Dense, ModelSerialization} from "mind-net.js";

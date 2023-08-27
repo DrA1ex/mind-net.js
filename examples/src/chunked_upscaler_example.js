@@ -1,7 +1,7 @@
 // Importing necessary modules and libraries
 import tqdm from "tqdm";
 
-import {SequentialModel, AdamOptimizer, Dense, Iter,} from "mind-net.js";
+import {SequentialModel, AdamOptimizer, Dense, Iter, ParallelModelWrapper,} from "mind-net.js";
 
 import * as DatasetUtils from "./utils/dataset.js";
 import * as ImageUtils from "./utils/image.js";
@@ -104,16 +104,17 @@ async function _saveModel() {
 let quitRequested = false;
 process.on("SIGINT", async () => quitRequested = true);
 
+const pUpscaler = new ParallelModelWrapper(upscaler)
+await pUpscaler.init();
 
 console.log("Training...");
-
 
 // Training loop
 for (const _ of tqdm(Array.from(Iter.range(0, epochs)))) {
     console.log("Epoch:", upscaler.epoch + 1);
 
     // Train models
-    upscaler.train(upscaleInChunks, upscaleOutChunks, {batchSize});
+    await pUpscaler.train(upscaleInChunks, upscaleOutChunks, {batchSize});
 
     console.log("Saving output...");
 
@@ -129,3 +130,4 @@ for (const _ of tqdm(Array.from(Iter.range(0, epochs)))) {
 
 // Save trained models
 await _saveModel();
+await pUpscaler.terminate();

@@ -19,7 +19,7 @@ class ModelWorkerWrapper {
             {type: "module"}));
     }
 
-    async compute(batch: ArrayLike<number>[]): Promise<ArrayLike<number>[]> {
+    async compute(batch: ArrayLike<number>[]): Promise<Matrix2D> {
         const result: any = await this._request("compute", {batch});
         return result.outputs;
     }
@@ -158,16 +158,18 @@ export class ParallelModelWrapper<T extends IModel> {
         const inputParts = Array.from(Iter.partition(pInput, batchSize));
         const count = inputParts.length;
 
-        const result: ArrayLike<number>[] = [];
+        const result: Matrix2D = [];
         for (let i = 0; i < count; i += this.parallelism) {
-            const tasks: Promise<ArrayLike<number>[]>[] = [];
+            const tasks: Promise<Matrix2D>[] = [];
             for (let k = 0; k < this.parallelism && i + k < count; k++) {
                 const task = this._workers[k].compute(inputParts[i + k]);
                 tasks.push(task);
             }
 
             const outputs = await Promise.all(tasks)
-            result.concat(...outputs);
+            for (const data of outputs) {
+                result.push(...data);
+            }
         }
 
         return result;
@@ -175,6 +177,7 @@ export class ParallelModelWrapper<T extends IModel> {
 
     async terminate() {
         await Promise.all(this._workers.map(w => w.terminate()));
+        this._initialized = false;
     }
 
     private async _initModel() {
@@ -244,7 +247,7 @@ export class ParallelModelWrapper<T extends IModel> {
     }
 
     private _assertInitialized() {
-        if (!this._initialized) throw new Error("Wrapper not initialized");
+        if (!this._initialized) throw new Error("ParallelModelWrapper can't be used before initialization");
     }
 }
 
@@ -260,16 +263,11 @@ export class ParallelUtils {
                 new ParallelUtils.BufferT(layer.size * layer.prevSize * Float64Array.BYTES_PER_ELEMENT)
             );
 
-            const weights2d = Iter.map(
-                Iter.range(0, layer.size),
-                i => weights.subarray(i * layer.prevSize, (i + 1) * layer.prevSize)
-            );
-
             result[i - 1] = {
-                weights: Array.from(weights2d) as any,
+                weights: ParallelUtils.splitBatches(weights, layer.prevSize),
                 biases: new Float64Array(
                     new ParallelUtils.BufferT(layer.size * Float64Array.BYTES_PER_ELEMENT)
-                ) as any
+                )
             }
         }
 
@@ -279,6 +277,7 @@ export class ParallelUtils {
     static updateWeights(model: IModel, deltas: LayerDelta[], count: number) {
         const optimizer = model.optimizer;
         const cache: Map<ILayer, LayerCache> = (model as any).cache;
+        if (!cache) throw new Error("Unsupported model type");
 
         for (let i = 1; i < model.layers.length; i++) {
             const layer = model.layers[i];
@@ -289,5 +288,14 @@ export class ParallelUtils {
 
             optimizer.updateWeights(layer, deltaWeights, deltaBiases, model.epoch, count);
         }
+    }
+
+    static splitBatches(data: Float64Array, batchSize: number): Float64Array[] {
+        return Array.from(
+            Iter.map(
+                Iter.range(0, data.length / batchSize),
+                i => data.subarray(i * batchSize, (i + 1) * batchSize)
+            )
+        );
     }
 }
