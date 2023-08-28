@@ -47,17 +47,11 @@ export class ChainModel extends ModelBase {
 
             for (const layer of layers) {
                 this.modelByLayer.set(layer, [model, this.trainable[i]]);
-                this.cache.set(layer, {
-                    deltaWeights: zero_2d(layer.size, layer.prevSize),
-                    deltaBiases: zero(layer.size),
-                    mask: one(layer.size),
-                });
+                this.layers.push(layer)
             }
-
-            this.layers.push(...layers);
         }
 
-        this.compiled = true;
+        super.compile(true);
     }
 
     protected _applyLayerDelta(layer: ILayer, batchSize: number) {

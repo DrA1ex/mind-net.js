@@ -1,5 +1,5 @@
 import Jimp from "jimp";
-import {Matrix} from "mind-net.js";
+import {ParallelModelWrapper, Matrix} from "mind-net.js";
 
 export const InputCache = new Map();
 
@@ -183,4 +183,43 @@ export function setCroppedImage(chunk, dst, x, y, imageSize, cropSize) {
             dst[yOffset + x + j] = chunk[i * cropSize + j];
         }
     }
+}
+
+export async function processMultiChunkDataParallel(pModel, inputs, channels = 1) {
+    const imageSize = Math.sqrt(inputs[0].length / channels);
+    const cropSize = Math.sqrt(pModel.model.inputSize);
+
+    if (imageSize % 1 !== 0) throw new Error("Wrong input image size");
+    if (cropSize % 1 !== 0) throw new Error("Wrong input model size");
+    if (!(pModel instanceof ParallelModelWrapper)) throw new Error("Model should be ParallelModelWrapper");
+
+    const chunks = inputs.map(input =>
+        Matrix.fill(
+            c => splitChunks(getChannel(input, c, channels), imageSize, cropSize),
+            channels
+        ).flat()
+    ).flat();
+
+    const batchSize = Math.min(Math.ceil(chunks.length / pModel.parallelism), 128);
+    const outChunks = await pModel.compute(chunks, {batchSize});
+    const chunksPerInput = chunks.length / inputs.length;
+    const chunkPerChannel = chunksPerInput / channels;
+
+    const oSize = pModel.model.outputSize * chunkPerChannel * channels;
+    const result = new Float64Array(inputs.length * oSize);
+
+    const outputs = new Array(inputs.length);
+    for (let i = 0; i < inputs.length; i++) {
+        const slice = result.subarray(i * oSize, (i + 1) * oSize);
+        outputs[i] = slice;
+
+        const chunksOffset = i * chunksPerInput;
+        for (let c = 0; c < channels; c++) {
+            const chunkSlice = outChunks.slice(chunksOffset + c * chunkPerChannel, chunksOffset + (c + 1) * chunkPerChannel);
+            const processed = joinChunks(chunkSlice);
+            setChannel(slice, processed, c, channels);
+        }
+    }
+
+    return outputs;
 }

@@ -74,7 +74,7 @@ function afterTrain(): any {
 }
 
 function compute(batch: Matrix2D): { outputs: Float64Array[] } {
-    const oSize = Model.layers[Model.layers.length - 1].size;
+    const oSize = Model.outputSize;
     const out = new Float64Array(
         new ParallelUtils.BufferT(batch.length * oSize * Float64Array.BYTES_PER_ELEMENT)
     );

@@ -60,7 +60,7 @@ export interface ILayer {
     readonly dropout: number;
     readonly skipWeightsInitialization: boolean;
 
-    build(index: number, prevSize: number): void;
+    build(index: number, prevSize: number, allowMultipleUsage: boolean): void;
     step(input: matrix.Matrix1D): matrix.Matrix1D;
     backward(gradient: matrix.Matrix1D, deltaWeights: matrix.Matrix2D, deltaBiases: matrix.Matrix1D): matrix.Matrix1D;
 }

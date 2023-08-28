@@ -11,7 +11,7 @@ Simple to use neural network implementation in pure TypeScript.
 
 
 ## About
-mind-net.js is a lightweight library that offers the necessary tools to train and execute neural networks. By using mind-net.js, developers can conveniently create and explore neural networks, gaining practical knowledge in the domain of machine learning.
+mind-net.js is a fast and lightweight library that offers the necessary tools to train and execute neural networks. By using mind-net.js, developers can conveniently create and explore neural networks, gaining practical knowledge in the domain of machine learning.
 
 **Note:** This library is primarily intended for small to medium-sized projects or educational purposes. It may not be suitable for high-performance or large-scale applications.
 ## Installation 

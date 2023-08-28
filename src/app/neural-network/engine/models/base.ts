@@ -2,8 +2,9 @@ import * as iter from "../iter";
 import * as matrix from "../matrix";
 
 import {ILayer, IOptimizer, ILoss, IModel, ModelTrainOptionsT} from "../base";
-import {buildLoss, LossT} from "../loss";
+import {buildLoss, CategoricalCrossEntropyLoss, LossT} from "../loss";
 import {buildOptimizer, OptimizerT} from "../optimizers";
+import {SoftMaxActivation} from "../activations";
 
 export type NeuralNetworkSnapshot = {
     weights: matrix.Matrix2D[],
@@ -35,8 +36,6 @@ export abstract class ModelBase implements IModel {
     }
 
     abstract readonly layers: ILayer[];
-
-    abstract compile(...args: any[]): void
 
     constructor(optimizer: OptimizerT | IOptimizer = 'sgd', loss: LossT | ILoss = "mse") {
         this.optimizer = buildOptimizer(optimizer);
@@ -118,6 +117,33 @@ export abstract class ModelBase implements IModel {
     public afterTrain() {
         this.optimizer.afterPass();
         this._epoch += 1;
+    }
+
+    compile(allowMultipleLayerUsage = false): void {
+        if (this.compiled) {
+            return;
+        }
+
+        for (let i = 0; i < this.layers.length; i++) {
+            const layer = this.layers[i];
+            if (layer.activation instanceof SoftMaxActivation) {
+                if (i !== this.layers.length - 1) {
+                    throw new Error("SoftMax activation supported only for last layer");
+                } else if (!(this.loss instanceof CategoricalCrossEntropyLoss)) {
+                    throw new Error("SoftMax activation supported only with CategoricalCrossEntropy loss");
+                }
+            }
+
+            const prevSize = i > 0 ? this.layers[i - 1].size : 0;
+            layer.build(i, prevSize, allowMultipleLayerUsage);
+            this.cache.set(layer, {
+                deltaWeights: matrix.zero_2d(layer.size, prevSize),
+                deltaBiases: matrix.zero(layer.size),
+                mask: matrix.one(layer.size),
+            });
+        }
+
+        this.compiled = true;
     }
 
     protected _forward(input: matrix.Matrix1D, isTraining = false): matrix.Matrix1D {

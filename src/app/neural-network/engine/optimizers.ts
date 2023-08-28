@@ -77,21 +77,19 @@ export abstract class OptimizerBase implements IOptimizer {
         }
 
         if (layer.l1WeightRegularization > 0 || layer.l2WeightRegularization > 0) {
-            for (let j = 0; j < layer.size; j++) {
-                matrix.matrix1d_binary_in_place_op(deltaWeights[j], layer.weights[j], (dW, w) => {
-                    let L1Regularization = 0;
-                    if (layer.l1WeightRegularization > 0) {
-                        L1Regularization = Math.sign(w) * layer.l1WeightRegularization
-                    }
+            matrix.matrix2d_binary_in_place_op(deltaWeights, layer.weights, (dW, w) => {
+                let L1Regularization = 0;
+                if (layer.l1WeightRegularization > 0) {
+                    L1Regularization = Math.sign(w) * layer.l1WeightRegularization
+                }
 
-                    let l2Regularization = 0;
-                    if (layer.l2WeightRegularization > 0) {
-                        l2Regularization = 2 * w * layer.l2WeightRegularization
-                    }
+                let l2Regularization = 0;
+                if (layer.l2WeightRegularization > 0) {
+                    l2Regularization = 2 * w * layer.l2WeightRegularization
+                }
 
-                    return dW + (L1Regularization + l2Regularization);
-                });
-            }
+                return dW + (L1Regularization + l2Regularization);
+            });
         }
     }
 
@@ -100,11 +98,9 @@ export abstract class OptimizerBase implements IOptimizer {
             return b - this.lr * dB;
         });
 
-        for (let j = 0; j < layer.size; j++) {
-            matrix.matrix1d_binary_in_place_op(layer.weights[j], deltaWeights[j], (w, dW) => {
-                return w - this.lr * dW;
-            });
-        }
+        matrix.matrix2d_binary_in_place_op(layer.weights, deltaWeights, (w, dW) => {
+            return w - this.lr * dW;
+        });
     }
 }
 

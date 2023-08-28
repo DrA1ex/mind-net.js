@@ -69,6 +69,18 @@ class ModelWorkerWrapper {
     }
 }
 
+export type ParallelWrapperCallOptions = {
+    batchSize: number;
+    cacheInput: boolean;
+    forceUpdateWeights: boolean;
+};
+
+export const ParallelWrapperCallOptionsDefaults: ParallelWrapperCallOptions = {
+    batchSize: 32,
+    cacheInput: true,
+    forceUpdateWeights: false,
+};
+
 export class ParallelModelWrapper<T extends IModel> {
     static {
         if (typeof SharedArrayBuffer === "undefined") {
@@ -77,7 +89,7 @@ export class ParallelModelWrapper<T extends IModel> {
     }
 
     private _initialized: boolean = false;
-    private readonly TrainDataCache = new WeakMap<Matrix2D, Float64Array>();
+    private readonly InputDataCache = new WeakMap<Matrix2D, Float64Array>();
 
     private readonly _workers: ModelWorkerWrapper[];
     private readonly _deltas: LayerDelta[];
@@ -88,7 +100,6 @@ export class ParallelModelWrapper<T extends IModel> {
         this.parallelism = Math.max(1, parallelism);
 
         this._workers = new Array(this.parallelism);
-
         this._deltas = ParallelUtils.createLayerDeltas(model);
     }
 
@@ -100,29 +111,44 @@ export class ParallelModelWrapper<T extends IModel> {
             this._workers[i] = new ModelWorkerWrapper(wrapperT, workerT, this.model);
         }
 
-        await this._initModel();
+        await this.syncModel();
 
         this._initialized = true;
     }
 
-    async train(input: Matrix2D, expected: Matrix2D, {batchSize = 64, cacheTrainData = true} = {}) {
+    async train(input: Matrix2D, expected: Matrix2D, options: Partial<ParallelWrapperCallOptions> = {}) {
         this._assertInitialized();
 
-        batchSize = Math.max(batchSize, 1);
-        if (input.length < batchSize) {
-            this.model.train(input, expected, {batchSize});
+        const opts = {
+            ...ParallelWrapperCallOptionsDefaults,
+            ...options
+        };
+
+        opts.batchSize = Math.max(opts.batchSize, 1);
+        if (input.length < opts.batchSize) {
+            this.model.train(input, expected, {batchSize: opts.batchSize});
             return;
         }
 
-        const pInput = this._prepareTrainData(input, cacheTrainData);
-        const pOut = this._prepareTrainData(expected, cacheTrainData);
+        if (opts.forceUpdateWeights) {
+            await this.syncModel();
+        }
+
+        const pInput = this._prepareTrainData(input, opts.cacheInput);
+        const pOut = this._prepareTrainData(expected, opts.cacheInput);
 
         const trainSet = Array.from(
-            Iter.partition(Iter.shuffle(Array.from(Iter.zip(pInput, pOut))), batchSize)
+            Iter.partition(Iter.shuffle(Array.from(Iter.zip(pInput, pOut))), opts.batchSize)
         );
 
-        await this._beforeTrain();
+        await this.beforeTrain();
 
+        await this.trainBatch(trainSet);
+
+        await this.afterTrain();
+    }
+
+    async trainBatch(trainSet: [ArrayLike<number>, ArrayLike<number>][][]) {
         const count = trainSet.length;
         for (let i = 0; i < count; i += this.parallelism) {
             const tasks: Promise<LayerDelta[]>[] = [];
@@ -142,20 +168,27 @@ export class ParallelModelWrapper<T extends IModel> {
 
             await this._syncDeltas(iterCount);
         }
-
-        await this._afterTrain();
     }
 
-    async compute(input: Matrix2D, {batchSize = 32, cache = false} = {}) {
+    async compute(input: Matrix2D, options: Partial<ParallelWrapperCallOptions> = {}) {
         this._assertInitialized();
 
-        if (input.length <= batchSize) {
+        const opts = {
+            ...ParallelWrapperCallOptionsDefaults,
+            ...options
+        };
+
+        if (opts.forceUpdateWeights) {
+            await this.syncModel();
+        }
+
+        if (input.length <= opts.batchSize) {
             return input.map(data => this.model.compute(data));
         }
 
-        const pInput = this._prepareTrainData(input, cache);
+        const pInput = this._prepareTrainData(input, opts.cacheInput);
 
-        const inputParts = Array.from(Iter.partition(pInput, batchSize));
+        const inputParts = Array.from(Iter.partition(pInput, opts.batchSize));
         const count = inputParts.length;
 
         const result: Matrix2D = [];
@@ -180,17 +213,17 @@ export class ParallelModelWrapper<T extends IModel> {
         this._initialized = false;
     }
 
-    private async _initModel() {
+    async syncModel() {
         const config = JSON.stringify(ModelSerialization.save(this.model));
         await Promise.all(this._workers.map(w => w.initModel(config)));
     }
 
-    private async _beforeTrain() {
+    async beforeTrain() {
         this.model.beforeTrain();
         await Promise.all(this._workers.map(w => w.beforeTrain()));
     }
 
-    private async _afterTrain() {
+    async afterTrain() {
         this.model.afterTrain();
         await Promise.all(this._workers.map(w => w.afterTrain()));
     }
@@ -201,21 +234,16 @@ export class ParallelModelWrapper<T extends IModel> {
 
     private _prepareTrainData(data: Matrix2D, cache = true): ArrayLike<number>[] {
         const iSize = data[0].length;
-        let fInput = this.TrainDataCache.get(data);
+        let fInput = this.InputDataCache.get(data);
         if (!fInput) {
             fInput = new Float64Array(
                 new ParallelUtils.BufferT(data.length * iSize * Float64Array.BYTES_PER_ELEMENT)
             );
 
-            if (cache) this.TrainDataCache.set(data, fInput);
+            if (cache) this.InputDataCache.set(data, fInput);
         }
 
-        const pInput = Array.from(
-            Iter.map(
-                Iter.range(0, data.length),
-                i => fInput!.subarray(i * iSize, (i + 1) * iSize)
-            )
-        );
+        const pInput = ParallelUtils.splitBatches(fInput, iSize);
 
         Matrix.copy_to_2d(data, pInput as any);
 
@@ -291,11 +319,9 @@ export class ParallelUtils {
     }
 
     static splitBatches(data: Float64Array, batchSize: number): Float64Array[] {
-        return Array.from(
-            Iter.map(
-                Iter.range(0, data.length / batchSize),
-                i => data.subarray(i * batchSize, (i + 1) * batchSize)
-            )
+        return Matrix.fill(
+            i => data.subarray(i * batchSize, (i + 1) * batchSize),
+            data.length / batchSize
         );
     }
 }

@@ -25,7 +25,7 @@ type Alias<A extends AliasesObject<R>, R> = { key: keyof A, type: R };
 type ClassAlias<T extends AliasesObject<Constructor<R>>, R> = Alias<T, Constructor<R>>;
 type FunctionAlias<T extends AliasesObject<Function<R>>, R> = Alias<T, Function<R>>;
 
-export function Param() {
+export function Param(path?: string) {
     return function (target: any, propertyKey: string) {
         let entries = SerializationConfig.get(target.constructor);
         if (!entries) {
@@ -33,7 +33,9 @@ export function Param() {
             SerializationConfig.set(target.constructor, entries);
         }
 
-        entries.push(propertyKey);
+
+        const propPath = [path?.split(".") ?? null, propertyKey];
+        entries.push(propPath.filter(p => p).join("."));
     };
 }
 
@@ -276,12 +278,27 @@ export class ModelSerialization {
         let params: { [key: string]: any } = {};
 
         if (config) {
-            for (const key of config) {
-                params[key] = (instance as any)[key];
+            for (const path of config) {
+                this._storePropertyValue(instance, path, params);
             }
         }
 
         return params;
+    }
+
+    private static _storePropertyValue(instance: any, path: string, out: any) {
+        const parts = path.split(".");
+
+        let cOut = out;
+        for (let i = 0; i < parts.length - 1; i++) {
+            const part = parts[i];
+
+            if (cOut[part] === undefined) cOut[part] = {};
+            cOut = cOut[part];
+        }
+
+        const part = parts[parts.length - 1];
+        cOut[part] = instance[part]
     }
 }
 

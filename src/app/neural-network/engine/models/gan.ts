@@ -10,6 +10,8 @@ import {LossT} from "../loss";
 export class GenerativeAdversarialModel {
     readonly ganChain: ChainModel;
 
+    get epoch() {return this.ganChain.epoch;}
+
     constructor(public generator: IModel,
                 public discriminator: IModel,
                 optimizer: OptimizerT | IOptimizer = 'sgd',
@@ -45,7 +47,7 @@ export class GenerativeAdversarialModel {
     public trainBatch(batch: matrix.Matrix1D[]) {
         const almostOnes = matrix.fill_value([0.9], batch.length);
         const zeros = matrix.fill_value([0], batch.length);
-        const noise = matrix.random_normal_2d(batch.length, this.generator.layers[0].size, -1, 1);
+        const noise = matrix.random_normal_2d(batch.length, this.generator.inputSize, -1, 1);
 
         const fake = iter.map(noise, input => this.generator.compute(input));
         this.discriminator.trainBatch(
@@ -55,7 +57,7 @@ export class GenerativeAdversarialModel {
             )
         );
 
-        const trainNoise = matrix.random_normal_2d(batch.length, this.generator.layers[0].size, -1, 1);
+        const trainNoise = matrix.random_normal_2d(batch.length, this.generator.inputSize, -1, 1);
         const ones = matrix.fill_value([1], batch.length);
         this.ganChain.trainBatch(iter.zip_iter(trainNoise, ones));
     }

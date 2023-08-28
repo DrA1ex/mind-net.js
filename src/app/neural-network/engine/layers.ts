@@ -34,15 +34,15 @@ export class Dense implements ILayer {
 
     @Param()
     readonly size: number;
-    @Param()
+    @Param("options")
     readonly dropout;
-    @Param()
+    @Param("options")
     readonly l1WeightRegularization;
-    @Param()
+    @Param("options")
     readonly l1BiasRegularization;
-    @Param()
+    @Param("options")
     readonly l2WeightRegularization;
-    @Param()
+    @Param("options")
     readonly l2BiasRegularization;
 
     readonly weightInitializer: InitializerFn;
@@ -94,8 +94,12 @@ export class Dense implements ILayer {
         }
     }
 
-    build(index: number, prevSize: number) {
-        if (this.isBuilt) throw new Error("Layer already used.");
+    build(index: number, prevSize: number, allowMultipleUsage = false) {
+        if (this.isBuilt) {
+            if (!allowMultipleUsage) throw new Error("Layer already used.");
+            return;
+        }
+
         this.isBuilt = true;
 
         this.prevSize = prevSize;

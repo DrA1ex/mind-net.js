@@ -1,5 +1,6 @@
 import {IActivation} from "./base";
 import {Matrix1D} from "./matrix";
+import {Param} from "../serialization";
 import * as matrix from "./matrix";
 import * as iter from "./iter";
 
@@ -14,6 +15,7 @@ export class SigmoidActivation implements IActivation {
 }
 
 export class LeakyReluActivation implements IActivation {
+    @Param()
     alpha: number;
 
     constructor({alpha = 0.3} = {}) {
