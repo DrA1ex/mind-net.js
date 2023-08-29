@@ -269,6 +269,31 @@ for (let i = 0; i <= 150; i++) {
 <img width="800" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/b0f85f39-f112-4246-933e-6d87c53c3cf0">
 
 
+## Benchmark:
+```
+You can bebchmark find script at: /examples/src/benchmark.js
+
+- Worker.Compute (Full) (x5) Mean: 0.1496 ± 9.182% Total: 0.7481
+- Compute (Full) (x5) Mean: 0.7444 ± 2.652% Total: 3.7222
+- TF.Compute (Full) (x5) Mean: 0.929 ± 0.7619% Total: 4.6448
+- Brain.Compute (Full) (x5) Mean: 1.0249 ± 1.8194% Total: 5.1247
+
+- Worker.Compute (Single) (x10000) Mean: 0.0004 ± 474.0863% Total: 3.662
+- Compute (Single) (x10000) Mean: 0.0004 ± 69.9225% Total: 3.7037
+- TF.Compute (Single) (x10000) Mean: 0.0006 ± 74.9014% Total: 5.8835
+- Brain.Compute (Single) (x10000) Mean: 0.0005 ± 78.5239% Total: 5.2406
+
+- Worker.Train (Full) (x5) Mean: 0.464 ± 4.1317% Total: 2.3202
+- Train (Full) (x5) Mean: 3.8714 ± 0.7429% Total: 19.3568
+- TF.Train (Full) (x5) Mean: 2.8263 ± 0.7938% Total: 14.1317
+- Brain.Train (Full) (x5) Mean: 2.7036 ± 0.3091% Total: 13.518
+
+- Worker.Train (Single) (x10000) Mean: 0.0029 ± 99.576% Total: 29.1533
+- Train (Single) (x10000) Mean: 0.003 ± 498.1374% Total: 29.7619
+- TF.Train (Single) (x10000) Mean: 0.0085 ± 827.8662% Total: 84.7745
+- Brain.Train (Single) (x10000) Mean: 0.0015 ± 1129.5542% Total: 15.4283
+```
+
 ## Examples
 
 See examples [here](examples/)
