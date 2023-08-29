@@ -10,4 +10,8 @@ export class SequentialModel extends ModelBase {
         this.layers.push(layer);
         return this;
     }
+
+    isTrainable(_: ILayer): boolean {
+        return true;
+    }
 }

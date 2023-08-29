@@ -236,21 +236,7 @@ export class ParallelModelWrapper<T extends IModel> {
     }
 
     private _prepareTrainData(data: Matrix2D, cache = true): ArrayLike<number>[] {
-        const iSize = data[0].length;
-        let fInput = this.InputDataCache.get(data);
-        if (!fInput) {
-            fInput = new Float64Array(
-                new ParallelUtils.BufferT(data.length * iSize * Float64Array.BYTES_PER_ELEMENT)
-            );
-
-            if (cache) this.InputDataCache.set(data, fInput);
-        }
-
-        const pInput = ParallelUtils.splitBatches(fInput, iSize);
-
-        Matrix.copy_to_2d(data, pInput as any);
-
-        return pInput;
+        return ParallelUtils.convertForTransfer(data, this.InputDataCache, cache);
     }
 
     private _clearDeltas() {
@@ -280,8 +266,9 @@ export class ParallelModelWrapper<T extends IModel> {
 
         for (let i = 1; i < this.model.layers.length; i++) {
             const layer = this.model.layers[i];
-            const {deltaWeights, deltaBiases} = cache.get(layer)!;
+            if (!this.model.isTrainable(layer)) continue;
 
+            const {deltaWeights, deltaBiases} = cache.get(layer)!;
             Matrix.copy_to(this._deltas[i - 1].biases, deltaBiases);
             Matrix.copy_to_2d(this._deltas[i - 1].weights, deltaWeights);
 
@@ -322,5 +309,24 @@ export class ParallelUtils {
             i => data.subarray(i * batchSize, (i + 1) * batchSize),
             data.length / batchSize
         );
+    }
+
+    static convertForTransfer(
+        data: Matrix2D, cacheMap: WeakMap<Matrix2D, Float64Array>, cache: boolean = true
+    ): Float64Array[] {
+        const iSize = data[0].length;
+        let fInput = cacheMap.get(data);
+        if (!fInput) {
+            fInput = new Float64Array(
+                new ParallelUtils.BufferT(data.length * iSize * Float64Array.BYTES_PER_ELEMENT)
+            );
+
+            if (cache) cacheMap.set(data, fInput);
+        }
+
+        const pInput = ParallelUtils.splitBatches(fInput, iSize);
+        Matrix.copy_to_2d(data, pInput as any);
+
+        return pInput;
     }
 }

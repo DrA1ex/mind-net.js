@@ -36,6 +36,7 @@ export abstract class ModelBase implements IModel {
     }
 
     abstract readonly layers: ILayer[];
+    abstract isTrainable(layer: ILayer): boolean;
 
     constructor(optimizer: OptimizerT | IOptimizer = 'sgd', loss: LossT | ILoss = "mse") {
         this.optimizer = buildOptimizer(optimizer);
@@ -217,6 +218,8 @@ export abstract class ModelBase implements IModel {
     }
 
     protected _applyLayerDelta(layer: ILayer, batchSize: number): void {
+        if (!this.isTrainable(layer)) return;
+
         const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
         this.optimizer.updateWeights(layer, deltaWeights, deltaBiases, this.epoch, batchSize);
     }

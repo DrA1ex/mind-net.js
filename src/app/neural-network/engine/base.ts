@@ -29,6 +29,8 @@ export interface IModel {
     beforeTrain(): void;
     afterTrain(): void;
     compile(): void;
+
+    isTrainable(layer: ILayer): boolean;
 }
 
 export interface IActivation {

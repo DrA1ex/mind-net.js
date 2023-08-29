@@ -1,8 +1,11 @@
-import {Iter, Matrix, GenerativeAdversarialModel, ParallelModelWrapper} from "../../neural-network";
+import {Iter, Matrix, GenerativeAdversarialModel, ParallelModelWrapper, ParallelUtils} from "../../neural-network";
 import {ParallelWrapperCallOptions, ParallelWrapperCallOptionsDefaults} from "./parallel";
 import {IModel} from "../base";
+import {Matrix2D} from "../matrix";
 
 export class ParallelGanWrapper {
+    private InputCache = new WeakMap<Matrix2D, Float64Array>();
+
     public readonly generatorWrapper: ParallelModelWrapper<IModel>
     public readonly discriminatorWrapper: ParallelModelWrapper<IModel>
     public readonly ganChainWrapper: ParallelModelWrapper<IModel>
@@ -27,13 +30,16 @@ export class ParallelGanWrapper {
             this.ganChainWrapper.beforeTrain(),
         ]);
 
+        const fReal = ParallelUtils.convertForTransfer(real, this.InputCache, opts.cacheInput);
         const subOpts = {...opts, batchSize: subBatchSize};
-        for (const batch of Iter.partition(Iter.shuffled(real), opts.batchSize)) {
+
+        for (const batch of Iter.partition(Iter.shuffled(fReal), opts.batchSize)) {
             const almostOnes = Matrix.fill_value([0.9], batch.length);
             const zeros = Matrix.fill_value([0], batch.length);
             const noise = Matrix.random_normal_2d(batch.length, inSize, -1, 1);
 
             const fake = await this.compute(noise, subOpts);
+
             const discriminatorSubBatch = Array.from(
                 Iter.partition(
                     Iter.zip_iter(

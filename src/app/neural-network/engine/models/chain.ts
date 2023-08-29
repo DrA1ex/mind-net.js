@@ -52,10 +52,8 @@ export class ChainModel extends ModelBase {
         super.compile(true);
     }
 
-    protected _applyLayerDelta(layer: ILayer, batchSize: number) {
+    isTrainable(layer: ILayer): boolean {
         const {index} = this.layerToModelMap.get(layer)!;
-        if (!this.trainable[index]) return;
-
-        super._applyLayerDelta(layer, batchSize);
+        return this.trainable[index];
     }
 }
