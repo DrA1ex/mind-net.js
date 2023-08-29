@@ -93,7 +93,7 @@ export class ParallelGanWrapper {
         await Promise.all([
             this.generatorWrapper.terminate(),
             this.discriminatorWrapper.terminate(),
-            this.ganChainWrapper.init(),
+            this.ganChainWrapper.terminate(),
         ]);
     }
 }
