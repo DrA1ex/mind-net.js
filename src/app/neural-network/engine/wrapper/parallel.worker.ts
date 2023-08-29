@@ -1,7 +1,7 @@
 import {ILayer, IModel} from "../base";
 import {LayerCache} from "../models/base";
 import {Matrix1D, Matrix2D} from "../matrix";
-import {LayerDelta} from "./parallel";
+import {LayerWeights} from "./parallel";
 import {Matrix, ModelSerialization, ParallelUtils} from "../../neural-network";
 
 type WorkerSelf = {
@@ -35,19 +35,24 @@ async function init() {
 
 
 let Model: IModel;
-let Deltas: LayerDelta[];
+let Deltas: LayerWeights[];
 
 function initModel(config: string): any {
     Model = ModelSerialization.load(JSON.parse(config));
     (Model as any)["_applyDelta"] = () => {};
 
     if (!Deltas) {
-        Deltas = ParallelUtils.createLayerDeltas(Model);
+        Deltas = ParallelUtils.createModelWeights(Model);
     }
 }
 
-function syncDeltas(deltas: LayerDelta[], count: number): any {
-    ParallelUtils.updateWeights(Model, deltas, count);
+function syncWeights(weights: LayerWeights[]): any {
+    for (let i = 1; i < Model.layers.length; i++) {
+        const layer = Model.layers[i];
+
+        Matrix.copy_to_2d(weights[i - 1].weights, layer.weights);
+        Matrix.copy_to(weights[i - 1].biases, layer.biases);
+    }
 }
 
 function trainBatch(batch: [Matrix1D, Matrix1D][]) {
@@ -95,8 +100,8 @@ init().then((self) => {
                 ret = initModel(e.data.config);
                 break;
 
-            case "syncDeltas":
-                ret = syncDeltas(e.data.deltas, e.data.count);
+            case "syncWeights":
+                ret = syncWeights(e.data.weights);
                 break;
 
             case "trainBatch":
