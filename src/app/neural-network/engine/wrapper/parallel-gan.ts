@@ -22,7 +22,7 @@ export class ParallelGanWrapper {
         const opts = {...ParallelWrapperCallOptionsDefaults, ...options};
 
         const inSize = this.gan.generator.inputSize;
-        const subBatchSize = Math.max(8, opts.batchSize / this.parallelism);
+        const subBatchSize = Math.max(8, Math.ceil(opts.batchSize / this.parallelism));
 
         await Promise.all([
             this.generatorWrapper.beforeTrain(),
