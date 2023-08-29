@@ -328,7 +328,7 @@ _Black & White:_
 - [mnist-500-16.zip](https://github.com/DrA1ex/mind-net.js/files/7082675/mnist-16.zip) ([source](https://www.kaggle.com/competitions/digit-recognizer))
 - [check-mark-10-16.zip](https://github.com/DrA1ex/mind-net.js/files/7082841/check-mark-16.zip) (original)
 - [fashion-mnist-300-28.zip](https://github.com/DrA1ex/mind-net.js/files/12293875/fashion-mnist-dataset.zip) ([source](https://www.kaggle.com/datasets/zalando-research/fashionmnist))
-- [mnist-10000-28.zip](https://github.com/DrA1ex/mind-net.js/files/12456697/mnist-10000-28.zip) ([source](https://www.kaggle.com/competitions/digit-recognizer))
+- [mnist-60000-28.zip](https://github.com/DrA1ex/mind-net.js/files/12456697/mnist-10000-28.zip) ([source](https://www.kaggle.com/competitions/digit-recognizer))
 
 _Colorful:_
 - [cartoon-500-28.zip](https://github.com/DrA1ex/mind-net.js/files/12394478/cartoon-500-28.zip) ([source](https://google.github.io/cartoonset/))
