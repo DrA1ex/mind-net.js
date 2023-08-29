@@ -2,7 +2,7 @@ import {ILayer, IModel} from "../base";
 import {LayerCache} from "../models/base";
 import {Matrix1D, Matrix2D} from "../matrix";
 import {LayerWeights} from "./parallel";
-import {Matrix, ModelSerialization, ParallelUtils} from "../../neural-network";
+import {Matrix, ParallelUtils, UniversalModelSerializer} from "../../neural-network";
 
 type WorkerSelf = {
     postMessage(message: any): void;
@@ -38,7 +38,7 @@ let Model: IModel;
 let Deltas: LayerWeights[];
 
 function initModel(config: string): any {
-    Model = ModelSerialization.load(JSON.parse(config));
+    Model = UniversalModelSerializer.load(JSON.parse(config));
     (Model as any)["_applyDelta"] = () => {};
 
     if (!Deltas) {

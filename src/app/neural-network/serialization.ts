@@ -8,7 +8,7 @@ import {
     Models,
     Optimizers,
     SequentialModel,
-    GenerativeAdversarialModel,
+    GenerativeAdversarialModel, ChainModel, ComplexModels,
 } from "./neural-network";
 import {AbstractMomentAcceleratedOptimizer, MomentCacheT} from "./engine/optimizers";
 
@@ -67,7 +67,7 @@ export type ModelSerialized = {
 export class ModelSerialization {
     public static save(model: IModel): ModelSerialized {
         return {
-            model: this._getTypeAlias(Models, model).key,
+            model: SerializationUtils.getTypeAlias(Models, model).key,
             optimizer: this.saveOptimizer(model),
             loss: this.saveLoss(model.loss),
             layers: model.layers.map(l => this.saveLayer(l)),
@@ -153,8 +153,8 @@ export class ModelSerialization {
     public static saveOptimizer(model: IModel): SerializationEntry<typeof Optimizers> {
         const optimizer = model.optimizer;
 
-        const type = this._getTypeAlias(Optimizers, optimizer);
-        const params = this._getSerializableParams(optimizer);
+        const type = SerializationUtils.getTypeAlias(Optimizers, optimizer);
+        const params = SerializationUtils.getSerializableParams(optimizer);
 
         const result: OptimizerSerializationEntry = {key: type.key, params}
 
@@ -186,8 +186,8 @@ export class ModelSerialization {
     }
 
     public static saveLoss(loss: ILoss): SerializationEntry<typeof Loss> {
-        const type = this._getTypeAlias(Loss, loss);
-        const params = this._getSerializableParams(loss);
+        const type = SerializationUtils.getTypeAlias(Loss, loss);
+        const params = SerializationUtils.getSerializableParams(loss);
 
         return {
             key: type.key,
@@ -196,15 +196,15 @@ export class ModelSerialization {
     }
 
     public static saveLayer(layer: ILayer): LayerSerializationEntry {
-        const type = this._getTypeAlias(Layers, layer);
-        const params = this._getSerializableParams(layer);
+        const type = SerializationUtils.getTypeAlias(Layers, layer);
+        const params = SerializationUtils.getSerializableParams(layer);
 
         return {
             key: type.key,
             size: layer.size,
             activation: this.saveActivation(layer.activation),
-            weightInitializer: this._getFnAlias(Initializers, layer.weightInitializer).key,
-            biasInitializer: this._getFnAlias(Initializers, layer.biasInitializer).key,
+            weightInitializer: SerializationUtils.getFnAlias(Initializers, layer.weightInitializer).key,
+            biasInitializer: SerializationUtils.getFnAlias(Initializers, layer.biasInitializer).key,
             weights: Matrix.copy_2d(layer.weights),
             biases: Matrix.copy(layer.biases),
             params,
@@ -212,16 +212,18 @@ export class ModelSerialization {
     }
 
     public static saveActivation(activation: IActivation): SerializationEntry<typeof Activations> {
-        const type = this._getTypeAlias(Activations, activation);
-        const params = this._getSerializableParams(activation);
+        const type = SerializationUtils.getTypeAlias(Activations, activation);
+        const params = SerializationUtils.getSerializableParams(activation);
 
         return {
             key: type.key,
             params,
         }
     }
+}
 
-    private static _getTypeAlias<A extends AliasesObject<Constructor<T>>, T>(
+class SerializationUtils {
+    static getTypeAlias<A extends AliasesObject<Constructor<T>>, T>(
         aliases: A, instance: T
     ): ClassAlias<A, T> {
         if (!instance) {
@@ -239,7 +241,7 @@ export class ModelSerialization {
         };
     }
 
-    private static _getFnAlias<T extends Function<R>, R>(
+    static getFnAlias<T extends Function<R>, R>(
         aliases: AliasesObject<T>, fn: T
     ): FunctionAlias<typeof aliases, R> {
         if (!fn) {
@@ -257,12 +259,12 @@ export class ModelSerialization {
         };
     }
 
-    private static _getSerializableParams<T extends object>(instance: T): SerializedParams {
+    static getSerializableParams<T extends object>(instance: T): SerializedParams {
         let result = {};
 
         let type = instance.constructor as Constructor<T>;
         while (type && type.constructor?.name) {
-            const classParams = this._getTypeSerializableParams(instance, type);
+            const classParams = this.getTypeSerializableParams(instance, type);
             if (classParams) {
                 result = {...classParams, ...result}
             }
@@ -273,20 +275,20 @@ export class ModelSerialization {
         return result;
     }
 
-    private static _getTypeSerializableParams<T, C>(instance: T, type: Constructor<C>): SerializedParams {
+    static getTypeSerializableParams<T, C>(instance: T, type: Constructor<C>): SerializedParams {
         const config = SerializationConfig.get(type);
         let params: { [key: string]: any } = {};
 
         if (config) {
             for (const path of config) {
-                this._storePropertyValue(instance, path, params);
+                this.storePropertyValue(instance, path, params);
             }
         }
 
         return params;
     }
 
-    private static _storePropertyValue(instance: any, path: string, out: any) {
+    static storePropertyValue(instance: any, path: string, out: any) {
         const parts = path.split(".");
 
         let cOut = out;
@@ -311,7 +313,7 @@ export type GanSerialized = {
 }
 
 export class GanSerialization {
-    public static save(gan: GenerativeAdversarialModel) {
+    public static save(gan: GenerativeAdversarialModel): GanSerialized {
         return {
             generator: ModelSerialization.save(gan.generator),
             discriminator: ModelSerialization.save(gan.discriminator),
@@ -348,5 +350,78 @@ export class GanSerialization {
         model.ganChain._epoch = data.epoch;
 
         return model;
+    }
+}
+
+export type ChainSerialized = {
+    model: keyof typeof ComplexModels,
+    models: ModelSerialized[],
+    trainable: boolean[],
+    epoch: number,
+    optimizer: OptimizerSerializationEntry,
+    loss: SerializationEntry<typeof Loss>,
+}
+
+export class ChainSerialization {
+    public static save(chain: ChainModel): ChainSerialized {
+        return {
+            model: SerializationUtils.getTypeAlias(ComplexModels, chain as any).key,
+            models: chain.models.map(model => ModelSerialization.save(model)),
+            trainable: chain.trainable.concat(),
+
+            epoch: chain.epoch,
+            optimizer: ModelSerialization.saveOptimizer(chain),
+            loss: ModelSerialization.saveLoss(chain.loss),
+        }
+    }
+
+    public static load(data: ChainSerialized): ChainModel {
+        const optimizerT = Optimizers[data.optimizer.key];
+        if (!optimizerT) throw new Error(`Invalid optimizer: ${data.optimizer.key}`);
+
+        const lossT = Loss[data.loss.key];
+        if (!lossT) throw new Error(`Invalid loss: ${data.loss.key}`);
+
+        const optimizer = new optimizerT(data.optimizer.params);
+        const model = new ChainModel(optimizer, new lossT(data.loss.params),);
+
+        for (let i = 0; i < data.models.length; i++) {
+            model.addModel(
+                ModelSerialization.load(data.models[i]),
+                data.trainable[i]
+            );
+        }
+
+        if (optimizer instanceof AbstractMomentAcceleratedOptimizer && data.optimizer.moments) {
+            ModelSerialization.loadMoments(model, optimizer, data.optimizer.moments as any);
+        }
+
+        // @ts-ignore
+        model._epoch = data.epoch;
+        model.compile();
+
+        return model;
+    }
+}
+
+type ISerializedModel = {
+    model: string
+}
+
+export class UniversalModelSerializer {
+    static save(model: IModel) {
+        if (model instanceof ChainModel) {
+            return ChainSerialization.save(model);
+        } else {
+            return ModelSerialization.save(model);
+        }
+    }
+
+    static load(data: ISerializedModel) {
+        if (data.model === "Chain") {
+            return ChainSerialization.load(data as any);
+        } else {
+            return ModelSerialization.load(data as any);
+        }
     }
 }

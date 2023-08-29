@@ -1,4 +1,4 @@
-import {Iter, Matrix, ModelSerialization} from "../../neural-network";
+import {Iter, Matrix, UniversalModelSerializer} from "../../neural-network";
 import {Matrix1D, Matrix2D} from "../matrix";
 import {ILayer, IModel} from "../base";
 import {getWorkerT, WorkerT, IWorker} from "../../misc/worker";
@@ -72,13 +72,11 @@ class ModelWorkerWrapper {
 export type ParallelWrapperCallOptions = {
     batchSize: number;
     cacheInput: boolean;
-    forceUpdateWeights: boolean;
 };
 
 export const ParallelWrapperCallOptionsDefaults: ParallelWrapperCallOptions = {
     batchSize: 32,
     cacheInput: true,
-    forceUpdateWeights: false,
 };
 
 export class ParallelModelWrapper<T extends IModel> {
@@ -130,10 +128,6 @@ export class ParallelModelWrapper<T extends IModel> {
             return;
         }
 
-        if (opts.forceUpdateWeights) {
-            await this.syncWeights();
-        }
-
         const pInput = this._prepareTrainData(input, opts.cacheInput);
         const pOut = this._prepareTrainData(expected, opts.cacheInput);
 
@@ -149,6 +143,8 @@ export class ParallelModelWrapper<T extends IModel> {
     }
 
     async trainBatch(trainSet: [ArrayLike<number>, ArrayLike<number>][][]) {
+        this._assertInitialized();
+
         const count = trainSet.length;
         for (let i = 0; i < count; i += this.parallelism) {
             const tasks: Promise<LayerWeights[]>[] = [];
@@ -177,10 +173,6 @@ export class ParallelModelWrapper<T extends IModel> {
             ...ParallelWrapperCallOptionsDefaults,
             ...options
         };
-
-        if (opts.forceUpdateWeights) {
-            await this.syncWeights();
-        }
 
         if (input.length <= opts.batchSize) {
             return input.map(data => this.model.compute(data));
@@ -239,7 +231,7 @@ export class ParallelModelWrapper<T extends IModel> {
     }
 
     private async _initModel() {
-        const config = JSON.stringify(ModelSerialization.save(this.model));
+        const config = JSON.stringify(UniversalModelSerializer.save(this.model));
         await Promise.all(this._workers.map(w => w.initModel(config)));
     }
 
@@ -282,7 +274,19 @@ export class ParallelModelWrapper<T extends IModel> {
     }
 
     private _applyDeltas(batchSize: number) {
-        ParallelUtils.updateWeights(this.model, this._deltas, batchSize);
+        const optimizer = this.model.optimizer;
+        const cache: Map<ILayer, LayerCache> = (this.model as any).cache;
+        if (!cache) throw new Error("Unsupported model type");
+
+        for (let i = 1; i < this.model.layers.length; i++) {
+            const layer = this.model.layers[i];
+            const {deltaWeights, deltaBiases} = cache.get(layer)!;
+
+            Matrix.copy_to(this._deltas[i - 1].biases, deltaBiases);
+            Matrix.copy_to_2d(this._deltas[i - 1].weights, deltaWeights);
+
+            optimizer.updateWeights(layer, deltaWeights, deltaBiases, this.model.epoch, batchSize);
+        }
     }
 
     private _assertInitialized() {
@@ -311,22 +315,6 @@ export class ParallelUtils {
         }
 
         return result;
-    }
-
-    static updateWeights(model: IModel, deltas: LayerWeights[], count: number) {
-        const optimizer = model.optimizer;
-        const cache: Map<ILayer, LayerCache> = (model as any).cache;
-        if (!cache) throw new Error("Unsupported model type");
-
-        for (let i = 1; i < model.layers.length; i++) {
-            const layer = model.layers[i];
-            const {deltaWeights, deltaBiases} = cache.get(layer)!;
-
-            Matrix.copy_to(deltas[i - 1].biases, deltaBiases);
-            Matrix.copy_to_2d(deltas[i - 1].weights, deltaWeights);
-
-            optimizer.updateWeights(layer, deltaWeights, deltaBiases, model.epoch, count);
-        }
     }
 
     static splitBatches(data: Float64Array, batchSize: number): Float64Array[] {

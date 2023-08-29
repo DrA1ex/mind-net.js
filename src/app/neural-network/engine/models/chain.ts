@@ -1,17 +1,15 @@
-import {one, zero, zero_2d} from "../matrix";
-
 import {ILayer, IModel} from "../base";
 import {ModelBase} from "./base";
 
 export class ChainModel extends ModelBase {
     layers: ILayer[] = [];
-    private trainable: boolean[] = [];
-    private modelByLayer = new Map<ILayer, [IModel, boolean]>();
+    private layerToModelMap = new Map<ILayer, { model: IModel, index: number }>();
 
+    readonly trainable: boolean[] = [];
     readonly models: IModel[] = [];
 
     addModel(model: IModel, trainable = true): this {
-        this.compiled = false;
+        if (this.compiled) throw new Error("Adding model to already compiled model is forbidden");
 
         this.models.push(model);
         this.trainable.push(trainable);
@@ -46,7 +44,7 @@ export class ChainModel extends ModelBase {
             }
 
             for (const layer of layers) {
-                this.modelByLayer.set(layer, [model, this.trainable[i]]);
+                this.layerToModelMap.set(layer, {model, index: i});
                 this.layers.push(layer)
             }
         }
@@ -55,8 +53,8 @@ export class ChainModel extends ModelBase {
     }
 
     protected _applyLayerDelta(layer: ILayer, batchSize: number) {
-        const [, trainable] = this.modelByLayer.get(layer)!;
-        if (!trainable) return;
+        const {index} = this.layerToModelMap.get(layer)!;
+        if (!this.trainable[index]) return;
 
         super._applyLayerDelta(layer, batchSize);
     }
