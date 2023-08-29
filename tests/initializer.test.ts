@@ -21,7 +21,7 @@ describe("Should generate correct data", () => {
             {name: "normal", expected: [-2.3262799429493666, 2.5811645738294993, -2.905089435124817, 4.77263583761917, 0.5914035615604016]},
         ]
     )("$name", ({name, expected}) => {
-        const initializer = Initializers[name];
+        const initializer = (Initializers as any)[name];
         expect(initializer).toBeDefined();
 
         const generated = initializer(InitializerSize, 0);
@@ -37,7 +37,7 @@ describe("Should generate data with desired size", () => {
         ("size: %d", (size) => {
             test.each([0, 1, 2, 5])
             ("prevSize: %d", (prevSize) => {
-                const initializer = Initializers[name];
+                const initializer = (Initializers as any)[name];
                 expect(initializer(size, prevSize)).toHaveLength(size);
             });
         });

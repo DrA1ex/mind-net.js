@@ -1,6 +1,5 @@
 import * as matrix from "./matrix";
-
-type InitializerFunction = (size: number, prevSize: number) => matrix.Matrix1D;
+import {InitializerFn} from "./base";
 
 function zeroInitializer(size: number, _: number): matrix.Matrix1D {
     return matrix.zero(size);
@@ -36,7 +35,7 @@ function normalInitializer(size: number, _: number): matrix.Matrix1D {
 
 export type InitializerT = "he" | "he_normal" | "xavier" | "xavier_normal" | "uniform" | "normal" | "zero";
 
-export const Initializers: { [key: string]: InitializerFunction } = {
+export const Initializers = {
     he: heInitializer,
     he_normal: heNormalInitializer,
     zero: zeroInitializer,
@@ -45,3 +44,5 @@ export const Initializers: { [key: string]: InitializerFunction } = {
     uniform: uniformInitializer,
     normal: normalInitializer,
 };
+
+export const InitializerMapping: { [key: string]: InitializerFn } = Initializers;

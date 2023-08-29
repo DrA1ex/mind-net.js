@@ -11,6 +11,7 @@ import {
     GenerativeAdversarialModel, ChainModel, ComplexModels,
 } from "./neural-network";
 import {AbstractMomentAcceleratedOptimizer, MomentCacheT} from "./engine/optimizers";
+import {InitializerMapping} from "./engine/initializers";
 
 const SerializationConfig = new Map<any, string[]>;
 
@@ -43,8 +44,8 @@ type LayerSerializationEntry = {
     key: keyof typeof Layers,
     size: number,
     activation: SerializationEntry<typeof Activations>,
-    weightInitializer: keyof typeof Initializers,
-    biasInitializer: keyof typeof Initializers,
+    weightInitializer: keyof typeof InitializerMapping,
+    biasInitializer: keyof typeof InitializerMapping,
     weights: Matrix.Matrix2D,
     biases: Matrix.Matrix1D,
     params: SerializedParams
@@ -100,8 +101,8 @@ export class ModelSerialization {
             const layer = new layerT(layerConf.size, {
                 ...layerConf.params,
                 activation: new activationT(layerConf.activation.params),
-                weightInitializer: Initializers[layerConf.weightInitializer],
-                biasInitializer: Initializers[layerConf.biasInitializer],
+                weightInitializer: InitializerMapping[layerConf.weightInitializer],
+                biasInitializer: InitializerMapping[layerConf.biasInitializer],
             });
 
             layer.skipWeightsInitialization = true;
