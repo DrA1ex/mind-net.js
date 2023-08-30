@@ -5,7 +5,7 @@ Simple to use neural network implementation in pure TypeScript.
 [![npm version](https://badge.fury.io/js/mind-net.js.svg)](https://badge.fury.io/js/mind-net.js) [![Tests](https://github.com/DrA1ex/mind-net.js/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/DrA1ex/mind-net.js/actions/workflows/tests.yml) [![GitHub Pages](https://github.com/DrA1ex/mind-net.js/actions/workflows/jekyll-gh-pages.yml/badge.svg?branch=main)](https://github.com/DrA1ex/mind-net.js/actions/workflows/jekyll-gh-pages.yml)
 
 <p align="center">
-<img alt="Logo" width="128" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/6ab40587-17a2-4ca9-bf4a-41d2f4d92549"/>
+<img alt="Logo" width="128" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/d2d0cbd6-bc6c-4ea5-8617-1031b4d6d40d"/>
 </p>
 
 
