@@ -273,37 +273,37 @@ for (let i = 0; i <= 150; i++) {
 
 **Full-sized dataset (5 iterations), Prediction Speed:**
 
-| Library            | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
+| Library              | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
 |----------------------|--------------|-------------|------------------|---------------------------|
-| Worker.Compute       | 149.6        | 9.182       | 0.7481           | Baseline                  |
-| Compute              | 744.4        | 2.652       | 3.7222           | ~397.77% Slower           |
+| mind-net.js (Worker) | 149.6        | 9.182       | 0.7481           | Baseline                  |
+| mind-net.js          | 744.4        | 2.652       | 3.7222           | ~397.77% Slower           |
 | Tensorflow.js        | 929          | 0.762       | 4.6448           | ~520.88% Slower           |
 | Brain.js             | 1024.9       | 1.819       | 5.1247           | ~585.05% Slower           |
 
 **Single-sample dataset (10,000 iterations), Prediction Speed:**
 
-| Library            | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
+| Library              | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
 |----------------------|--------------|-------------|------------------|---------------------------|
-| Worker.Compute       | 0.4          | 474.086     | 3.662            | Baseline                  |
-| Compute              | 0.4          | 69.923      | 3.7037           | -                           |
+| mind-net.js (Worker) | 0.4          | 474.086     | 3.662            | Baseline                  |
+| mind-net.js          | 0.4          | 69.923      | 3.7037           | -                           |
 | Tensorflow.js        | 0.6          | 74.901      | 5.8835           | ~60% Slower               |
 | Brain.js             | 0.5          | 78.524      | 5.2406           | ~43% Slower               |
 
 **Full-sized dataset (5 iterations), Train Speed:**
 
-| Library            | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
+| Library              | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
 |----------------------|--------------|-------------|------------------|---------------------------|
-| Worker.Compute       | 464          | 4.132       | 2.3202           | Baseline                  |
-| Compute              | 3871.4       | 0.743       | 19.3568          | ~734.74% Slower           |
+| mind-net.js (Worker) | 464          | 4.132       | 2.3202           | Baseline                  |
+| mind-net.js          | 3871.4       | 0.743       | 19.3568          | ~734.74% Slower           |
 | Tensorflow.js        | 2826.3       | 0.794       | 14.1317          | ~509.63% Slower           |
 | Brain.js             | 2703.6       | 0.309       | 13.518           | ~483.05% Slower           |
 
 **Single-sample  dataset (10,000 iterations), Train Speed:**
 
-| Library            | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
+| Library              | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
 |----------------------|--------------|-------------|------------------|---------------------------|
-| Worker.Compute       | 2.9          | 99.576      | 29.1533          | Baseline                  |
-| Compute              | 3            | 498.137     | 29.7619          | ~3.45% Slower             |
+| mind-net.js (Worker) | 2.9          | 99.576      | 29.1533          | Baseline                  |
+| mind-net.js          | 3            | 498.137     | 29.7619          | ~3.45% Slower             |
 | Tensorflow.js        | 8.5          | 827.866     | 84.7745          | ~192.86% Slower           |
 | Brain.js             | 1.5          | 1129.554    | 15.4283          | ~48.28% Faster            |
 
