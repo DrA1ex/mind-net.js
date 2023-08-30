@@ -1,5 +1,4 @@
 import path from "node:path";
-import tqdm from "tqdm";
 
 import {
     Dense,
@@ -9,11 +8,12 @@ import {
     AdamOptimizer,
     ParallelModelWrapper,
     ParallelGanWrapper,
-    Iter, Matrix,
+    Matrix,
+    ProgressUtils,
+    ImageUtils
 } from "mind-net.js";
 
 import * as DatasetUtils from "./utils/dataset.js";
-import * as ImageUtils from "./utils/image.js";
 import * as ModelUtils from "./utils/model.js";
 
 
@@ -56,7 +56,7 @@ const imageDim = trainData[0].length;
 const gsImageDim = gsTrainData[0].length;
 const upscaleImageDim = upscaleTrainData[0].length;
 
-const epochs = 40;
+const epochs = 100;
 const batchSize = 64;
 const epochSamples = 10;
 const finalSamples = 20;
@@ -123,11 +123,11 @@ upscaler.compile();
 const pUpscaler = new ParallelModelWrapper(upscaler);
 
 async function _filterWithVAEBatch(inputs) {
-    return ModelUtils.processMultiChannelDataParallel(pVae, inputs, imageChannel);
+    return ImageUtils.processMultiChannelDataParallel(pVae, inputs, imageChannel);
 }
 
 async function _upscaleBatch(inputs) {
-    return ModelUtils.processMultiChannelDataParallel(pUpscaler, inputs, imageChannel);
+    return ImageUtils.processMultiChannelDataParallel(pUpscaler, inputs, imageChannel);
 }
 
 async function _saveModel() {
@@ -153,7 +153,7 @@ await Promise.all([pVae.init(), pUpscaler.init(), pGan.init()]);
 console.log("Training...");
 
 // Training loop
-for (const _ of tqdm(Array.from(Iter.range(0, epochs)))) {
+for (const _ of ProgressUtils.progress(epochs)) {
     console.log("Epoch:", ganModel.epoch + 1);
 
     // Train models

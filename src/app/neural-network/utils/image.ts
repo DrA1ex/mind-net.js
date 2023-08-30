@@ -21,7 +21,7 @@ export function grayscaleDataset(data: Matrix2D, channels = 3) {
     return result;
 }
 
-export function getChannel(data: Matrix1D, channel: number, channelCount: number, dst = null) {
+export function getChannel(data: Matrix1D, channel: number, channelCount: number, dst?: Matrix1D) {
     const result = dst ?? new Array(data.length / channelCount);
     for (let k = 0; k < result.length; k++) {
         result[k] = data[k * channelCount + channel];
@@ -104,6 +104,23 @@ export function setCroppedImage(chunk: Matrix1D, dst: Matrix1D, x: number, y: nu
             dst[yOffset + x + j] = chunk[i * cropSize + j];
         }
     }
+}
+
+export function processMultiChannelData(model: IModel, src: Matrix1D, channels = 3, dst?: Matrix1D) {
+    const channelSize = src.length / channels;
+    if (channelSize % 1 !== 0) throw new Error(`Invalid input data size`);
+
+    const outSize = model.outputSize;
+    const result = dst ?? new Array(outSize * channels);
+
+    const channelData = new Array(channelSize);
+    for (let c = 0; c < 3; c++) {
+        getChannel(src, c, channels, channelData);
+        const processedChannel = model.compute(channelData);
+        setChannel(result, processedChannel, c, channels);
+    }
+
+    return result;
 }
 
 export async function processMultiChunkDataParallel<T extends IModel>(

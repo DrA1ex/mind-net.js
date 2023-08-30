@@ -1,12 +1,16 @@
 // Importing necessary modules and libraries
-import tqdm from "tqdm";
-
-import {SequentialModel, AdamOptimizer, Dense, Iter, Matrix, ParallelModelWrapper,} from "mind-net.js";
+import {
+    SequentialModel,
+    AdamOptimizer,
+    Dense,
+    Matrix,
+    ParallelModelWrapper,
+    ProgressUtils,
+    ImageUtils
+} from "mind-net.js";
 
 import * as DatasetUtils from "./utils/dataset.js";
-import * as ImageUtils from "./utils/image.js";
 import * as ModelUtils from "./utils/model.js";
-
 
 const DatasetUrl = "https://github.com/DrA1ex/mind-net.js/files/12407792/cartoon-2500-28.zip";
 const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12398103/cartoon-2500-64.zip";
@@ -108,7 +112,7 @@ await pUpscaler.init();
 console.log("Training...");
 
 // Training loop
-for (const _ of tqdm(Array.from(Iter.range(0, epochs)))) {
+for (const _ of ProgressUtils.progress(epochs)) {
     console.log("Epoch:", upscaler.epoch + 1);
 
     // Train models

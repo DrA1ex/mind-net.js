@@ -6,8 +6,7 @@
  *
  */
 
-import MindNet, {Matrix, ParallelModelWrapper} from "mind-net.js";
-import * as TimeUtils from "./utils/time.js";
+import MindNet, {Matrix, ParallelModelWrapper, TimeUtils} from "mind-net.js";
 
 import * as tf from '@tensorflow/tfjs';
 import brain from "brain.js";

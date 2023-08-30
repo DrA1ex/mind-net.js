@@ -6,7 +6,6 @@
     "get-pixels": "^3.3.3",
     "jimp": "^0.22.10",
     "jszip": "^3.10.1",
-    "mind-net.js": "latest",
-    "tqdm": "^2.0.3"
+    "mind-net.js": "latest"
   }
 }

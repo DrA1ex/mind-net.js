@@ -1,7 +1,6 @@
 import fs from "fs";
-import {ModelSerialization, GanSerialization, Matrix,} from "mind-net.js";
-import * as ImageUtils from "./utils/image.js";
-import * as ModelUtils from "./utils/model.js";
+import {ModelSerialization, GanSerialization, Matrix, ImageUtils} from "mind-net.js";
+import * as Image from "./utils/image.js";
 
 
 const name = "2023-08-22T12:45:42.929Z_40";
@@ -35,10 +34,10 @@ for (let k = 0; k <= count; k++) {
     for (let i = 0; i <= framesPerSample; i++) {
         const data = start.map((v, k) => v + (next[k] - v) * i / framesPerSample);
 
-        await ImageUtils.saveImageGrid(() => {
+        await Image.saveImageGrid(() => {
                 const gen = gan.generator.compute(data);
-                const filtered = ModelUtils.processMultiChannelData(vae, gen, 3, gen);
-                return ModelUtils.processMultiChannelData(upscaler, filtered, 3);
+                const filtered = ImageUtils.processMultiChannelData(vae, gen, 3, gen);
+                return ImageUtils.processMultiChannelData(upscaler, filtered, 3);
             },
             `./out/animation/animation_${(k * framesPerSample + i).toString().padStart(6, "0")}.png`,
             outSize, 1, 3, 0, scale

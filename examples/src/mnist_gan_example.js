@@ -1,5 +1,4 @@
 import path from "node:path";
-import tqdm from "tqdm";
 
 import {
     Dense,
@@ -8,12 +7,13 @@ import {
     SequentialModel,
     AdamOptimizer,
     ParallelGanWrapper,
-    Iter, Matrix
+    Matrix,
+    ImageUtils,
+    ProgressUtils,
 } from "mind-net.js";
 
 import * as DatasetUtils from "./utils/dataset.js";
 import * as ModelUtils from "./utils/model.js";
-import * as ImageUtils from "./utils/image.js";
 
 const DatasetUrl = "https://github.com/DrA1ex/mind-net.js/files/12456697/mnist-10000-28.zip";
 
@@ -101,7 +101,7 @@ console.log("Training...");
 const generatorInput = Matrix.random_normal_2d(epochSamples ** 2, inputDim, -1, 1);
 
 // Training loop
-for (const _ of tqdm(Array.from(Iter.range(0, epochs)))) {
+for (const _ of ProgressUtils.progress(epochs)) {
     console.log("Epoch:", ganModel.epoch + 1);
 
     await pGan.train(trainData, {batchSize});

@@ -3,58 +3,11 @@ import path from "path";
 import {
     GanSerialization,
     GenerativeAdversarialModel,
-    ParallelModelWrapper,
-    ModelSerialization,
-    Matrix
+    ModelSerialization
 } from "mind-net.js";
-import * as ImageUtils from "./image.js";
+
+import * as Image from "./image.js";
 import * as CommonUtils from "./common.js";
-
-export function processMultiChannelData(model, src, channels = 3, dst = null) {
-    const channelSize = src.length / channels;
-    if (channelSize % 1 !== 0) throw new Error(`Invalid input data size`);
-
-    const outSize = model.outputSize;
-    const result = dst ?? new Array(outSize * channels);
-
-    const channelData = new Array(channelSize);
-    for (let c = 0; c < 3; c++) {
-        ImageUtils.getChannel(src, c, channels, channelData);
-        const processedChannel = model.compute(channelData);
-        ImageUtils.setChannel(result, processedChannel, c, channels);
-    }
-
-    return result;
-}
-
-export async function processMultiChannelDataParallel(pModel, inputs, channels = 3) {
-    const inputSize = inputs[0].length
-    const channelSize = inputSize / channels;
-    if (!Number.isFinite(channelSize) || channelSize % 1 !== 0) throw new Error("Invalid input data size");
-    if (!(pModel instanceof ParallelModelWrapper)) throw new Error("Model should be ParallelModelWrapper");
-
-    const channelsData = inputs.map(input =>
-        Matrix.fill(c => ImageUtils.getChannel(input, c, channels), channels)
-    ).flat();
-
-    const processedChannels = await pModel.compute(channelsData);
-
-    const outSize = pModel.model.outputSize * channels;
-    const result = new Float64Array(inputs.length * outSize);
-
-    const outputs = new Array(inputs.length);
-    for (let i = 0; i < inputs.length; i++) {
-        const slice = result.subarray(i * outSize, (i + 1) * outSize);
-        outputs[i] = slice;
-
-        for (let c = 0; c < channels; c++) {
-            const processed = processedChannels[i * channels + c];
-            ImageUtils.setChannel(slice, processed, c, channels);
-        }
-    }
-
-    return outputs;
-}
 
 export async function saveModel(model, fileName) {
     let dump;
@@ -130,7 +83,7 @@ export async function saveModelsSamples(key, outPath, imageSize, dataFn, options
         opts.time ? new Date().toISOString() : null
     ].filter(v => v).join("_");
 
-    await ImageUtils.saveImageGrid(dataFn, path.join(outPath, fileName + ".png"), imageSize, opts.count, opts.channel, opts.border, opts.scale);
+    await Image.saveImageGrid(dataFn, path.join(outPath, fileName + ".png"), imageSize, opts.count, opts.channel, opts.border, opts.scale);
 }
 
 /**
