@@ -311,7 +311,7 @@ for (let i = 0; i <= 150; i++) {
 | Brain.js             | 1.5          | 1129.554    | 15.4283          | ~48.28% Faster            |
 | Tensorflow (Native)  | 3.5          | 166.625     | 34.9394          | ~19.8% Slower             |
 
-You can bebchmark find script at: [/examples/src/benchmark.js](/examples/src/benchmark.js)
+You can find bebchmark script at: [/examples/src/benchmark.js](/examples/src/benchmark.js)
 
 ## Examples
 
