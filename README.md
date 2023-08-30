@@ -269,30 +269,45 @@ for (let i = 0; i <= 150; i++) {
 <img width="800" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/b0f85f39-f112-4246-933e-6d87c53c3cf0">
 
 
-## Benchmark:
-```
-You can bebchmark find script at: /examples/src/benchmark.js
+## Benchmark (v1.3.3)
 
-- Worker.Compute (Full) (x5) Mean: 0.1496 ± 9.182% Total: 0.7481
-- Compute (Full) (x5) Mean: 0.7444 ± 2.652% Total: 3.7222
-- TF.Compute (Full) (x5) Mean: 0.929 ± 0.7619% Total: 4.6448
-- Brain.Compute (Full) (x5) Mean: 1.0249 ± 1.8194% Total: 5.1247
+**Full-sized dataset (5 iterations), Prediction Speed:**
 
-- Worker.Compute (Single) (x10000) Mean: 0.0004 ± 474.0863% Total: 3.662
-- Compute (Single) (x10000) Mean: 0.0004 ± 69.9225% Total: 3.7037
-- TF.Compute (Single) (x10000) Mean: 0.0006 ± 74.9014% Total: 5.8835
-- Brain.Compute (Single) (x10000) Mean: 0.0005 ± 78.5239% Total: 5.2406
+| Library            | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
+|----------------------|--------------|-------------|------------------|---------------------------|
+| Worker.Compute       | 149.6        | 9.182       | 0.7481           | Baseline                  |
+| Compute              | 744.4        | 2.652       | 3.7222           | ~397.77% Slower           |
+| Tensorflow.js        | 929          | 0.762       | 4.6448           | ~520.88% Slower           |
+| Brain.js             | 1024.9       | 1.819       | 5.1247           | ~585.05% Slower           |
 
-- Worker.Train (Full) (x5) Mean: 0.464 ± 4.1317% Total: 2.3202
-- Train (Full) (x5) Mean: 3.8714 ± 0.7429% Total: 19.3568
-- TF.Train (Full) (x5) Mean: 2.8263 ± 0.7938% Total: 14.1317
-- Brain.Train (Full) (x5) Mean: 2.7036 ± 0.3091% Total: 13.518
+**Single-sample dataset (10,000 iterations), Prediction Speed:**
 
-- Worker.Train (Single) (x10000) Mean: 0.0029 ± 99.576% Total: 29.1533
-- Train (Single) (x10000) Mean: 0.003 ± 498.1374% Total: 29.7619
-- TF.Train (Single) (x10000) Mean: 0.0085 ± 827.8662% Total: 84.7745
-- Brain.Train (Single) (x10000) Mean: 0.0015 ± 1129.5542% Total: 15.4283
-```
+| Library            | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
+|----------------------|--------------|-------------|------------------|---------------------------|
+| Worker.Compute       | 0.4          | 474.086     | 3.662            | Baseline                  |
+| Compute              | 0.4          | 69.923      | 3.7037           | -                           |
+| Tensorflow.js        | 0.6          | 74.901      | 5.8835           | ~60% Slower               |
+| Brain.js             | 0.5          | 78.524      | 5.2406           | ~43% Slower               |
+
+**Full-sized dataset (5 iterations), Train Speed:**
+
+| Library            | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
+|----------------------|--------------|-------------|------------------|---------------------------|
+| Worker.Compute       | 464          | 4.132       | 2.3202           | Baseline                  |
+| Compute              | 3871.4       | 0.743       | 19.3568          | ~734.74% Slower           |
+| Tensorflow.js        | 2826.3       | 0.794       | 14.1317          | ~509.63% Slower           |
+| Brain.js             | 2703.6       | 0.309       | 13.518           | ~483.05% Slower           |
+
+**Single-sample  dataset (10,000 iterations), Train Speed:**
+
+| Library            | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
+|----------------------|--------------|-------------|------------------|---------------------------|
+| Worker.Compute       | 2.9          | 99.576      | 29.1533          | Baseline                  |
+| Compute              | 3            | 498.137     | 29.7619          | ~3.45% Slower             |
+| Tensorflow.js        | 8.5          | 827.866     | 84.7745          | ~192.86% Slower           |
+| Brain.js             | 1.5          | 1129.554    | 15.4283          | ~48.28% Faster            |
+
+You can bebchmark find script at: [/examples/src/benchmark.js](/examples/src/benchmark.js)
 
 ## Examples
 
