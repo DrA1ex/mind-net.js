@@ -279,7 +279,7 @@ for (let i = 0; i <= 150; i++) {
 | mind-net.js          | 744.4        | 2.652       | 3.7222           | ~397.77% Slower           |
 | Tensorflow.js        | 929          | 0.762       | 4.6448           | ~520.88% Slower           |
 | Brain.js             | 1024.9       | 1.819       | 5.1247           | ~585.05% Slower           |
-| Tensorflow (Native)  | 74.8         | 1.819       | 0.3742           | ~49.91%  Faster           |
+| Tensorflow (Native)  | 74.8         | 11.46       | 0.3742           | ~49.91%  Faster           |
 
 **Single-sample dataset (10,000 iterations), Prediction Speed:**
 
@@ -289,7 +289,7 @@ for (let i = 0; i <= 150; i++) {
 | mind-net.js          | 0.4          | 69.923      | 3.7037           | -                         |
 | Tensorflow.js        | 0.6          | 74.901      | 5.8835           | ~60% Slower               |
 | Brain.js             | 0.5          | 78.524      | 5.2406           | ~43% Slower               |
-| Tensorflow (Native)  | 0.8          | 1.819       | 8.2383           | ~124% Slower              |
+| Tensorflow (Native)  | 0.8          | 86.92       | 8.2383           | ~124% Slower              |
 
 **Full-sized dataset (5 iterations), Train Speed:**
 
@@ -299,7 +299,7 @@ for (let i = 0; i <= 150; i++) {
 | mind-net.js          | 3871.4       | 0.743       | 19.3568          | ~734.74% Slower           |
 | Tensorflow.js        | 2826.3       | 0.794       | 14.1317          | ~509.63% Slower           |
 | Brain.js             | 2703.6       | 0.309       | 13.518           | ~483.05% Slower           |
-| Tensorflow (Native)  | 109          | 1.819       | 0.5451           | ~76% Faster               |
+| Tensorflow (Native)  | 109          | 7.124       | 0.5451           | ~76% Faster               |
 
 **Single-sample  dataset (10,000 iterations), Train Speed:**
 
@@ -309,7 +309,7 @@ for (let i = 0; i <= 150; i++) {
 | mind-net.js          | 3            | 498.137     | 29.7619          | ~3.45% Slower             |
 | Tensorflow.js        | 8.5          | 827.866     | 84.7745          | ~192.86% Slower           |
 | Brain.js             | 1.5          | 1129.554    | 15.4283          | ~48.28% Faster            |
-| Tensorflow (Native)  | 3.5          | 1.819       | 34.9394          | ~19.8% Slower             |
+| Tensorflow (Native)  | 3.5          | 166.625     | 34.9394          | ~19.8% Slower             |
 
 You can bebchmark find script at: [/examples/src/benchmark.js](/examples/src/benchmark.js)
 
