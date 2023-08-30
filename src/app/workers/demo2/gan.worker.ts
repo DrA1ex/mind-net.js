@@ -4,8 +4,7 @@ import {Color, MultiPlotChart, PlotAxisScale, PlotSeriesOverflow} from "text-gra
 
 import * as iter from "../../neural-network/engine/iter";
 import * as color from "../../utils/color";
-import * as nnUtils from "../../neural-network/utils";
-import NN, {GanSerialization, Matrix} from "../../neural-network/neural-network";
+import NN, {GanSerialization, Matrix, CommonUtils} from "../../neural-network/neural-network";
 import {LossT} from "../../neural-network/engine/loss";
 
 import {
@@ -270,7 +269,7 @@ function draw() {
     const gridSize = size * DRAW_GRID_DIMENSION;
 
     const dataSamples = drawGridSample(DRAW_GRID_DIMENSION, size,
-        () => nnUtils.pickRandomItem(trainingData));
+        () => CommonUtils.pickRandomItem(trainingData));
 
     const genSamples = drawGridSample(DRAW_GRID_DIMENSION, size, (i, j) => {
         return neuralNetwork.compute(exampleNoise[i][j]);

@@ -1,8 +1,8 @@
 import {ILoss} from "./base";
 import {Param} from "../serialization";
-import * as matrix from "./matrix";
 import {Matrix1D} from "./matrix";
-import * as utils from "../utils";
+import * as Matrix from "./matrix";
+import * as CommonUtils from "../utils/common"
 
 export class MeanSquaredErrorLoss implements ILoss {
     @Param()
@@ -27,11 +27,11 @@ export class MeanSquaredErrorLoss implements ILoss {
     }
 
     accuracy(predicted: Matrix1D[], expected: Matrix1D[]): number {
-        return utils.absoluteAccuracy(predicted, expected, this.k);
+        return CommonUtils.absoluteAccuracy(predicted, expected, this.k);
     }
 
     calculateError(predicted: Matrix1D, expected: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return matrix.matrix1d_binary_op(predicted, expected, (p, e) =>
+        return Matrix.matrix1d_binary_op(predicted, expected, (p, e) =>
             -2 * (e - p) / predicted.length, dst);
     }
 }
@@ -59,11 +59,11 @@ export class MeanAbsoluteErrorLoss implements ILoss {
     }
 
     accuracy(predicted: Matrix1D[], expected: Matrix1D[]): number {
-        return utils.absoluteAccuracy(predicted, expected, this.k);
+        return CommonUtils.absoluteAccuracy(predicted, expected, this.k);
     }
 
     calculateError(predicted: Matrix1D, expected: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return matrix.matrix1d_binary_op(predicted, expected, (p, e) =>
+        return Matrix.matrix1d_binary_op(predicted, expected, (p, e) =>
             Math.sign(e - p) / predicted.length, dst);
     }
 }
@@ -103,7 +103,7 @@ export class CategoricalCrossEntropyLoss implements ILoss {
     }
 
     calculateError(predicted: Matrix1D, expected: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return matrix.sub(predicted, expected, dst);
+        return Matrix.sub(predicted, expected, dst);
     }
 
     private _clip(value: number, eps = 1e-7) {
@@ -152,7 +152,7 @@ export class BinaryCrossEntropy implements ILoss {
     }
 
     calculateError(predicted: Matrix1D, expected: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return matrix.matrix1d_binary_op(predicted, expected, (p, e) => {
+        return Matrix.matrix1d_binary_op(predicted, expected, (p, e) => {
             const c = this._clip(p);
             return -(e / c - (1 - e) / (1 - c)) / predicted.length;
         }, dst);
