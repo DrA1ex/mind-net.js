@@ -152,6 +152,8 @@ await Promise.all([pVae.init(), pUpscaler.init(), pGan.init()]);
 
 console.log("Training...");
 
+const generatorInput = Matrix.random_normal_2d(epochSamples ** 2, inputDim, -1, 1);
+
 // Training loop
 for (const _ of ProgressUtils.progress(epochs)) {
     console.log("Epoch:", ganModel.epoch + 1);
@@ -168,7 +170,6 @@ for (const _ of ProgressUtils.progress(epochs)) {
     console.log("Saving output...");
 
     // Saving a snapshot of the generator model's output
-    const generatorInput = Matrix.random_normal_2d(epochSamples ** 2, inputDim, -1, 1);
     const generatedImages = await pGan.compute(generatorInput);
     await ModelUtils.saveGeneratedModelsSamples(ganModel.epoch, outPath, generatedImages,
         {channel: imageChannel, count: epochSamples, time: false, prefix: "generated", scale: 4});
