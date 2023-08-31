@@ -311,6 +311,8 @@ for (let i = 0; i <= 150; i++) {
 | Brain.js             | 1.5          | 1129.554    | 15.4283          | ~48.28% Faster            |
 | Tensorflow (Native)  | 3.5          | 166.625     | 34.9394          | ~19.8% Slower             |
 
+Comparison with different dataset sizes: [link](https://docs.google.com/spreadsheets/d/e/2PACX-1vQhyMUNaJj1-9JhKrMHIIhj5fjzoVue1b0Lrke8UhEkhNqHqVJ9s1uRK6ceQkdrloia2OPqUlWNdEzr/pubchart?oid=360497977&format=interactive)
+
 You can find benchmark script at: [/examples/src/benchmark.js](/examples/src/benchmark.js)
 
 ## Examples
