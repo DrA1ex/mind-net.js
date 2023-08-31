@@ -32,15 +32,15 @@ const pModel = new ParallelModelWrapper(model, 6);
 await pModel.init();
 
 const ComputeIters = 10000;
-const TrainIters = 5
+const TrainIters = 5;
 const BatchSize = 128;
 const Count = 2000;
 
 const trainData = Matrix.random_2d(Count, Sizes[0]);
 const singleTrainData = trainData.slice(0, 1);
 
-const tfTrainData = tf.tensor(trainData);
-const tfSingleData = tf.tensor(singleTrainData);
+const tfTrainData = tf.tensor(Matrix.copy_2d(trainData));
+const tfSingleData = tf.tensor(Matrix.copy_2d(singleTrainData));
 
 const brTrainData = trainData.map(d => ({input: d, output: d}));
 const brSingleData = brTrainData.slice(0, 1);
