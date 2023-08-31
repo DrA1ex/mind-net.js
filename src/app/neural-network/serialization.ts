@@ -67,6 +67,8 @@ export type ModelSerialized = {
 
 export class ModelSerialization {
     public static save(model: IModel): ModelSerialized {
+        if (!model.isCompiled) throw new Error("Model should be compiled");
+
         return {
             model: SerializationUtils.getTypeAlias(Models, model).key,
             optimizer: this.saveOptimizer(model),
@@ -365,6 +367,8 @@ export type ChainSerialized = {
 
 export class ChainSerialization {
     public static save(chain: ChainModel): ChainSerialized {
+        if (!chain.isCompiled) throw new Error("Model should be compiled");
+
         return {
             model: SerializationUtils.getTypeAlias(ComplexModels, chain as any).key,
             models: chain.models.map(model => ModelSerialization.save(model)),

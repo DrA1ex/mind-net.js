@@ -1,14 +1,20 @@
 import {jest} from '@jest/globals'
 
 export function SetupMockRandom(values: number[], loop = false) {
+    let randomValues = values.concat();
+
+    function reset() {
+        randomValues = values.concat();
+    }
+
     function _mock() {
-        let randomValues = values.concat();
+        reset();
 
         return jest.spyOn(Math, "random").mockImplementation(() => {
             let nextValue = randomValues.shift()
 
             if (nextValue === undefined && loop) {
-                randomValues = values.concat();
+                reset();
                 nextValue = randomValues.shift();
             }
 
@@ -20,8 +26,8 @@ export function SetupMockRandom(values: number[], loop = false) {
         });
     }
 
-    let randomMock: jest.SpiedFunction<() => number>;
 
+    let randomMock: jest.SpiedFunction<() => number>;
     beforeEach(() => {
         randomMock = _mock();
     });
@@ -29,6 +35,8 @@ export function SetupMockRandom(values: number[], loop = false) {
     afterEach(() => {
         randomMock.mockRestore();
     });
+
+    return {reset};
 }
 
 export function MockFunctionSequential<T>(values: T[]) {

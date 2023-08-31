@@ -28,6 +28,7 @@ export abstract class ModelBase implements IModel {
     readonly optimizer: IOptimizer;
     readonly loss: ILoss;
 
+    get isCompiled() {return this.compiled;}
     get inputSize() {return this.layers[0].size;}
     get outputSize() {return this.layers[this.layers.length - 1].size;}
 

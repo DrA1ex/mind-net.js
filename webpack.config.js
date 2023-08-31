@@ -74,14 +74,16 @@ const main = {
 
 const worker = {
     ...common,
-    entry: ["./lib/parallel.worker.js"],
+    entry: [
+        "./lib/parallel.worker.js"
+    ],
     dependencies: ["main"],
     output: {
         ...commonOutput,
         filename: "parallel.worker.js"
     },
     externals: {
-        "../../neural-network": "./main.js",
+        "./parallel.worker.impl": "./main.js",
     }
 }
 

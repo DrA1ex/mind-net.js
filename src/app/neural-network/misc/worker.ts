@@ -1,4 +1,4 @@
-interface IWorker {
+export interface IWorker {
     postMessage(message: any, transferList?: Transferable[]): void;
 
     on(eventName: string, handler: (...args: any[]) => void): void;
@@ -69,26 +69,26 @@ class NodeWorker {
     }
 }
 
-type WorkerT = new (...args: any) => IWorker;
+export type WorkerT = new (...args: any) => IWorker;
 
-async function getWorkerT() {
-    let wrapperT: WorkerT;
-    let workerT: any;
-    if (typeof Worker !== "undefined") {
-        wrapperT = BrowserWorker
-        workerT = Worker;
-    }
-    // @ts-ignore
-    else if (typeof window === "undefined") {
-        const path = "worker_threads";
-        const WorkerThreads = await import(/* webpackIgnore: true */ path);
-        wrapperT = NodeWorker;
-        workerT = WorkerThreads.Worker;
-    } else {
-        throw new Error("Unsupported environment: Worker doesn't exists");
-    }
+export class WorkerFactory {
+    async getWorkerT() {
+        let wrapperT: WorkerT;
+        let workerT: any;
+        if (typeof Worker !== "undefined") {
+            wrapperT = BrowserWorker
+            workerT = Worker;
+        }
+        // @ts-ignore
+        else if (typeof window === "undefined") {
+            const path = "worker_threads";
+            const WorkerThreads = await import(/* webpackIgnore: true */ path);
+            wrapperT = NodeWorker;
+            workerT = WorkerThreads.Worker;
+        } else {
+            throw new Error("Unsupported environment: Worker doesn't exists");
+        }
 
-    return [wrapperT, workerT];
+        return [wrapperT, workerT];
+    }
 }
-
-export {getWorkerT, IWorker, WorkerT};

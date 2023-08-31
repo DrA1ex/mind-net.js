@@ -1,7 +1,7 @@
 import {Iter, Matrix, UniversalModelSerializer} from "../../neural-network";
 import {Matrix1D, Matrix2D} from "../matrix";
 import {ILayer, IModel} from "../base";
-import {getWorkerT, WorkerT, IWorker} from "../../misc/worker";
+import {WorkerFactory, WorkerT, IWorker} from "../../misc/worker";
 import {LayerCache} from "../models/base";
 
 export type LayerWeights = {
@@ -105,7 +105,9 @@ export class ParallelModelWrapper<T extends IModel> {
     async init() {
         if (this._initialized) return;
 
-        const [wrapperT, workerT] = await getWorkerT();
+        const wFactory = new WorkerFactory();
+        const [wrapperT, workerT] = await wFactory.getWorkerT();
+
         for (let i = 0; i < this.parallelism; i++) {
             this._workers[i] = new ModelWorkerWrapper(wrapperT, workerT, this.model);
         }

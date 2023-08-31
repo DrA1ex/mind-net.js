@@ -59,3 +59,7 @@ export {
 export {
     ParallelGanWrapper
 } from "./engine/wrapper/parallel-gan";
+
+export {
+    ParallelWorkerImpl
+} from "./engine/wrapper/parallel.worker.impl"
