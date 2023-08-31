@@ -296,7 +296,7 @@ for (let i = 0; i <= 150; i++) {
 | Library              | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
 |----------------------|--------------|-------------|------------------|---------------------------|
 | mind-net.js (Worker) | 464          | 4.132       | 2.3202           | Baseline                  |
-| mind-net.js          | 3871.4       | 0.743       | 19.3568          | ~734.74% Slower           |
+| mind-net.js          | 2345.2       | 3.452       | 11.7263          | ~405.4% Slower            |
 | Tensorflow.js        | 2826.3       | 0.794       | 14.1317          | ~509.63% Slower           |
 | Brain.js             | 2703.6       | 0.309       | 13.518           | ~483.05% Slower           |
 | Tensorflow (Native)  | 109          | 7.124       | 0.5451           | ~76% Faster               |
@@ -311,7 +311,7 @@ for (let i = 0; i <= 150; i++) {
 | Brain.js             | 1.5          | 1129.554    | 15.4283          | ~48.28% Faster            |
 | Tensorflow (Native)  | 3.5          | 166.625     | 34.9394          | ~19.8% Slower             |
 
-You can find bebchmark script at: [/examples/src/benchmark.js](/examples/src/benchmark.js)
+You can find benchmark script at: [/examples/src/benchmark.js](/examples/src/benchmark.js)
 
 ## Examples
 
