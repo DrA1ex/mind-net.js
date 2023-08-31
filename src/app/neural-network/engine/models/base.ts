@@ -182,7 +182,7 @@ export abstract class ModelBase implements IModel {
     }
 
     protected _applyDropoutMask(values: matrix.Matrix1D, mask: matrix.Matrix1D) {
-        matrix.mul_to(values, mask);
+        matrix.mul_to(mask, values);
     }
 
     protected _backprop(loss: matrix.Matrix1D) {

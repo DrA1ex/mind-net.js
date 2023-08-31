@@ -249,11 +249,11 @@ export class ParallelModelWrapper<T extends IModel> {
     private _accumulateDelta(deltas: LayerWeights[][]) {
         for (const entry of deltas) {
             for (let i = 0; i < entry.length; i++) {
-                Matrix.add_to(this._deltas[i].biases, entry[i].biases);
+                Matrix.add_to(entry[i].biases, this._deltas[i].biases);
 
                 const wCount = entry[i].weights.length;
                 for (let k = 0; k < wCount; k++) {
-                    Matrix.add_to(this._deltas[i].weights[k], entry[i].weights[k]);
+                    Matrix.add_to(entry[i].weights[k], this._deltas[i].weights[k]);
                 }
             }
         }

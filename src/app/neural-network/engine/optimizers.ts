@@ -278,7 +278,7 @@ export class SgdNesterovOptimizer extends OptimizerBase {
         // next gradient
         matrix.add(layer.output, s.momentum, s.nextGrad);
         layer.activation.moment(s.nextGrad, s.tmp1);
-        matrix.mul_to(s.tmp1, error);
+        matrix.mul_to(error, s.tmp1);
 
         // calculate/update moment
         matrix.matrix1d_binary_in_place_op(s.momentum, s.tmp1, (m, g) => this.beta * m + (1 - this.beta) * g);

@@ -128,7 +128,7 @@ export class Dense implements ILayer {
         }
 
         matrix.dot_2d(this.weights, this.input, this.output);
-        matrix.add_to(this.output, this.biases);
+        matrix.add_to(this.biases, this.output);
         return this.output
     }
 
@@ -138,7 +138,7 @@ export class Dense implements ILayer {
                 (w, a) => w + a * gradient[j]);
         }
 
-        matrix.add_to(deltaBiases, gradient);
+        matrix.add_to(gradient, deltaBiases);
 
         // Input layer doesn't have any weights
         if (this.index === 0) return this.error;
