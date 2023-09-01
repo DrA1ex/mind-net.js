@@ -128,7 +128,7 @@ const [result] = network.compute([x, y]);
 console.log(`sqrt(${x.toFixed(2)} ** 2 + ${y.toFixed(2)} ** 2) = ${result.toFixed(2)} (real: ${real.toFixed(2)})`);
 ```
 
-### Generative Adversarial network (GAN) for Colorful Cartoon generation with VAE filtering
+### Generative Adversarial network (GAN) for Colorful Cartoon generation with Autoencoder filtering
 
 <img width="480" alt="animation" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/e3c4a943-036d-4bd8-8e04-035cebb579aa">
 
@@ -146,7 +146,7 @@ const zipData = await fetch(DatasetUrl).then(r => r.arrayBuffer());
 // Loading the dataset from the zip file
 const trainData = (await DatasetUtils.loadDataset(zipData));
 
-// Creating grayscale VAE training data from the RGB training data
+// Creating grayscale Autoencoder training data from the RGB training data
 const gsTrainData = grayscaleDataset(trainData, 3);
 
 // ... Create generator and discriminator models
@@ -154,12 +154,12 @@ const gsTrainData = grayscaleDataset(trainData, 3);
 // Creating the generative adversarial model
 const ganModel = new GenerativeAdversarialModel(generator, discriminator, createOptimizer(), loss);
 
-// Creating the variational autoencoder (VAE) model
-const vae = new SequentialModel(createOptimizer(), "mse");
-// ... add VAE layers and compile
+// Creating the autoencoder (AE) model
+const ae = new SequentialModel(createOptimizer(), "mse");
+// ... add AE layers and compile
 
 // Declare filtering function
-function _filterWithVAE(input) { /* ... */ }
+function _filterWithAE(input) { /* ... */ }
 
 // Train loop
 for (let i = 0; i < epochs; i++) {
@@ -167,14 +167,14 @@ for (let i = 0; i < epochs; i++) {
     
     // Train epoch
     ganModel.train(trainData, {batchSize});
-    vae.train(gsTrainData, gsTrainData, {batchSize});
+    ae.train(gsTrainData, gsTrainData, {batchSize});
 
     // Save generated image
     await ImageUtils.saveSnapshot(generator, ganModel.ganChain.epoch, {label: "generated", channel: 3});
     
     // Save filtered image
-    await ImageUtils.saveImageGrid((x, y) => _filterWithVAE(ImageUtils.InputCache.get(generator)[`${x},${y}`]),
-        `./out/filtered_${vae.epoch.toString().padStart(6, "0")}.png`, imageSize, 10, 3);
+    await ImageUtils.saveImageGrid((x, y) => _filterWithAE(ImageUtils.InputCache.get(generator)[`${x},${y}`]),
+        `./out/filtered_${ae.epoch.toString().padStart(6, "0")}.png`, imageSize, 10, 3);
 }
 ```
 

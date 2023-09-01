@@ -10,11 +10,11 @@ const outPath = "./out/animation";
 
 console.log("Loading models...");
 
-const vaeDump = fs.readFileSync(`${path}/vae_${name}.json`);
+const aeDump = fs.readFileSync(`${path}/ae_${name}.json`);
 const upscalerDump = fs.readFileSync(`${path}/upscaler_${name}.json`);
 const ganDump = fs.readFileSync(`${path}/gan_${name}.json`);
 
-const vae = ModelSerialization.load(JSON.parse(vaeDump.toString()));
+const ae = ModelSerialization.load(JSON.parse(aeDump.toString()));
 const upscaler = ModelSerialization.load(JSON.parse(upscalerDump.toString()));
 const gan = GanSerialization.load(JSON.parse(ganDump.toString()));
 
@@ -46,14 +46,14 @@ for (let k = 0; k <= count; k++) {
     start = next;
 }
 
-const pVae = new ParallelModelWrapper(vae);
+const pAe = new ParallelModelWrapper(ae);
 const pUpscaler = new ParallelModelWrapper(upscaler);
 const pGenerator = new ParallelModelWrapper(gan.generator);
 
-await Promise.all([pVae.init(), pUpscaler.init(), pGenerator.init()]);
+await Promise.all([pAe.init(), pUpscaler.init(), pGenerator.init()]);
 
 const generated = await pGenerator.compute(inputs, {progress: true});
-const filtered = await ImageUtils.processMultiChannelDataParallel(pVae, generated, channels);
+const filtered = await ImageUtils.processMultiChannelDataParallel(pAe, generated, channels);
 const upscaled = await ImageUtils.processMultiChannelDataParallel(pUpscaler, filtered, channels);
 
 console.log("Save...");
@@ -70,6 +70,6 @@ await ModelUtils.saveGeneratedModelsSamples(
     {count: Math.floor(Math.sqrt(upscaled.length)), channel: channels, scale}
 );
 
-await Promise.all([pVae.terminate(), pUpscaler.terminate(), pGenerator.terminate()]);
+await Promise.all([pAe.terminate(), pUpscaler.terminate(), pGenerator.terminate()]);
 
 console.log("Done!");
