@@ -63,3 +63,7 @@ export {
 export {
     ParallelWorkerImpl
 } from "./engine/wrapper/parallel.worker.impl"
+
+export {
+    FileAsyncReader, FetchDataAsyncReader
+} from "./utils/fetch"

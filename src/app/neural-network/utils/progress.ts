@@ -1,3 +1,6 @@
+import {FetchDataAsyncReader, FileAsyncReader, ObservableStreamLoader, ProgressFn} from "./fetch";
+import {CommonUtils} from "../neural-network";
+
 export enum Color {
     red = "\u001B[31m",
     green = "\u001B[32m",
@@ -24,43 +27,172 @@ export enum BackgroundColor {
     default = "\u001B[49m"
 }
 
+export enum SpeedCalculationKind {
+    timePerIteration,
+    iterationsPerSecond,
+    auto
+}
+
+export enum ValueLimit {
+    exclusive = "exclusive",
+    inclusive = "inclusive",
+}
+
+export const Converters = {
+    Bytes: CommonUtils.formatByteSize,
+    TimeSpan: CommonUtils.formatTimeSpan,
+    Metric: (value: number) => CommonUtils.formatUnit(value, "ops"),
+    None: (value: number) => value.toString()
+}
+
 export type ProgressOptions = {
     width: number,
     color: Color,
+    speedConverter: (value: number) => string,
+    valueConverter: (value: number) => string,
     background: BackgroundColor,
+    speed: SpeedCalculationKind,
+    update: boolean,
+    limit: ValueLimit,
+    progressThrottle: number,
 }
 
 const ProgressOptionsDefaults: ProgressOptions = {
     width: 40,
     color: Color.cyan,
     background: BackgroundColor.default,
+    speed: SpeedCalculationKind.auto,
+    update: false,
+    speedConverter: Converters.Metric,
+    valueConverter: Converters.None,
+    limit: ValueLimit.exclusive,
+    progressThrottle: 0,
+}
+
+const FetchProgressOptionsDefaults: Partial<ProgressOptions> = {
+    color: Color.green,
+    update: true,
+    valueConverter: Converters.Bytes,
+    speedConverter: Converters.Bytes,
+    limit: ValueLimit.inclusive,
+    progressThrottle: 50
 }
 
 export function* progress(total: number, options: Partial<ProgressOptions> = {}) {
-    const opts = {...ProgressOptionsDefaults, ...options};
+    function* _iter(): Generator<[number, number]> {
+        for (let i = 0; i < total; i++) {
+            yield [i, total];
+        }
+    }
 
+    yield* progressGenerator(_iter(), options);
+}
+
+export function* progressIterable(
+    iterable: Iterable<any>, total?: number, options: Partial<ProgressOptions> = {}
+) {
+    const progressFn = progressCallback(options);
+
+    let iteration = 0
+    for (const iterableElement of iterable) {
+        progressFn(iteration, total ?? 0);
+        yield iterableElement;
+    }
+}
+
+export function* progressGenerator(
+    iterable: Generator<[iteration: number, total: number]>, options: Partial<ProgressOptions> = {}
+) {
+    const progressFn = progressCallback(options);
+
+    for (const [iteration, total] of iterable) {
+        progressFn(iteration, total);
+        yield iteration;
+    }
+}
+
+export function progressCallback(options: Partial<ProgressOptions> = {}): ProgressFn {
+    const opts: ProgressOptions = {...ProgressOptionsDefaults, ...options};
     const startTime = performance.now();
+    let firstCall = true;
 
-    let iteration = 0;
-    while (iteration < total) {
+    const callback = (iteration: number, total?: number) => {
+        iteration = Math.max(0, iteration ?? 0);
+        total = Math.max(iteration, total ?? 0);
+
         const elapsedTime = (performance.now() - startTime) / 1000;
-        const speed = iteration > 0 ? elapsedTime / iteration : 0
-        const estimateTime = iteration > 0 ? speed * total : 0
+        const isFirstIter = iteration === 0;
         const progress = iteration / total;
+
+        const speed = !isFirstIter ? elapsedTime / iteration : 0
+        const estimateTime = !isFirstIter ? speed * total : 0
+
+        const displayIterationValue = opts.limit === ValueLimit.exclusive ? iteration + 1 : iteration;
+        const iterationsStr = opts.valueConverter(displayIterationValue);
+        const totalStr = opts.valueConverter(total);
+
+        let speedMethod = opts.speed == SpeedCalculationKind.auto
+            ? (speed >= 1 ? SpeedCalculationKind.timePerIteration : SpeedCalculationKind.iterationsPerSecond)
+            : opts.speed;
+
+        let speedStr;
+        if (speedMethod === SpeedCalculationKind.iterationsPerSecond) {
+            speedStr = speed !== 0 ? `${opts.speedConverter(1 / speed)}/s` : "n/a";
+        } else {
+            speedStr = speed !== 0 ? `${Converters.TimeSpan(speed * 1000)}/it` : "n/a";
+        }
 
         const output = opts.color + opts.background
             + `${Math.floor(progress * 100).toString().padStart(3, " ")}%|`
             + progressBar(progress, opts.width)
-            + `| ${iteration}/${total} `
+            + `| ${iterationsStr}/${totalStr} `
             + `[${formatTime(elapsedTime)}<${formatTime(estimateTime)}, `
-            + `${speed.toFixed(2)}s/it]`
+            + `${speedStr}]`
             + Color.reset;
 
-        console.log(output);
 
-        yield;
-        iteration++;
+        if (typeof process !== "undefined" && typeof process.stdout !== "undefined") {
+            if (!firstCall && options.update) {
+                process.stdout.write("\u001B[F");
+                process.stdout.write("\u001B[2k");
+            }
+        } else {
+            if (options.update) console.clear();
+        }
+
+        console.log(output);
+        firstCall = false;
     }
+
+    if (opts.progressThrottle > 0) {
+        return throttle(callback, opts.limit, opts.progressThrottle);
+    }
+
+    return callback;
+}
+
+export async function fetchProgress(url: string, options: Partial<ProgressOptions> = {}): Promise<Uint8Array> {
+    const fetchResponse = await fetch(url);
+
+    const opts: Partial<ProgressOptions> = {...FetchProgressOptionsDefaults, ...options}
+    const progressFn = progressCallback(opts);
+
+    const reader = new FetchDataAsyncReader(fetchResponse);
+    const loader = new ObservableStreamLoader(reader, progressFn);
+
+    const buffer = await loader.loadChunked();
+    return buffer.toTypedArray(Uint8Array);
+}
+
+export async function fileProgress(file: File, options: Partial<ProgressOptions> = {}): Promise<Uint8Array> {
+    const opts: Partial<ProgressOptions> = {...FetchProgressOptionsDefaults, ...options}
+    const progressFn = progressCallback(opts);
+
+    const reader = new FileAsyncReader(file);
+    const loader = new ObservableStreamLoader(reader, progressFn);
+
+    const buffer = await loader.loadChunked();
+    return buffer.toTypedArray(Uint8Array);
 }
 
 function formatTime(seconds: number) {
@@ -69,7 +201,6 @@ function formatTime(seconds: number) {
     seconds = Math.floor(seconds) % 60;
 
     const times = [hours > 0 ? hours : undefined, minutes, seconds];
-
     return times.filter(t => t !== undefined)
         .map(t => t!.toString().padStart(2, '0'))
         .join(':');
@@ -80,12 +211,10 @@ function progressBar(progress: number, width: number) {
     const partialChars = ['▏', '▎', '▍', '▌', '▋', '▊', '▉'];
     const emptyChar = ' ';
 
-    // Calculate the number of filled characters and partial character index
     const progressWidth = Math.max(0, Math.min(1, progress)) * width;
     const filledCount = Math.floor(progressWidth);
     const partialIndex = Math.floor(progressWidth % 1 * partialChars.length);
 
-    // Create the progress bar string
     let progressBar = filledChar.repeat(filledCount);
 
     let partialWidth = 0;
@@ -97,4 +226,37 @@ function progressBar(progress: number, width: number) {
     progressBar += emptyChar.repeat(width - filledCount - partialWidth);
 
     return progressBar;
+}
+
+export function throttle(fn: ProgressFn, limit: ValueLimit, delay: number) {
+    let timerId: number | null = null;
+    let lastArgs: [number, number] | null = null;
+
+    function _throttled(iteration: number, total: number) {
+        const isFinished = limit === ValueLimit.inclusive ? iteration >= total : iteration >= total - 1;
+        if (isFinished) {
+            // If all iterations have been processed, clear the timer and invoke the original function.
+            if (timerId !== null) clearTimeout(timerId);
+            fn(iteration, total);
+            return;
+        }
+
+        if (timerId !== null) {
+            // If a timer is already active, store the arguments for later execution.
+            lastArgs = [iteration, total];
+            return;
+        }
+
+        timerId = setTimeout(() => {
+            timerId = null;
+            // Execute the stored arguments after the delay if any.
+            if (lastArgs !== null) _throttled(...lastArgs);
+            lastArgs = null;
+        }, delay) as any;
+
+        // Invoke the original function immediately if there was no timer
+        return fn(iteration, total);
+    }
+
+    return _throttled;
 }

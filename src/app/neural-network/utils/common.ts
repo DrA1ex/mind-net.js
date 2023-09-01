@@ -36,3 +36,59 @@ export function std(data: Matrix.Matrix1D) {
     const meanOfSquareDiff = data.reduce((p, c) => p + Math.pow(c - mean, 2) / length, 0);
     return Math.sqrt(meanOfSquareDiff);
 }
+
+type Unit = string | string[];
+type UnitConfig = { unit: Unit, exp: number, threshold?: number }
+
+export function formatUnitCustom(value: number, unit: string, unitsConfig: UnitConfig[], fractionDigits: number) {
+    let sizeUnit: Unit = "";
+    for (let i = 0; i < unitsConfig.length; i++) {
+        if (value >= unitsConfig[i].exp * (unitsConfig[i].threshold ?? 1)) {
+            value /= unitsConfig[i].exp;
+            sizeUnit = unitsConfig[i].unit;
+            break;
+        }
+    }
+
+    sizeUnit = formatUnitSuffix(fractionDigits > 0 ? value : Math.round(value), sizeUnit);
+    return `${value.toFixed(fractionDigits)} ${sizeUnit}${unit}`;
+}
+
+export function formatUnitSuffix(value: number, unit: Unit) {
+    if (unit instanceof Array) {
+        if (Math.abs(value) === 1) {
+            return unit[0];
+        } else {
+            return unit[1];
+        }
+    }
+
+    return unit;
+}
+
+export function formatUnit(value: number, unit: string, fractionDigits = 2, exp = 1000) {
+    const units = [
+        {unit: "T", exp: Math.pow(exp, 4)},
+        {unit: "G", exp: Math.pow(exp, 3)},
+        {unit: "M", exp: Math.pow(exp, 2)},
+        {unit: "K", exp: exp},
+    ]
+
+    return formatUnitCustom(value, unit, units, fractionDigits);
+}
+
+export function formatByteSize(size: number) {
+    return formatUnit(size, "B", 2, 1024)
+}
+
+export function formatTimeSpan(ms: number, fractionDigits = 2) {
+    const units: UnitConfig[] = [
+        {unit: "d", exp: 60 * 60 * 24 * 1000},
+        {unit: "h", exp: 60 * 60 * 1000, threshold: 3},
+        {unit: "m", exp: 60 * 1000, threshold: 5},
+        {unit: "s", exp: 1000},
+        {unit: "ms", exp: 1},
+    ]
+
+    return formatUnitCustom(ms, "", units, fractionDigits);
+}

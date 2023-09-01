@@ -20,13 +20,13 @@ const DatasetUrl = "https://github.com/DrA1ex/mind-net.js/files/12456697/mnist-1
 console.log("Fetching datasets...");
 
 // Fetching the dataset zip file and converting it to an ArrayBuffer
-const zipData = await fetch(DatasetUrl).then(r => r.arrayBuffer())
+const zipData = await ProgressUtils.fetchProgress(DatasetUrl);
 
 console.log("Preparing...");
 
 // Loading datasets from the zip files
 const trainData = ImageUtils.grayscaleDataset(
-    await DatasetUtils.loadDataset(zipData)
+    await DatasetUtils.loadDataset(zipData.buffer)
 );
 
 // You can reduce dataset length

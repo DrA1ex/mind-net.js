@@ -23,17 +23,15 @@ const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12398103/cart
 console.log("Fetching datasets...");
 
 // Fetching the dataset zip file and converting it to an ArrayBuffer
-const [zipData, zipBigData] = await Promise.all([
-    fetch(DatasetUrl).then(r => r.arrayBuffer()),
-    fetch(DatasetBigUrl).then(r => r.arrayBuffer())
-]);
+const zipData = await ProgressUtils.fetchProgress(DatasetUrl);
+const zipBigData = await ProgressUtils.fetchProgress(DatasetBigUrl);
 
 console.log("Preparing...");
 
 // Loading datasets from the zip files
 const [trainData, bigTrainData] = await Promise.all([
-    DatasetUtils.loadDataset(zipData),
-    DatasetUtils.loadDataset(zipBigData)
+    DatasetUtils.loadDataset(zipData.buffer),
+    DatasetUtils.loadDataset(zipBigData.buffer)
 ]);
 
 // You can reduce dataset length
