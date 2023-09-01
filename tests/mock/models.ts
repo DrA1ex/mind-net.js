@@ -2,6 +2,8 @@ import {
     AdamOptimizer, ChainModel, Dense, GenerativeAdversarialModel, LeakyReluActivation, MeanAbsoluteErrorLoss,
     RMSPropOptimizer, SequentialModel, SgdOptimizer, Initializers
 } from "../../src/app/neural-network/neural-network";
+import {ParallelWrapperCallOptionsDefaults} from "../../src/app/neural-network/engine/wrapper/parallel";
+import {DefaultTrainOpts} from "../../src/app/neural-network/engine/models/base";
 
 export function sequential(inSize = 4, outSize = 10) {
     const model = new SequentialModel(
@@ -83,4 +85,15 @@ export function gan(inSize = 10, outSize = 4) {
     model2.compile();
 
     return new GenerativeAdversarialModel(model1, model2);
+}
+
+export function disableProgressLogs() {
+    let origOptParallelTrain = ParallelWrapperCallOptionsDefaults.progress;
+    beforeAll(() => ParallelWrapperCallOptionsDefaults.progress = false);
+    afterAll(() => ParallelWrapperCallOptionsDefaults.progress = origOptParallelTrain);
+
+    let origOptionTrain = DefaultTrainOpts.progress;
+    beforeAll(() => DefaultTrainOpts.progress = false);
+    afterAll(() => DefaultTrainOpts.progress = origOptionTrain);
+
 }

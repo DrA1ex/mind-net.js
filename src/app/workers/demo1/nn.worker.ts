@@ -113,7 +113,7 @@ function trainBatch() {
     let iterationsPerCheck = TRAINING_EPOCHS_PER_CALL;
     let epochs;
     for (epochs = 0; epochs < iterationsLeft; epochs++) {
-        neuralNetwork.train(trainingInputs, trainingOutputs, {batchSize});
+        neuralNetwork.train(trainingInputs, trainingOutputs, {batchSize, progress: false});
 
         if (epochs % iterationsPerCheck == 0) {
             const trainingTime = performance.now() - startTime;

@@ -1,9 +1,12 @@
 import * as matrix from "./matrix";
 import {Matrix1D} from "./matrix";
+import {ProgressOptions} from "../utils/progress";
 
 export type ModelTrainOptionsT = {
     epochs: number
     batchSize: number,
+    progress: boolean,
+    progressOptions: Partial<ProgressOptions>
 }
 
 export type ModelEvaluationR = {

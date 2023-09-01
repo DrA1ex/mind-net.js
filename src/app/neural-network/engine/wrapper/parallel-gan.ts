@@ -1,4 +1,11 @@
-import {Iter, Matrix, GenerativeAdversarialModel, ParallelModelWrapper, ParallelUtils} from "../../neural-network";
+import {
+    Iter,
+    Matrix,
+    GenerativeAdversarialModel,
+    ParallelModelWrapper,
+    ParallelUtils,
+    ProgressUtils
+} from "../../neural-network";
 import {ParallelWrapperCallOptions, ParallelWrapperCallOptionsDefaults} from "./parallel";
 import {IModel} from "../base";
 import {Matrix2D} from "../matrix";
@@ -31,7 +38,11 @@ export class ParallelGanWrapper {
         ]);
 
         const fReal = ParallelUtils.convertForTransfer(real, this.InputCache, opts.cacheInput);
-        const subOpts = {...opts, batchSize: subBatchSize};
+        const subOpts = {...opts, batchSize: subBatchSize, progress: false};
+
+        const progressFn = opts.progress ? ProgressUtils.progressCallback(opts.progressOptions) : undefined;
+        const totalSteps = Math.ceil(real.length / opts.batchSize) * 3;
+        let step = 0;
 
         for (const batch of Iter.partition(Iter.shuffled(fReal), opts.batchSize)) {
             const almostOnes = Matrix.fill_value([0.9], batch.length);
@@ -39,6 +50,7 @@ export class ParallelGanWrapper {
             const noise = Matrix.random_normal_2d(batch.length, inSize, -1, 1);
 
             const fake = await this.compute(noise, subOpts);
+            if (progressFn) progressFn(++step, totalSteps);
 
             const discriminatorSubBatch = Array.from(
                 Iter.partition(
@@ -51,6 +63,7 @@ export class ParallelGanWrapper {
             );
 
             await this.discriminatorWrapper.trainBatch(discriminatorSubBatch);
+            if (progressFn) progressFn(++step, totalSteps);
 
             const trainNoise = Matrix.random_normal_2d(batch.length, inSize, -1, 1);
             const ones = Matrix.fill_value([1], batch.length);
@@ -68,6 +81,7 @@ export class ParallelGanWrapper {
 
             // Sync Generator weights since they were changed during Chain training step.
             await this.generatorWrapper.syncWeights();
+            if (progressFn) progressFn(++step, totalSteps);
         }
 
         await Promise.all([

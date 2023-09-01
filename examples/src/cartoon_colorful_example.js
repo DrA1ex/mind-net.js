@@ -159,11 +159,9 @@ for (const _ of ProgressUtils.progress(epochs)) {
     // Train models
     console.log("Model train step...");
 
-    await Promise.all([
-        pGan.train(trainData, {batchSize}),
-        pVae.train(gsTrainData, gsTrainData, {batchSize}),
-        pUpscaler.train(gsTrainData, upscaleTrainData, {batchSize})
-    ]);
+    await pGan.train(trainData, {batchSize});
+    await pVae.train(gsTrainData, gsTrainData, {batchSize});
+    await pUpscaler.train(gsTrainData, upscaleTrainData, {batchSize});
 
     console.log("Saving output...");
 

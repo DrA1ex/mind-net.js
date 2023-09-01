@@ -1,8 +1,10 @@
-import {Iter, Matrix, UniversalModelSerializer} from "../../neural-network";
+import {Iter, Matrix, ProgressUtils, UniversalModelSerializer} from "../../neural-network";
 import {Matrix1D, Matrix2D} from "../matrix";
 import {ILayer, IModel} from "../base";
 import {WorkerFactory, WorkerT, IWorker} from "../../misc/worker";
-import {LayerCache} from "../models/base";
+import {DefaultTrainOpts, LayerCache} from "../models/base";
+import {ProgressFn} from "../../utils/fetch";
+import {ProgressOptions, ValueLimit, Color} from "../../utils/progress";
 
 export type LayerWeights = {
     weights: Matrix2D;
@@ -72,10 +74,22 @@ class ModelWorkerWrapper {
 export type ParallelWrapperCallOptions = {
     batchSize: number;
     cacheInput: boolean;
+    progress: boolean;
+    progressOptions: Partial<ProgressOptions>
 };
 
 export const ParallelWrapperCallOptionsDefaults: ParallelWrapperCallOptions = {
-    batchSize: 32,
+    batchSize: DefaultTrainOpts.batchSize,
+    progress: DefaultTrainOpts.progress,
+    progressOptions: DefaultTrainOpts.progressOptions,
+    cacheInput: true,
+};
+
+
+export const ParallelWrapperComputeCallOptionsDefaults: ParallelWrapperCallOptions = {
+    batchSize: DefaultTrainOpts.batchSize,
+    progress: false,
+    progressOptions: DefaultTrainOpts.progressOptions,
     cacheInput: true,
 };
 
@@ -126,7 +140,7 @@ export class ParallelModelWrapper<T extends IModel> {
 
         opts.batchSize = Math.max(opts.batchSize, 1);
         if (input.length < opts.batchSize) {
-            this.model.train(input, expected, {batchSize: opts.batchSize});
+            this.model.train(input, expected, opts);
             return;
         }
 
@@ -139,15 +153,18 @@ export class ParallelModelWrapper<T extends IModel> {
 
         await this.beforeTrain();
 
-        await this.trainBatch(trainSet);
+        const progressFn = opts.progress ? ProgressUtils.progressCallback(opts.progressOptions) : undefined;
+        await this.trainBatch(trainSet, progressFn);
 
         await this.afterTrain();
     }
 
-    async trainBatch(trainSet: [ArrayLike<number>, ArrayLike<number>][][]) {
+    async trainBatch(trainSet: [ArrayLike<number>, ArrayLike<number>][][], progressFn?: ProgressFn) {
         this._assertInitialized();
 
         const count = trainSet.length;
+        if (progressFn) progressFn(0, count);
+
         for (let i = 0; i < count; i += this.parallelism) {
             const tasks: Promise<LayerWeights[]>[] = [];
             let iterCount = 0;
@@ -159,6 +176,7 @@ export class ParallelModelWrapper<T extends IModel> {
             }
 
             const trainResults = await Promise.all(tasks);
+            if (progressFn) progressFn(i + trainResults.length, count);
 
             this._clearDeltas();
             this._accumulateDelta(trainResults);
@@ -172,7 +190,7 @@ export class ParallelModelWrapper<T extends IModel> {
         this._assertInitialized();
 
         const opts = {
-            ...ParallelWrapperCallOptionsDefaults,
+            ...ParallelWrapperComputeCallOptionsDefaults,
             ...options
         };
 
@@ -185,7 +203,11 @@ export class ParallelModelWrapper<T extends IModel> {
         const inputParts = Array.from(Iter.partition(pInput, opts.batchSize));
         const count = inputParts.length;
 
-        const result: Matrix2D = [];
+        const progressFn = opts.progress ? ProgressUtils.progressCallback(opts.progressOptions) : undefined;
+
+        const result: Matrix2D = new Array(count);
+        let resultIndex = 0;
+
         for (let i = 0; i < count; i += this.parallelism) {
             const tasks: Promise<Matrix2D>[] = [];
             for (let k = 0; k < this.parallelism && i + k < count; k++) {
@@ -195,8 +217,12 @@ export class ParallelModelWrapper<T extends IModel> {
 
             const outputs = await Promise.all(tasks)
             for (const data of outputs) {
-                result.push(...data);
+                for (const entry of data) {
+                    result[resultIndex++] = entry;
+                }
             }
+
+            if (progressFn) progressFn(resultIndex + 1, count);
         }
 
         return result;

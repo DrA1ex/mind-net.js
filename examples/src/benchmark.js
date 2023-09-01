@@ -52,7 +52,7 @@ const brModel = new brain.NeuralNetwork({
 
 brModel.train(brSingleData);
 
-const trainOpts = {batchSize: BatchSize, epochs: 1, iterations: 1};
+const trainOpts = {batchSize: BatchSize, epochs: 1, iterations: 1, progress: false};
 
 for (let i = 0; i < 3; i++) {
     await TimeUtils.timeIt(() => pModel.compute(trainData, {batchSize: BatchSize}), `Worker.Compute (Full) #${i}`, ComputeIters / Count);
@@ -73,8 +73,8 @@ for (let i = 0; i < 3; i++) {
     await TimeUtils.timeIt(() => brModel.train(brTrainData, trainOpts), `Brain.Train (Full) #${i}`, TrainIters);
     console.log();
 
-    await TimeUtils.timeIt(() => pModel.train(singleTrainData, singleTrainData), `Worker.Train (Single) #${i}`, TrainIters * Count);
-    await TimeUtils.timeIt(() => model.train(singleTrainData, singleTrainData), `Train (Single) #${i}`, TrainIters * Count);
+    await TimeUtils.timeIt(() => pModel.train(singleTrainData, singleTrainData, trainOpts), `Worker.Train (Single) #${i}`, TrainIters * Count);
+    await TimeUtils.timeIt(() => model.train(singleTrainData, singleTrainData, trainOpts), `Train (Single) #${i}`, TrainIters * Count);
     await TimeUtils.timeIt(() => tfModel.fit(tfSingleData, tfSingleData, trainOpts), `TF.Train (Single) #${i}`, TrainIters * Count);
     await TimeUtils.timeIt(() => brModel.train(brSingleData, trainOpts), `Brain.Train (Single) #${i}`, TrainIters * Count);
     console.log("\n");

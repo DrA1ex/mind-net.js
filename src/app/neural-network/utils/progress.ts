@@ -1,5 +1,5 @@
 import {FetchDataAsyncReader, FileAsyncReader, ObservableStreamLoader, ProgressFn} from "./fetch";
-import {CommonUtils} from "../neural-network";
+import * as CommonUtils from "./common";
 
 export enum Color {
     red = "\u001B[31m",
@@ -66,12 +66,12 @@ const ProgressOptionsDefaults: ProgressOptions = {
     speedConverter: Converters.Metric,
     valueConverter: Converters.None,
     limit: ValueLimit.exclusive,
-    progressThrottle: 0,
+    progressThrottle: 1000,
 }
 
 const FetchProgressOptionsDefaults: Partial<ProgressOptions> = {
     color: Color.green,
-    update: true,
+    update: (typeof process !== "undefined"),
     valueConverter: Converters.Bytes,
     speedConverter: Converters.Bytes,
     limit: ValueLimit.inclusive,
@@ -151,13 +151,14 @@ export function progressCallback(options: Partial<ProgressOptions> = {}): Progre
             + Color.reset;
 
 
+        const shouldOverrideLine = !firstCall && options.update;
         if (typeof process !== "undefined" && typeof process.stdout !== "undefined") {
-            if (!firstCall && options.update) {
+            if (shouldOverrideLine) {
                 process.stdout.write("\u001B[F");
                 process.stdout.write("\u001B[2K");
             }
         } else {
-            if (options.update) console.clear();
+            if (shouldOverrideLine) console.clear();
         }
 
         console.log(output);

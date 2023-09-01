@@ -11,7 +11,7 @@ network.compile();
 const input = [[0, 0], [0, 1], [1, 0], [1, 1]];
 const expected = [[0], [1], [1], [0]];
 for (let i = 0; i < 20000; i++) {
-    network.train(input, expected);
+    network.train(input, expected, {progress: false});
 }
 
 console.log(network.compute([1, 0])); // 0.99

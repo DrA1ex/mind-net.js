@@ -1,9 +1,11 @@
+import * as Models from "./mock/models";
+import {SetupMockRandom} from "./mock/common";
+
 import {
     SequentialModel, Dense,
     LeakyReluActivation, LinearActivation, ReluActivation, SigmoidActivation, TanhActivation,
     SgdOptimizer, SgdMomentumOptimizer, SgdNesterovOptimizer, RMSPropOptimizer, AdamOptimizer, Matrix,
 } from "../src/app/neural-network/neural-network";
-import {SetupMockRandom} from "./mock/common";
 
 SetupMockRandom([
     0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
@@ -20,6 +22,8 @@ function _simpleModel(optimizer = "sgd", loss = "mse") {
     model.compile();
     return model;
 }
+
+Models.disableProgressLogs();
 
 describe("Should correctly train with different activations", () => {
     test.each([

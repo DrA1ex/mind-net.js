@@ -15,6 +15,8 @@ import {RandomMockData, TrainData, TrainExpected, TestInput} from "./fixture/par
 const randomMock = SetupMockRandom(RandomMockData, true);
 const BatchSize = 32;
 
+Models.disableProgressLogs();
+
 describe("Should correct train network in parallel", () => {
     beforeEach(() => randomMock.reset());
     WorkerMock.mockWorker(ParallelWorkerImpl);

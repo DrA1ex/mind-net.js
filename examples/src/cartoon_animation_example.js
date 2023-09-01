@@ -52,7 +52,7 @@ const pGenerator = new ParallelModelWrapper(gan.generator);
 
 await Promise.all([pVae.init(), pUpscaler.init(), pGenerator.init()]);
 
-const generated = await pGenerator.compute(inputs);
+const generated = await pGenerator.compute(inputs, {progress: true});
 const filtered = await ImageUtils.processMultiChannelDataParallel(pVae, generated, channels);
 const upscaled = await ImageUtils.processMultiChannelDataParallel(pUpscaler, filtered, channels);
 

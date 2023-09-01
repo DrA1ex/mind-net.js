@@ -5,6 +5,9 @@ import {ILayer, IOptimizer, ILoss, IModel, ModelTrainOptionsT} from "../base";
 import {buildLoss, CategoricalCrossEntropyLoss, LossT} from "../loss";
 import {buildOptimizer, OptimizerT} from "../optimizers";
 import {SoftMaxActivation} from "../activations";
+import {Color, ValueLimit} from "../../utils/progress";
+import {ProgressFn} from "../../utils/fetch";
+import {ProgressUtils} from "../../neural-network";
 
 export type NeuralNetworkSnapshot = {
     weights: matrix.Matrix2D[],
@@ -17,13 +20,24 @@ export type LayerCache = {
     mask: matrix.Matrix1D,
 };
 
+export const DefaultTrainOpts: ModelTrainOptionsT = {
+    batchSize: 32,
+    epochs: 1,
+    progress: true,
+    progressOptions: {
+        update: (typeof process !== "undefined"),
+        color: Color.yellow,
+        limit: ValueLimit.inclusive,
+        progressThrottle: 500
+    }
+}
+
 export abstract class ModelBase implements IModel {
     protected _epoch: number = 0;
 
     protected compiled: boolean = false;
     protected cache = new Map<ILayer, LayerCache>();
-
-    private _lossErrorCache!: matrix.Matrix1D;
+    protected lossErrorCache!: matrix.Matrix1D;
 
     readonly optimizer: IOptimizer;
     readonly loss: ILoss;
@@ -69,45 +83,55 @@ export abstract class ModelBase implements IModel {
     }
 
     train(
-        input: matrix.Matrix1D[], expected: matrix.Matrix1D[],
-        {batchSize = 32, epochs = 1}: Partial<ModelTrainOptionsT> = {}
+        input: matrix.Matrix1D[], expected: matrix.Matrix1D[], options: Partial<ModelTrainOptionsT> = {}
     ) {
         this._assertCompiled();
         this._assertInputSize2d(input);
         this._assertExpectedSize2d(expected);
         this._assertInputOutputSize(input, expected);
 
-        for (let i = 0; i < epochs; i++) {
+        const opts = {...DefaultTrainOpts, ...options};
+
+        let processedCount = 0;
+        const total = input.length * opts.epochs;
+
+        const progressFn = opts.progress ? ProgressUtils.progressCallback(opts.progressOptions) : undefined;
+        const progressFnWrapper = progressFn && ((current: number, _: number) => progressFn(processedCount + current, total));
+
+        for (let i = 0; i < opts.epochs; i++) {
             this.beforeTrain();
 
             const shuffledTrainSet = iter.shuffle(Array.from(iter.zip(input, expected)));
-            for (const batch of iter.partition(shuffledTrainSet, batchSize)) {
-                this.trainBatch(batch);
+            for (const batch of iter.partition(shuffledTrainSet, opts.batchSize)) {
+                this.trainBatch(batch, progressFnWrapper);
+                processedCount += batch.length;
             }
 
             this.afterTrain();
         }
     }
 
-    public trainBatch(batch: Iterable<[matrix.Matrix1D, matrix.Matrix1D]>) {
+    public trainBatch(batch: Iterable<[matrix.Matrix1D, matrix.Matrix1D]>, progressFn?: ProgressFn) {
         this._assertCompiled();
 
         this._clearDelta();
 
-        //TODO: Refactor
-        if (!this._lossErrorCache) this._lossErrorCache = matrix.zero(this.layers[this.layers.length - 1].size);
-
+        const totalCount = (batch as any).length ?? 0;
         let count = 0;
         for (const [trainInput, trainExpected] of batch) {
+            if (progressFn) progressFn(count, totalCount);
+
             this._assertInputSize(trainInput);
             this._assertExpectedSize(trainExpected);
 
             const output = this._forward(trainInput, true);
-            const loss = this.loss.calculateError(output, trainExpected, this._lossErrorCache);
+            const loss = this.loss.calculateError(output, trainExpected, this.lossErrorCache);
 
             this._backprop(loss);
             ++count;
         }
+
+        if (progressFn) progressFn(count, totalCount);
 
         this._applyDelta(count);
     }
@@ -144,6 +168,8 @@ export abstract class ModelBase implements IModel {
                 mask: matrix.one(layer.size),
             });
         }
+
+        this.lossErrorCache = matrix.zero(this.layers[this.layers.length - 1].size);
 
         this.compiled = true;
     }

@@ -1,4 +1,5 @@
 import {SetupMockRandom} from "./mock/common";
+
 // noinspection ES6PreferShortImport
 import {Dense, Matrix} from "../src/app/neural-network/neural-network";
 import {InitializerT} from "../src/app/neural-network/engine/initializers";

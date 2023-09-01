@@ -25,7 +25,7 @@ const dashboard = new TrainingDashboard(network, tInput, tExpected, dashboardOpt
 // Train the network
 for (let i = 0; i <= 150; i++) {
     // Train over data
-    network.train(input, expected);
+    network.train(input, expected, {progress: false});
 
     // Update the dashboard
     dashboard.update();

@@ -7,6 +7,7 @@ import {ChunkedArrayBuffer} from "../src/app/neural-network/utils/array-buffer";
 
 jest.useFakeTimers();
 jest.spyOn(global, "clearTimeout");
+jest.spyOn(console, "log").mockImplementation(() => {});
 
 function _mockFetch(data: number[][], headers: [string, string][] = []) {
     const readMock = jest.fn<any>();

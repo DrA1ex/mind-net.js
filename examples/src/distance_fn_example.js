@@ -35,7 +35,7 @@ const TestExpected = Expected.splice(0, TestInput.length);
 
 // Training should take about 100-200 epochs
 for (let i = 0; i < 300; i++) {
-    network.train(Input, Expected, {epochs: 10, batchSize: 64});
+    network.train(Input, Expected, {epochs: 10, batchSize: 64, progress: false});
 
     const {loss, accuracy} = network.evaluate(TestInput, TestExpected);
     console.log(`Epoch ${network.epoch}. Loss: ${loss}. Accuracy: ${accuracy.toFixed(2)}`);
