@@ -75,7 +75,7 @@ const FetchProgressOptionsDefaults: Partial<ProgressOptions> = {
     valueConverter: Converters.Bytes,
     speedConverter: Converters.Bytes,
     limit: ValueLimit.inclusive,
-    progressThrottle: 50
+    progressThrottle: (typeof process !== "undefined") ? 50 : 500,
 }
 
 export function* progress(total: number, options: Partial<ProgressOptions> = {}) {
@@ -154,7 +154,7 @@ export function progressCallback(options: Partial<ProgressOptions> = {}): Progre
         if (typeof process !== "undefined" && typeof process.stdout !== "undefined") {
             if (!firstCall && options.update) {
                 process.stdout.write("\u001B[F");
-                process.stdout.write("\u001B[2k");
+                process.stdout.write("\u001B[2K");
             }
         } else {
             if (options.update) console.clear();
