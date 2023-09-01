@@ -92,19 +92,17 @@ export abstract class ModelBase implements IModel {
 
         const opts = {...DefaultTrainOpts, ...options};
 
-        let processedCount = 0;
-        const total = input.length * opts.epochs;
-
-        const progressFn = opts.progress ? ProgressUtils.progressCallback(opts.progressOptions) : undefined;
-        const progressFnWrapper = progressFn && ((current: number, _: number) => progressFn(processedCount + current, total));
+        const batchCtrl = opts.progress
+            ? ProgressUtils.progressBatchCallback(input.length, opts.epochs, opts.progressOptions)
+            : undefined;
 
         for (let i = 0; i < opts.epochs; i++) {
             this.beforeTrain();
 
             const shuffledTrainSet = iter.shuffle(Array.from(iter.zip(input, expected)));
             for (const batch of iter.partition(shuffledTrainSet, opts.batchSize)) {
-                this.trainBatch(batch, progressFnWrapper);
-                processedCount += batch.length;
+                this.trainBatch(batch, batchCtrl?.progressFn);
+                batchCtrl?.add(batch.length);
             }
 
             this.afterTrain();

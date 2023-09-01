@@ -4,7 +4,7 @@ import {ILayer, IModel} from "../base";
 import {WorkerFactory, WorkerT, IWorker} from "../../misc/worker";
 import {DefaultTrainOpts, LayerCache} from "../models/base";
 import {ProgressFn} from "../../utils/fetch";
-import {ProgressOptions, ValueLimit, Color} from "../../utils/progress";
+import {ProgressOptions} from "../../utils/progress";
 
 export type LayerWeights = {
     weights: Matrix2D;
@@ -73,6 +73,7 @@ class ModelWorkerWrapper {
 
 export type ParallelWrapperCallOptions = {
     batchSize: number;
+    epochs: number,
     cacheInput: boolean;
     progress: boolean;
     progressOptions: Partial<ProgressOptions>
@@ -80,6 +81,7 @@ export type ParallelWrapperCallOptions = {
 
 export const ParallelWrapperCallOptionsDefaults: ParallelWrapperCallOptions = {
     batchSize: DefaultTrainOpts.batchSize,
+    epochs: DefaultTrainOpts.epochs,
     progress: DefaultTrainOpts.progress,
     progressOptions: DefaultTrainOpts.progressOptions,
     cacheInput: true,
@@ -88,6 +90,7 @@ export const ParallelWrapperCallOptionsDefaults: ParallelWrapperCallOptions = {
 
 export const ParallelWrapperComputeCallOptionsDefaults: ParallelWrapperCallOptions = {
     batchSize: DefaultTrainOpts.batchSize,
+    epochs: DefaultTrainOpts.epochs,
     progress: false,
     progressOptions: DefaultTrainOpts.progressOptions,
     cacheInput: true,
@@ -147,16 +150,19 @@ export class ParallelModelWrapper<T extends IModel> {
         const pInput = this._prepareTrainData(input, opts.cacheInput);
         const pOut = this._prepareTrainData(expected, opts.cacheInput);
 
-        const trainSet = Array.from(
-            Iter.partition(Iter.shuffle(Array.from(Iter.zip(pInput, pOut))), opts.batchSize)
-        );
+        const batchCtrl = opts.progress
+            ? ProgressUtils.progressBatchCallback(Math.ceil(input.length / opts.batchSize), opts.epochs, opts.progressOptions)
+            : undefined;
 
-        await this.beforeTrain();
+        for (let i = 0; i < opts.epochs; i++) {
+            await this.beforeTrain();
 
-        const progressFn = opts.progress ? ProgressUtils.progressCallback(opts.progressOptions) : undefined;
-        await this.trainBatch(trainSet, progressFn);
+            const trainSet = Array.from(Iter.partition(Iter.shuffle(Array.from(Iter.zip(pInput, pOut))), opts.batchSize));
+            await this.trainBatch(trainSet, batchCtrl?.progressFn);
 
-        await this.afterTrain();
+            await this.afterTrain();
+            batchCtrl?.addBatch();
+        }
     }
 
     async trainBatch(trainSet: [ArrayLike<number>, ArrayLike<number>][][], progressFn?: ProgressFn) {

@@ -1,5 +1,6 @@
 import {FetchDataAsyncReader, FileAsyncReader, ObservableStreamLoader, ProgressFn} from "./fetch";
 import * as CommonUtils from "./common";
+import {ProgressUtils} from "../neural-network";
 
 export enum Color {
     red = "\u001B[31m",
@@ -172,6 +173,37 @@ export function progressCallback(options: Partial<ProgressOptions> = {}): Progre
     return callback;
 }
 
+export type ProgressBatchCtrl = {
+    readonly total: number;
+    readonly batchSize: number;
+    readonly progressFn: ProgressFn;
+
+    currentOffset: number;
+
+    addBatch(): void;
+    add(count: number): void;
+    reset(): void;
+}
+
+export function progressBatchCallback(
+    batchSize: number, batchCount: number, options: Partial<ProgressOptions> = {}
+): ProgressBatchCtrl {
+    const progressFn = progressCallback(options);
+
+    const ctrl: ProgressBatchCtrl = {
+        currentOffset: 0,
+        total: batchSize * batchCount,
+        batchSize,
+        progressFn: (current) => progressFn(ctrl.currentOffset + current, ctrl.total),
+
+        addBatch: () => ctrl.currentOffset += batchSize,
+        add: (count: number) => ctrl.currentOffset += count,
+        reset: () => ctrl.currentOffset = 0,
+    }
+
+    return ctrl;
+}
+
 export async function fetchProgress(url: string, options: Partial<ProgressOptions> = {}): Promise<Uint8Array> {
     const fetchResponse = await fetch(url);
 
@@ -231,6 +263,7 @@ function progressBar(progress: number, width: number) {
 
 export function throttle(fn: ProgressFn, limit: ValueLimit, delay: number) {
     let timerId: number | null = null;
+    let timerSetAt: number;
     let lastArgs: [number, number] | null = null;
 
     function _throttled(iteration: number, total: number) {
@@ -245,8 +278,20 @@ export function throttle(fn: ProgressFn, limit: ValueLimit, delay: number) {
         if (timerId !== null) {
             // If a timer is already active, store the arguments for later execution.
             lastArgs = [iteration, total];
+
+            // If the timer should have fired but hasn't (possibly due to blocking code),
+            //    invoke the function and clear the timer
+            if (performance.now() - timerSetAt >= delay) {
+                clearTimeout(timerId);
+                timerId = null;
+                _throttled(...lastArgs)
+            }
+
             return;
         }
+
+        // Set the timestamp when the timer is activated.
+        timerSetAt = performance.now();
 
         timerId = setTimeout(() => {
             timerId = null;
