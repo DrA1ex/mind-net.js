@@ -2,7 +2,7 @@ import {ParallelModelWrapper, Matrix} from "../neural-network";
 import {Matrix1D, Matrix2D} from "../engine/matrix";
 import {IModel} from "../engine/base";
 
-export function grayscaleDataset(data: Matrix2D, channels = 3) {
+export function grayscaleDataset(data: Matrix2D, channels = 3): Matrix2D {
     if (channels !== 3 && channels !== 4) throw new Error("Unsupported channel count");
 
     const result = new Array(data.length);
@@ -114,7 +114,7 @@ export function processMultiChannelData(model: IModel, src: Matrix1D, channels =
     const result = dst ?? new Array(outSize * channels);
 
     const channelData = new Array(channelSize);
-    for (let c = 0; c < 3; c++) {
+    for (let c = 0; c < channels; c++) {
         getChannel(src, c, channels, channelData);
         const processedChannel = model.compute(channelData);
         setChannel(result, processedChannel, c, channels);

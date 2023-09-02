@@ -1,0 +1,42 @@
+<div class="container">
+    <div class="row">
+        <div class="col-md-6" #col1Parent>
+            <h2>Source image</h2>
+            <canvas class="border border-2 h-auto w-100" width="400" height="400"
+                    #drawingCanvas
+                    (mousedown)="startDrawing($event)"
+                    (mousemove)="draw($event)"
+                    (mouseup)="stopDrawing()">
+            </canvas>
+        </div>
+        <div class="col-md-6">
+            <h2>Generated Image</h2>
+            <binary-image-drawer class="border border-2" [canvasWidth]="400" [canvasHeight]="400"
+                                 #generatedImage></binary-image-drawer>
+            <p>{{modelDetails}}</p>
+        </div>
+    </div>
+    <div class="row align-items-end">
+        <div class="mt-2  col-md-6">
+            <button class="btn btn-primary me-2" (click)="loadImage()">Load image</button>
+            <button class="btn btn-primary" (click)="resetDrawing()">Reset</button>
+        </div>
+        <div class="mt-2 col-md-6">
+            <button class="btn btn-primary" (click)="loadModel()">Load Model</button>
+        </div>
+    </div>
+</div>
+
+<!-- Loading overlay -->
+<div class="position-absolute top-0 start-0 bottom-0 end-0"
+     style="background: rgba(0,0,0,0.4)"
+     *ngIf="progress.total > 0">
+    <div class="position-absolute top-50 start-50 translate-middle col-4">
+        <h3 class="text-center">Loading...</h3>
+        <div class="progress" style="height: 20px">
+            <div class="progress-bar" role="progressbar" [style.width.%]="(progress.loaded / progress.total) * 100">
+                {{progress.converter(progress.loaded)}}/{{progress.converter(progress.total)}}
+            </div>
+        </div>
+    </div>
+</div>

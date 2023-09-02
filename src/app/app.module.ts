@@ -8,12 +8,14 @@ import {NeuralNetworkDrawerComponent} from './components/neural-network-drawer/n
 import {RouterModule, Routes} from "@angular/router";
 import {Demo1Component} from './pages/demo1/demo1.component';
 import {Demo2Component} from './pages/demo2/demo2.component';
+import {Demo3Component} from './pages/demo3/demo3.component';
 import {BinaryImageDrawerComponent} from './components/binary-image-drawer/binary-image-drawer.component';
 import {HttpClientModule} from "@angular/common/http";
 
 const routes: Routes = [
     {path: 'demo1', component: Demo1Component},
     {path: 'demo2', component: Demo2Component},
+    {path: 'demo3', component: Demo3Component},
     {path: '', redirectTo: '/demo1', pathMatch: 'full'},
     {path: '**', redirectTo: '/demo1'}
 ];
@@ -25,7 +27,8 @@ const routes: Routes = [
         NeuralNetworkDrawerComponent,
         BinaryImageDrawerComponent,
         Demo1Component,
-        Demo2Component
+        Demo2Component,
+        Demo3Component,
     ],
     imports: [
         BrowserModule,

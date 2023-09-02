@@ -3,7 +3,7 @@ import path from "path";
 import {
     GanSerialization,
     GenerativeAdversarialModel,
-    ModelSerialization
+    UniversalModelSerializer
 } from "mind-net.js";
 
 import * as Image from "./image.js";
@@ -14,7 +14,7 @@ export async function saveModel(model, fileName) {
     if (model instanceof GenerativeAdversarialModel) {
         dump = GanSerialization.save(model);
     } else {
-        dump = ModelSerialization.save(model);
+        dump = UniversalModelSerializer.save(model);
     }
 
     await CommonUtils.promisify(fs.writeFile, fileName, JSON.stringify(dump));

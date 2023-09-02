@@ -65,5 +65,5 @@ export {
 } from "./engine/wrapper/parallel.worker.impl"
 
 export {
-    FileAsyncReader, FetchDataAsyncReader
+    FileAsyncReader, FetchDataAsyncReader, ObservableStreamLoader
 } from "./utils/fetch"
