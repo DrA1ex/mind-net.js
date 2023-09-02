@@ -22,6 +22,9 @@ export class Demo3Component implements AfterViewInit {
     private model?: IModel;
     private isDrawing = false;
 
+    brushColor!: string;
+    brushSize!: number
+
     modelDetails: string = "Load model to view details";
     progress = {
         loaded: 0,
@@ -56,7 +59,9 @@ export class Demo3Component implements AfterViewInit {
         const x = (event.clientX - rect.left) / rect.width;
         const y = (event.clientY - rect.top) / rect.height;
 
-        this.drawingContext.lineWidth = 5;
+        this.drawingContext.lineWidth = this.brushSize;
+        this.drawingContext.strokeStyle = this.brushColor;
+
         this.drawingContext.lineTo(canvas.width * x, canvas.height * y);
         this.drawingContext.stroke();
     }

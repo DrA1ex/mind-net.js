@@ -1,0 +1,22 @@
+<div class="row mt-2 mb-2">
+    <span class="col-1 col-form-label">Color: </span>
+    <div class="col-2">
+        <input type="color" class="form-control form-control-color" title="Choose color"
+               [(ngModel)]="selectedColor" (ngModelChange)="colorChanged()">
+    </div>
+
+    <span class="col-1 col-form-label">Size: </span>
+    <div class="col-2">
+        <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" name="sizeSelectionDropDown"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                {{selectedSize}}
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="sizeSelectionDropDown">
+                <li *ngFor="let size of brushSizes">
+                    <a class="dropdown-item pointer" (click)="selectSize(size)">{{size}}</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

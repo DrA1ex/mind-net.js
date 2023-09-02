@@ -3,14 +3,17 @@ import {BrowserModule} from '@angular/platform-browser';
 
 import {AppComponent} from './app.component';
 import {FormsModule} from "@angular/forms";
-import {PlotDrawerComponent} from './components/plot-drawer/plot-drawer.component';
-import {NeuralNetworkDrawerComponent} from './components/neural-network-drawer/neural-network-drawer.component';
+import {HttpClientModule} from "@angular/common/http";
 import {RouterModule, Routes} from "@angular/router";
+
 import {Demo1Component} from './pages/demo1/demo1.component';
 import {Demo2Component} from './pages/demo2/demo2.component';
 import {Demo3Component} from './pages/demo3/demo3.component';
+
+import {PlotDrawerComponent} from './components/plot-drawer/plot-drawer.component';
+import {NeuralNetworkDrawerComponent} from './components/neural-network-drawer/neural-network-drawer.component';
 import {BinaryImageDrawerComponent} from './components/binary-image-drawer/binary-image-drawer.component';
-import {HttpClientModule} from "@angular/common/http";
+import {ColorSelectorComponent} from './components/color-selector/color-selector.component';
 
 const routes: Routes = [
     {path: 'demo1', component: Demo1Component},
@@ -29,6 +32,7 @@ const routes: Routes = [
         Demo1Component,
         Demo2Component,
         Demo3Component,
+        ColorSelectorComponent,
     ],
     imports: [
         BrowserModule,

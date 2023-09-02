@@ -194,3 +194,42 @@ export async function processMultiChannelDataParallel<T extends IModel>(
 
     return outputs;
 }
+
+export function shiftImage(image: Matrix1D, shiftX: number, shiftY: number, fill = 0) {
+    const size = Math.sqrt(image.length);
+    if (size % 1 !== 0) throw new Error("Invalid input data size");
+
+    const shiftedImage = Matrix.fill_value(fill, image.length);
+    for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+            let x = j + shiftX;
+            let y = i + shiftY;
+
+            if (x < 0 || x >= size || y < 0 || y >= size) continue;
+
+            const floorX = Math.floor(x);
+            const ceilX = Math.min(Math.ceil(x), size - 1);
+            const floorY = Math.floor(y);
+            const ceilY = Math.min(Math.ceil(y), size - 1);
+
+            const topLeft = image[floorX + floorY * size];
+            const topRight = image[ceilX + floorY * size];
+            const bottomLeft = image[floorX + ceilY * size];
+            const bottomRight = image[ceilX + ceilY * size];
+
+            const fracX = x - floorX;
+            const fracY = y - floorY;
+
+            const topInterpolation = topLeft + (topRight - topLeft) * fracX;
+            const bottomInterpolation = bottomLeft + (bottomRight - bottomLeft) * fracY;
+
+            shiftedImage[i * size + j] = topInterpolation + (bottomInterpolation - topInterpolation) * fracY;
+        }
+    }
+
+    return shiftedImage;
+}
+
+export function shiftImageBatch(images: Matrix2D, shiftX: number, shiftY: number, fill = 0) {
+    return images.map(image => shiftImage(image, shiftX, shiftY, fill));
+}

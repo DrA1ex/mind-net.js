@@ -8,6 +8,7 @@
                     (mousemove)="draw($event)"
                     (mouseup)="stopDrawing()">
             </canvas>
+            <app-color-selector (color)="brushColor = $event" (size)="brushSize = $event"></app-color-selector>
         </div>
         <div class="col-md-6">
             <h2>Generated Image</h2>
