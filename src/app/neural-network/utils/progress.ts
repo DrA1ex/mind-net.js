@@ -96,7 +96,7 @@ export function* progressIterable(
 
     let iteration = 0
     for (const iterableElement of iterable) {
-        progressFn(iteration, total ?? 0);
+        progressFn(iteration++, total ?? 0);
         yield iterableElement;
     }
 }
