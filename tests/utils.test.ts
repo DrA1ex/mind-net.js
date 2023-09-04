@@ -94,6 +94,31 @@ describe("throttle", () => {
         expect(clearTimeout).toHaveBeenCalled();
     });
 
+    it("should clear the timer when timer was missed", () => {
+        const performanceMock = jest.spyOn(performance, "now");
+        performanceMock.mockReturnValue(0);
+
+        const throttledFn = ProgressUtils.throttle(mockFn, ValueLimit.exclusive, 500);
+
+        throttledFn(1, 10);
+        expect(mockFn).toHaveBeenCalledTimes(1);
+
+        // Simulate missed time
+        performanceMock.mockReset().mockReturnValue(1000);
+
+        throttledFn(5, 10);
+        // Should be force called by missed timer condition
+        expect(mockFn).toHaveBeenCalledTimes(2);
+        expect(mockFn).toHaveBeenCalledWith(5, 10);
+        // Verify that the timer is cleared after completion
+        expect(clearTimeout).toHaveBeenCalled();
+
+        jest.advanceTimersByTime(1000);
+
+        // Verify that timer will not fire again
+        expect(mockFn).toHaveBeenCalledTimes(2);
+    });
+
     describe("inclusive limit", () => {
         it("should call the original function if all iterations have been processed", () => {
             const throttledFn = ProgressUtils.throttle(mockFn, ValueLimit.inclusive, 100);

@@ -284,7 +284,8 @@ export function throttle(fn: ProgressFn, limit: ValueLimit, delay: number) {
             if (performance.now() - timerSetAt >= delay) {
                 clearTimeout(timerId);
                 timerId = null;
-                _throttled(...lastArgs)
+                lastArgs = null;
+                _throttled(iteration, total)
             }
 
             return;
