@@ -47,14 +47,12 @@ export class LeakyReluActivation extends ActivationCombinedBase {
 }
 
 export class ReluActivation extends ActivationCombinedBase {
-    private leakyRelu = new LeakyReluActivation({alpha: 0});
-
     value(x: number): number {
-        return this.leakyRelu.value(x);
+        return x >= 0 ? x : 0;
     }
 
     moment(x: number): number {
-        return this.leakyRelu.moment(x);
+        return x >= 0 ? 1 : 0;
     }
 }
 

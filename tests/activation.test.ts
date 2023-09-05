@@ -9,7 +9,7 @@ const ActivationValueTestInput = [-10, -1, -0.5, 0, 0.5, 1, 10];
 describe("Activation.value", () => {
     test.each([
         {type: SigmoidActivation, expected: [0.000045397868702434395, 0.2689414213699951, 0.3775406687981454, 0.5, 0.6224593312018546, 0.7310585786300049, 0.9999546021312976]},
-        {type: ReluActivation, expected: [-0, -0, -0, 0, 0.5, 1, 10,]},
+        {type: ReluActivation, expected: [0, 0, 0, 0, 0.5, 1, 10,]},
         {type: LeakyReluActivation, expected: [-3, -0.3, -0.15, 0, 0.5, 1, 10]},
         {type: TanhActivation, expected: [-0.9999999958776927, -0.7615941559557649, -0.46211715726000974, 0, 0.46211715726000974, 0.7615941559557649, 0.9999999958776927]},
         {type: LinearActivation, expected: [-10, -1, -0.5, 0, 0.5, 1, 10]},
