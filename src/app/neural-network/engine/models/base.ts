@@ -178,7 +178,7 @@ export abstract class ModelBase implements IModel {
             const layer = this.layers[i];
 
             const prime = layer.step(result);
-            result = layer.activation.value(prime, layer.activationOutput);
+            result = layer.activation.forward(prime, layer.activationOutput);
 
             if (isTraining && layer.dropout > 0) {
                 const mask = this.cache.get(layer)!.mask;

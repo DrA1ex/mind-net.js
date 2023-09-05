@@ -66,7 +66,7 @@ describe("Should correctly calculate gradient", () => {
         const layer: any = {
             size: 3,
             activation: {
-                moment: (input: Matrix.Matrix1D, dst?: Matrix.Matrix1D) =>
+                backward: (input: Matrix.Matrix1D, dst?: Matrix.Matrix1D) =>
                     Matrix.matrix1d_unary_op(input, (v) => v * 0.5, dst)
             },
             output: [-1, 0, 1],

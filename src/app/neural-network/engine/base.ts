@@ -39,8 +39,13 @@ export interface IModel {
 }
 
 export interface IActivation {
-    value(input: Matrix1D, dst?: Matrix1D): Matrix1D
-    moment(input: Matrix1D, dst?: Matrix1D): Matrix1D;
+    forward(input: Matrix1D, dst?: Matrix1D): Matrix1D
+    backward(input: Matrix1D, dst?: Matrix1D): Matrix1D;
+}
+
+export interface ISingleValueActivation {
+    value(x: number): number
+    moment(x: number): number;
 }
 
 export interface ILayer {

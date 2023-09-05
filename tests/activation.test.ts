@@ -18,7 +18,7 @@ describe("Activation.value", () => {
         {type, expected}
     ) => {
         const obj = new type();
-        expect(obj.value(ActivationValueTestInput)).toStrictEqual(expected);
+        expect(obj.forward(ActivationValueTestInput)).toStrictEqual(expected);
     });
 });
 
@@ -34,7 +34,7 @@ describe("Activation.moment", () => {
         {type, expected}
     ) => {
         const obj = new type();
-        expect(obj.moment(ActivationValueTestInput)).toStrictEqual(expected);
+        expect(obj.backward(ActivationValueTestInput)).toStrictEqual(expected);
     });
 });
 
@@ -45,8 +45,8 @@ describe("Should use destination array if specified ::value", () => {
         const obj = new type();
 
         const dst = new Array(ActivationValueTestInput.length);
-        const withDst = obj.value(ActivationValueTestInput, dst);
-        const withoutDst = obj.value(ActivationValueTestInput);
+        const withDst = obj.forward(ActivationValueTestInput, dst);
+        const withoutDst = obj.forward(ActivationValueTestInput);
 
         expect(withDst).toStrictEqual(withoutDst);
         expect(withDst).toBe(dst);
@@ -60,8 +60,8 @@ describe("Should use destination array if specified ::moment", () => {
         const obj = new type();
 
         const dst = new Array(ActivationValueTestInput.length);
-        const withDst = obj.moment(ActivationValueTestInput, dst);
-        const withoutDst = obj.moment(ActivationValueTestInput);
+        const withDst = obj.backward(ActivationValueTestInput, dst);
+        const withoutDst = obj.backward(ActivationValueTestInput);
 
         expect(withDst).toStrictEqual(withoutDst);
         expect(withDst).toBe(dst);

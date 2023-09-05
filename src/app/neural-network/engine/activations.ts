@@ -1,79 +1,94 @@
-import {IActivation} from "./base";
+import {IActivation, ISingleValueActivation} from "./base";
 import {Matrix1D} from "./matrix";
 import {Param} from "../serialization";
-import * as matrix from "./matrix";
-import * as iter from "./iter";
+import * as Matrix from "./matrix";
+import * as Iter from "./iter";
 
-export class SigmoidActivation implements IActivation {
-    value(input: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return matrix.matrix1d_unary_op(input, x => 1 / (1 + Math.exp(-x)), dst);
+export abstract class ActivationCombinedBase implements IActivation, ISingleValueActivation {
+    abstract value(x: number): number;
+    abstract moment(x: number): number;
+
+    forward(input: Matrix1D, dst?: Matrix1D): Matrix1D {
+        return Matrix.matrix1d_unary_op(input, this.value.bind(this), dst);
     }
 
-    moment(input: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return matrix.matrix1d_unary_in_place_op(this.value(input, dst), s => s * (1 - s));
+    backward(input: Matrix1D, dst?: Matrix1D): Matrix1D {
+        return Matrix.matrix1d_unary_op(input, this.moment.bind(this), dst);
     }
 }
 
-export class LeakyReluActivation implements IActivation {
+export class SigmoidActivation extends ActivationCombinedBase {
+    value(x: number): number {
+        return 1 / (1 + Math.exp(-x));
+    }
+
+    moment(x: number): number {
+        const s = this.value(x);
+        return s * (1 - s);
+    }
+}
+
+export class LeakyReluActivation extends ActivationCombinedBase {
     @Param()
     alpha: number;
 
     constructor({alpha = 0.3} = {}) {
+        super();
         this.alpha = alpha
     }
 
-    value(input: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return matrix.matrix1d_unary_op(input, x => x >= 0 ? x : x * this.alpha, dst);
+    value(x: number): number {
+        return x >= 0 ? x : x * this.alpha;
     }
 
-    moment(input: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return matrix.matrix1d_unary_op(input, x => x >= 0 ? 1 : this.alpha, dst);
+    moment(x: number): number {
+        return x >= 0 ? 1 : this.alpha;
     }
 }
 
-export class ReluActivation implements IActivation {
+export class ReluActivation extends ActivationCombinedBase {
     private leakyRelu = new LeakyReluActivation({alpha: 0});
 
-    value(input: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return this.leakyRelu.value(input, dst);
+    value(x: number): number {
+        return this.leakyRelu.value(x);
     }
 
-    moment(input: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return this.leakyRelu.moment(input, dst);
-    }
-}
-
-export class TanhActivation implements IActivation {
-    value(input: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return matrix.matrix1d_unary_op(input, Math.tanh, dst);
-    }
-
-    moment(input: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return matrix.matrix1d_unary_op(input, x => 1 - Math.pow(Math.tanh(x), 2), dst);
+    moment(x: number): number {
+        return this.leakyRelu.moment(x);
     }
 }
 
-export class LinearActivation implements IActivation {
-    value(input: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return dst ? matrix.copy_to(input, dst) : input;
+export class TanhActivation extends ActivationCombinedBase {
+    value(x: number): number {
+        return Math.tanh(x);
     }
 
-    moment(input: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return matrix.matrix1d_unary_op(input, () => 1, dst);
+    moment(x: number): number {
+        return 1 - Math.pow(Math.tanh(x), 2);
+    }
+}
+
+export class LinearActivation extends ActivationCombinedBase {
+    value(x: number): number {
+        return x
+    }
+
+    moment(_: number): number {
+        return 1;
     }
 }
 
 export class SoftMaxActivation implements IActivation {
-    value(input: Matrix1D, dst?: Matrix1D): Matrix1D {
-        const max = iter.max(input);
-        const mapped = matrix.matrix1d_unary_op(input, value => Math.exp(value - max), dst);
-        const sum = iter.sum(mapped);
+    forward(input: Matrix1D, dst?: Matrix1D): Matrix1D {
+        const max = Iter.max(input);
+        const mapped = Matrix.matrix1d_unary_op(input, value => Math.exp(value - max), dst);
+        const sum = Iter.sum(mapped);
 
-        return matrix.matrix1d_unary_in_place_op(mapped, v => v / sum);
+        return Matrix.matrix1d_unary_in_place_op(mapped, v => v / sum);
     }
 
-    moment(input: Matrix1D, dst?: Matrix1D): Matrix1D {
-        return matrix.matrix1d_unary_op(input, () => 1, dst);
+    backward(input: Matrix1D, dst?: Matrix1D): Matrix1D {
+        return Matrix.matrix1d_unary_op(input, () => 1, dst);
     }
 }
 

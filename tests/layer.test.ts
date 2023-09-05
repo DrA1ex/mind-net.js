@@ -146,10 +146,10 @@ test.each([
 
 test("Should works with custom activation", () => {
     class CustomActivation implements IActivation {
-        moment(input: Matrix1D, dst?: Matrix1D): Matrix1D {
+        backward(input: Matrix1D, dst?: Matrix1D): Matrix1D {
             return Matrix.matrix1d_unary_op(input, () => 0.5, dst);
         }
-        value(input: Matrix1D, dst?: Matrix1D): Matrix1D {
+        forward(input: Matrix1D, dst?: Matrix1D): Matrix1D {
             return Matrix.matrix1d_unary_op(input, () => -0.5, dst);
         }
     }

@@ -40,7 +40,7 @@ export abstract class OptimizerBase implements IOptimizer {
 
         const {tmp1} = this._cache.get(layer)!;
 
-        layer.activation.moment(layer.output, tmp1);
+        layer.activation.backward(layer.output, tmp1);
         matrix.matrix1d_binary_in_place_op(tmp1, error, (a, e) => a * e);
 
         return tmp1;
@@ -277,7 +277,7 @@ export class SgdNesterovOptimizer extends OptimizerBase {
 
         // next gradient
         matrix.add(layer.output, s.momentum, s.nextGrad);
-        layer.activation.moment(s.nextGrad, s.tmp1);
+        layer.activation.backward(s.nextGrad, s.tmp1);
         matrix.mul_to(error, s.tmp1);
 
         // calculate/update moment
