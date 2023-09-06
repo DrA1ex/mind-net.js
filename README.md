@@ -327,7 +327,7 @@ for (let i = 0; i <= 150; i++) {
 
 ### CPU Benchmark (v1.3.3)
 
-**Full-sized dataset (5 iterations), Prediction Speed:**
+**Full-sized dataset (5 iterations), CPU only, Prediction Speed:**
 
 | Library              | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
 |----------------------|--------------|-------------|------------------|---------------------------|
@@ -337,7 +337,7 @@ for (let i = 0; i <= 150; i++) {
 | Brain.js             | 1024.9       | 1.819       | 5.1247           | ~585.05% Slower           |
 | Tensorflow (Native)  | 74.8         | 11.46       | 0.3742           | ~49.91%  Faster           |
 
-**Single-sample dataset (10,000 iterations), Prediction Speed:**
+**Single-sample dataset (10,000 iterations), CPU only, Prediction Speed:**
 
 | Library              | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
 |----------------------|--------------|-------------|------------------|---------------------------|
@@ -347,7 +347,7 @@ for (let i = 0; i <= 150; i++) {
 | Brain.js             | 0.5          | 78.524      | 5.2406           | ~43% Slower               |
 | Tensorflow (Native)  | 0.8          | 86.92       | 8.2383           | ~124% Slower              |
 
-**Full-sized dataset (5 iterations), Train Speed:**
+**Full-sized dataset (5 iterations), CPU only, Train Speed:**
 
 | Library              | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
 |----------------------|--------------|-------------|------------------|---------------------------|
@@ -357,7 +357,7 @@ for (let i = 0; i <= 150; i++) {
 | Brain.js             | 2703.6       | 0.309       | 13.518           | ~483.05% Slower           |
 | Tensorflow (Native)  | 109          | 7.124       | 0.5451           | ~76% Faster               |
 
-**Single-sample  dataset (10,000 iterations), Train Speed:**
+**Single-sample  dataset (10,000 iterations), CPU only, Train Speed:**
 
 | Library              | Mean Time (ms) | Variance (%) | Total Time (s) | Speed compared to Worker |
 |----------------------|--------------|-------------|------------------|---------------------------|
@@ -373,21 +373,23 @@ You can find benchmark script at: [/examples/src/benchmark.js](/examples/src/ben
 
 ### GPU Benchmark (Core v1.4.1, GPU binding v1.0.1)
 
-**Full-sized dataset (10 iterations), Prediction speed:**
+**Full-sized dataset (10 iterations), GPU only, Prediction speed:**
 
-| Library         | Mean Time (ms) | Variance (%) | Speed comparison |
-|-----------------|----------------|--------------|------------------|
-| mind-net.js     | 239.7          | 19.9932      | Baseline         |
-| Tensorflow.js  (native)   | 98.7           | 9.5713       | ~41.18% Faster    |
-| Brain.js        | 2629           | 6.0515       | ~991.46% Slower   |
+| Library                   | Mean Time (ms) | Variance (%) | Total time (s) | Speed comparison |
+|---------------------------|----------------|--------------|----------------|------------------|
+| mind-net.js               | 239.7          | 19.9932      | 2.3967         | Baseline         |
+| Tensorflow.js  (native)   | 98.7           | 9.5713       | 0.9869         | ~41.18% Faster   |
+| Brain.js                  | 2629           | 6.0515       | 26.29          | ~991.46% Slower  |
 
-**Full-sized dataset (10 iterations), Train speed:**
+**Full-sized dataset (10 iterations), GPU only, Train speed:**
 
-| Library        | Mean Time (ms) | Variance (%) | Speed comparison |
-|----------------|----------------|--------------|------------------|
-| mind-net.js    | 677.4          | 5.6329       | Baseline         |
-| Tensorflow.js (native)  | 216.5          | 4.3513       | ~31.98%  Faster   |
-| Brain.js       | 3849.8         | 4.8699       | ~468.94% Slower  |
+| Library                 | Mean Time (ms) | Variance (%) | Total time (s) | Speed comparison |
+|-------------------------|----------------|--------------|----------------|------------------|
+| mind-net.js             | 677.4          | 5.6329       | 6.7735         | Baseline         |
+| Tensorflow.js (native)  | 216.5          | 4.3513       | 2.1646         | ~31.98%  Faster  |
+| Brain.js                | 3849.8         | 4.8699       | 38.4984        | ~468.94% Slower  |
+
+You can find benchmark script at: [/examples/src/benchmark.js](/examples/src/benchmark_gpu.js)
 
 ## Examples source code
 
