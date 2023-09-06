@@ -1,6 +1,6 @@
 # mind-net.js
 
-Simple to use neural network implementation in pure TypeScript.
+Simple to use neural network implementation in pure TypeScript with GPU support.
 
 [![npm version](https://badge.fury.io/js/mind-net.js.svg)](https://badge.fury.io/js/mind-net.js) [![Tests](https://github.com/DrA1ex/mind-net.js/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/DrA1ex/mind-net.js/actions/workflows/tests.yml) [![GitHub Pages](https://github.com/DrA1ex/mind-net.js/actions/workflows/jekyll-gh-pages.yml/badge.svg?branch=main)](https://github.com/DrA1ex/mind-net.js/actions/workflows/jekyll-gh-pages.yml)
 
@@ -21,7 +21,6 @@ npm install mind-net.js
 ```
 
 ## Get Started
-
 #### Approximation of the XOR function
 ```javascript
 import MindNet from "mind-net.js";
@@ -71,7 +70,26 @@ esbuild index=index.js parallel.worker=node_modules/mind-net.js/parallel.worker.
 <script type="module" src="./bundle/index.js"></script>
 ```
 
-### More complex examples
+## Table of Contents
+- [Examples](#examples)
+    - [Approximation of distance function](#Approximation-of-distance-function)
+    - [Generative Adversarial network (GAN) for Colorful Cartoon generation with Autoencoder filtering](#generative-adversarial-network-gan-for-colorful-cartoon-generation-with-autoencoder-filtering)
+    - [Multithreading](#Multithreading)
+    - [GPU](#gpu)
+    - [Saving/Loading model](#savingloading-model)
+    - [Configuration of Training dashboard](#Configuration-of-Training-dashboard)
+- [Benchmark](#benchmark)
+    - [CPU Benchmark](#cpu-benchmark-v133)
+    - [GPU Benchmark](#gpu-benchmark-core-v141-gpu-binding-v101)
+- [Examples source code](#Examples-source-code)
+- [Demo](#demo)
+    - [Sequential demo](#Sequential-demo)
+    - [Generative-adversarial Network demo](#Generative-adversarial-Network-demo)
+- [Datasets](#Datasets-used-in-examples)
+
+
+## Examples
+
 #### Approximation of distance function
 ```javascript
 import MindNet, {Matrix} from "mind-net.js";
@@ -180,7 +198,7 @@ for (let i = 0; i < epochs; i++) {
 
 ### Multithreading
 ```javascript
-import {SequentialModel, Dense, ModelSerialization, ParallelModelWrapper} from "mind-net.js";
+import {SequentialModel, Dense, ParallelModelWrapper} from "mind-net.js";
 
 // Create and configure model
 const network = new SequentialModel();
@@ -206,6 +224,42 @@ const predictions = await pModel.compute(input);
 
 // Terminate workers
 await pModel.terminate();
+```
+
+### GPU
+
+1. Install the binding
+```shell
+npm install @mind-net.js/gpu
+```
+
+2. Use imported bindong
+```javascript
+import {SequentialModel, Dense} from "mind-net.js";
+import {GpuModelWrapper} from "@mind-net.js/gpu";
+
+const network = new SequentialModel();
+network.addLayer(new Dense(2));
+network.addLayer(new Dense(64, {activation: "leakyRelu"}));
+network.addLayer(new Dense(1, {activation: "linear"}));
+network.compile();
+
+// Define the input and expected output data
+const input = [[1, 2], [3, 4], [5, 6]];
+const expected = [[3], [7], [11]];
+
+// Create GPU wrapper wrapper
+const batchSize = 128; // Note: batchSize specified only when creating the wrapper
+const gpuWrapper = new GpuModelWrapper(network, batchSize);
+
+// Train model
+gpuWrapper.train(input, expected);
+
+// Compute predictions
+const predictions = gpuWrapper.compute(input);
+
+// Free resources
+gpuWrapper.destroy();
 ```
 
 ### Saving/Loading model
@@ -269,7 +323,9 @@ for (let i = 0; i <= 150; i++) {
 <img width="800" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/b0f85f39-f112-4246-933e-6d87c53c3cf0">
 
 
-## Benchmark (v1.3.3)
+## Benchmark
+
+### CPU Benchmark (v1.3.3)
 
 **Full-sized dataset (5 iterations), Prediction Speed:**
 
@@ -315,7 +371,25 @@ Comparison with different dataset sizes: [link](https://docs.google.com/spreadsh
 
 You can find benchmark script at: [/examples/src/benchmark.js](/examples/src/benchmark.js)
 
-## Examples
+### GPU Benchmark (Core v1.4.1, GPU binding v1.0.1)
+
+**Full-sized dataset (10 iterations), Prediction speed:**
+
+| Library         | Mean Time (ms) | Variance (%) | Speed comparison |
+|-----------------|----------------|--------------|------------------|
+| mind-net.js     | 239.7          | 19.9932      | Baseline         |
+| Tensorflow.js  (native)   | 98.7           | 9.5713       | ~41.18% Faster    |
+| Brain.js        | 2629           | 6.0515       | ~991.46% Slower   |
+
+**Full-sized dataset (10 iterations), Train speed:**
+
+| Library        | Mean Time (ms) | Variance (%) | Speed comparison |
+|----------------|----------------|--------------|------------------|
+| mind-net.js    | 677.4          | 5.6329       | Baseline         |
+| Tensorflow.js (native)  | 216.5          | 4.3513       | ~31.98%  Faster   |
+| Brain.js       | 3849.8         | 4.8699       | ~468.94% Slower  |
+
+## Examples source code
 
 See examples [here](examples/)
 
@@ -332,8 +406,9 @@ node ./src/cartoon_colorful_example.js
 ```
 
 # Demo
-## [Sequential demo](https://dra1ex.github.io/mind-net.js/demo1/)
-### Classification of 2D space from set of points with different type
+
+## Sequential demo
+### Classification of 2D space from set of points with different type ([link](https://dra1ex.github.io/mind-net.js/demo1/))
 
 <img width="800" alt="spiral" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/8a571abf-35a2-47a0-b53f-9b2c835cc2fd">
 
@@ -352,8 +427,8 @@ node ./src/cartoon_colorful_example.js
 
 **Source code**: [src/app/pages/demo1](/src/app/pages/demo1)
 
-## [Generative-adversarial Network demo](https://dra1ex.github.io/mind-net.js/demo2/)
-### Generating images by unlabeled sample data
+## Generative-adversarial Network demo
+### Generating images by unlabeled sample data ([link](https://dra1ex.github.io/mind-net.js/demo2/))
 
 **DISCLAIMER**: The datasets used in this example have been deliberately simplified, and the hyperparameters have been selected for the purpose of demonstration to showcase early results. It is important to note that the quality of the outcomes may vary and is dependent on the size of the model and chosen hyperparameters.
 
@@ -367,8 +442,7 @@ node ./src/cartoon_colorful_example.js
 
 **Source code**: [src/app/pages/demo2](/src/app/pages/demo2)
 
-
-### Datasets used in examples
+## Datasets used in examples
 
 _Black & White:_
 - [mnist-500-16.zip](https://github.com/DrA1ex/mind-net.js/files/7082675/mnist-16.zip) ([source](https://www.kaggle.com/competitions/digit-recognizer))
