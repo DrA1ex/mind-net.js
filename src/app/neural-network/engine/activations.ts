@@ -23,7 +23,7 @@ export class SigmoidActivation extends ActivationCombinedBase {
     }
 
     moment(x: number): number {
-        const s = this.value(x);
+        const s = 1 / (1 + Math.exp(-x));
         return s * (1 - s);
     }
 }

@@ -1,7 +1,8 @@
-import * as iter from "../iter";
-import * as matrix from "../matrix";
+import * as Iter from "../iter";
+import * as Matrix from "../matrix";
 
 import {ILayer, IOptimizer, ILoss, IModel, ModelTrainOptionsT} from "../base";
+import {Matrix1D, Matrix2D} from "../matrix";
 import {buildLoss, CategoricalCrossEntropyLoss, LossT} from "../loss";
 import {buildOptimizer, OptimizerT} from "../optimizers";
 import {SoftMaxActivation} from "../activations";
@@ -10,14 +11,14 @@ import {ProgressFn} from "../../utils/fetch";
 import {ProgressUtils} from "../../neural-network";
 
 export type NeuralNetworkSnapshot = {
-    weights: matrix.Matrix2D[],
-    biases: matrix.Matrix1D[]
+    weights: Matrix2D[],
+    biases: Matrix1D[]
 };
 
 export type LayerCache = {
-    deltaWeights: matrix.Matrix2D,
-    deltaBiases: matrix.Matrix1D,
-    mask: matrix.Matrix1D,
+    deltaWeights: Matrix2D,
+    deltaBiases: Matrix1D,
+    mask: Matrix1D,
 };
 
 export const DefaultTrainOpts: ModelTrainOptionsT = {
@@ -37,7 +38,7 @@ export abstract class ModelBase implements IModel {
 
     protected compiled: boolean = false;
     protected cache = new Map<ILayer, LayerCache>();
-    protected lossErrorCache!: matrix.Matrix1D;
+    protected lossErrorCache!: Matrix1D;
 
     readonly optimizer: IOptimizer;
     readonly loss: ILoss;
@@ -58,15 +59,15 @@ export abstract class ModelBase implements IModel {
         this.loss = buildLoss(loss);
     }
 
-    compute(input: matrix.Matrix1D): matrix.Matrix1D {
+    compute(input: Matrix1D): Matrix1D {
         this._assertCompiled();
         this._assertInputSize(input);
 
         const output = this._forward(input);
-        return matrix.copy(output);
+        return Matrix.copy(output);
     }
 
-    evaluate(input: matrix.Matrix1D[], expected: matrix.Matrix1D[]) {
+    evaluate(input: Matrix1D[], expected: Matrix1D[]) {
         this._assertInputSize2d(input);
         this._assertExpectedSize2d(expected);
         this._assertInputOutputSize(input, expected);
@@ -83,7 +84,7 @@ export abstract class ModelBase implements IModel {
     }
 
     train(
-        input: matrix.Matrix1D[], expected: matrix.Matrix1D[], options: Partial<ModelTrainOptionsT> = {}
+        input: Matrix1D[], expected: Matrix1D[], options: Partial<ModelTrainOptionsT> = {}
     ) {
         this._assertCompiled();
         this._assertInputSize2d(input);
@@ -99,8 +100,8 @@ export abstract class ModelBase implements IModel {
         for (let i = 0; i < opts.epochs; i++) {
             this.beforeTrain();
 
-            const shuffledTrainSet = iter.shuffle(Array.from(iter.zip(input, expected)));
-            for (const batch of iter.partition(shuffledTrainSet, opts.batchSize)) {
+            const shuffledTrainSet = Iter.shuffle(Array.from(Iter.zip(input, expected)));
+            for (const batch of Iter.partition(shuffledTrainSet, opts.batchSize)) {
                 this.trainBatch(batch, batchCtrl?.progressFn);
                 batchCtrl?.add(batch.length);
             }
@@ -109,7 +110,7 @@ export abstract class ModelBase implements IModel {
         }
     }
 
-    public trainBatch(batch: Iterable<[matrix.Matrix1D, matrix.Matrix1D]>, progressFn?: ProgressFn) {
+    public trainBatch(batch: Iterable<[Matrix1D, Matrix1D]>, progressFn?: ProgressFn) {
         this._assertCompiled();
 
         this._clearDelta();
@@ -161,18 +162,18 @@ export abstract class ModelBase implements IModel {
             const prevSize = i > 0 ? this.layers[i - 1].size : 0;
             layer.build(i, prevSize, allowMultipleLayerUsage);
             this.cache.set(layer, {
-                deltaWeights: matrix.zero_2d(layer.size, prevSize),
-                deltaBiases: matrix.zero(layer.size),
-                mask: matrix.one(layer.size),
+                deltaWeights: Matrix.zero_2d(layer.size, prevSize),
+                deltaBiases: Matrix.zero(layer.size),
+                mask: Matrix.one(layer.size),
             });
         }
 
-        this.lossErrorCache = matrix.zero(this.layers[this.layers.length - 1].size);
+        this.lossErrorCache = Matrix.zero(this.layers[this.layers.length - 1].size);
 
         this.compiled = true;
     }
 
-    protected _forward(input: matrix.Matrix1D, isTraining = false): matrix.Matrix1D {
+    protected _forward(input: Matrix1D, isTraining = false): Matrix1D {
         let result = input;
         for (let i = 1; i < this.layers.length; i++) {
             const layer = this.layers[i];
@@ -190,7 +191,7 @@ export abstract class ModelBase implements IModel {
         return result;
     }
 
-    protected _calculateDropoutMask(layer: ILayer, dst: matrix.Matrix1D) {
+    protected _calculateDropoutMask(layer: ILayer, dst: Matrix1D) {
         const rate = 1 - layer.dropout;
         const scale = 1 / rate;
         const maxZeros = Math.floor(layer.size * layer.dropout);
@@ -206,11 +207,11 @@ export abstract class ModelBase implements IModel {
         }
     }
 
-    protected _applyDropoutMask(values: matrix.Matrix1D, mask: matrix.Matrix1D) {
-        matrix.mul_to(mask, values);
+    protected _applyDropoutMask(values: Matrix1D, mask: Matrix1D) {
+        Matrix.mul_to(mask, values);
     }
 
-    protected _backprop(loss: matrix.Matrix1D) {
+    protected _backprop(loss: Matrix1D) {
         let errors = loss;
 
         for (let i = this.layers.length - 1; i > 0; i--) {
@@ -238,21 +239,22 @@ export abstract class ModelBase implements IModel {
     protected _applyDelta(batchSize: number): void {
         for (let i = 1; i < this.layers.length; i++) {
             const layer = this.layers[i];
-            this._applyLayerDelta(layer, batchSize);
+            const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
+
+            this._applyLayerDelta(layer, deltaWeights, deltaBiases, batchSize);
         }
     }
 
-    protected _applyLayerDelta(layer: ILayer, batchSize: number): void {
+    protected _applyLayerDelta(layer: ILayer, deltaWeights: Matrix2D, deltaBiases: Matrix1D, batchSize: number): void {
         if (!this.isTrainable(layer)) return;
 
-        const {deltaWeights, deltaBiases} = this.cache.get(layer)!;
         this.optimizer.updateWeights(layer, deltaWeights, deltaBiases, this.epoch, batchSize);
     }
 
     getSnapshot(): NeuralNetworkSnapshot {
         return {
-            weights: this.layers.slice(1).map(l => l.weights.map(w => matrix.copy(w))),
-            biases: this.layers.slice(1).map(l => matrix.copy(l.biases))
+            weights: this.layers.slice(1).map(l => l.weights.map(w => Matrix.copy(w))),
+            biases: this.layers.slice(1).map(l => Matrix.copy(l.biases))
         };
     }
 
@@ -262,7 +264,7 @@ export abstract class ModelBase implements IModel {
         }
     }
 
-    protected _assertInputSize(input: matrix.Matrix1D) {
+    protected _assertInputSize(input: Matrix1D) {
         if (!input) {
             throw new Error("Input data missing or in wrong format");
         }
@@ -273,7 +275,7 @@ export abstract class ModelBase implements IModel {
         }
     }
 
-    protected _assertInputSize2d(input: matrix.Matrix2D) {
+    protected _assertInputSize2d(input: Matrix2D) {
         if (!input || !input[0]) {
             throw new Error("Input data missing or in wrong format");
         }
@@ -284,7 +286,7 @@ export abstract class ModelBase implements IModel {
         }
     }
 
-    protected _assertExpectedSize(expected: matrix.Matrix1D) {
+    protected _assertExpectedSize(expected: Matrix1D) {
         if (!expected) {
             throw new Error("Expected data missing or in wrong format");
         }
@@ -295,7 +297,7 @@ export abstract class ModelBase implements IModel {
         }
     }
 
-    protected _assertExpectedSize2d(expected: matrix.Matrix2D) {
+    protected _assertExpectedSize2d(expected: Matrix2D) {
         if (!expected || !expected[0]) {
             throw new Error("Expected data missing or in wrong format");
         }
@@ -306,7 +308,7 @@ export abstract class ModelBase implements IModel {
         }
     }
 
-    protected _assertInputOutputSize(input: matrix.Matrix2D, expected: matrix.Matrix2D) {
+    protected _assertInputOutputSize(input: Matrix2D, expected: Matrix2D) {
         if (input.length !== expected.length) {
             throw new Error(`Inconsistent data length: input length ${input.length} != expected length ${expected.length}`)
         }

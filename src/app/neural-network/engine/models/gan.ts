@@ -31,7 +31,7 @@ export class GenerativeAdversarialModel {
         return this.generator.compute(input);
     }
 
-    public train(real: matrix.Matrix1D[], {batchSize = 32, epochs = 1}) {
+    public train(real: matrix.Matrix1D[], {batchSize = 32, epochs = 1} = {}) {
         for (let i = 0; i < epochs; i++) {
             this.beforeTrain();
 
