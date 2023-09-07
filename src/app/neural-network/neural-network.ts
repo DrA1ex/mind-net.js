@@ -26,6 +26,8 @@ export {
 };
 
 
+export {DefaultTrainOpts} from "./engine/models/base";
+
 export {ChainModel} from "./engine/models/chain"
 export {SequentialModel} from "./engine/models/sequential"
 export {GenerativeAdversarialModel} from "./engine/models/gan"

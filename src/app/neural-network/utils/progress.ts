@@ -180,6 +180,7 @@ export type ProgressBatchCtrl = {
 
     currentOffset: number;
 
+    progress(): void;
     addBatch(): void;
     add(count: number): void;
     reset(): void;
@@ -196,6 +197,7 @@ export function progressBatchCallback(
         batchSize,
         progressFn: (current) => progressFn(ctrl.currentOffset + current, ctrl.total),
 
+        progress: () => ctrl.progressFn(0, ctrl.total),
         addBatch: () => ctrl.currentOffset += batchSize,
         add: (count: number) => ctrl.currentOffset += count,
         reset: () => ctrl.currentOffset = 0,
