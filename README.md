@@ -233,7 +233,17 @@ await pModel.terminate();
 npm install @mind-net.js/gpu
 ```
 
-2. Use imported bindong
+_Optionally_, if you encounter any build issues, you can add overrides for the gl package by modifying your package.json configuration as follows:
+```javascript
+{
+    //...
+    "overrides": {
+        "gl": "^6.0.2"
+    }
+}
+```
+
+2. Use imported binding
 ```javascript
 import {SequentialModel, Dense} from "mind-net.js";
 import {GpuModelWrapper} from "@mind-net.js/gpu";
@@ -248,7 +258,7 @@ network.compile();
 const input = [[1, 2], [3, 4], [5, 6]];
 const expected = [[3], [7], [11]];
 
-// Create GPU wrapper wrapper
+// Create GPU wrapper
 const batchSize = 128; // Note: batchSize specified only when creating the wrapper
 const gpuWrapper = new GpuModelWrapper(network, batchSize);
 
