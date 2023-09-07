@@ -4,6 +4,8 @@ import {IActivation, ILayer, InitializerFn} from "./base";
 import {ActivationsMap, ActivationT} from "./activations";
 import {Initializers, InitializerT} from "./initializers";
 import {Param} from "../serialization";
+import {Matrix1D} from "./matrix";
+import * as Matrix from "./matrix";
 
 type DenseOptionsT = {
     dropout: number,
@@ -144,6 +146,37 @@ export class Dense implements ILayer {
         if (this.index === 0) return this.error;
 
         return matrix.dot_2d_translated(this.weights, gradient, this.error);
+    }
+}
+
+export class Dropout {
+    public readonly mask: Matrix1D;
+
+    get dropout() {return this.layer.dropout;}
+    get size() {return this.layer.size;}
+
+    constructor(public layer: ILayer) {
+        this.mask = Matrix.one(layer.size);
+    }
+
+    public calculateMask() {
+        const rate = 1 - this.dropout;
+        const scale = 1 / rate;
+        const maxZeros = Math.floor(this.size * this.dropout);
+
+        let count = 0;
+        for (let i = 0; i < this.size; i++) {
+            if (count < maxZeros && Math.random() >= rate) {
+                this.mask[i] = 0;
+                count++;
+            } else {
+                this.mask[i] = scale;
+            }
+        }
+    }
+
+    public applyMask(values: Matrix1D) {
+        Matrix.mul_to(this.mask, values);
     }
 }
 

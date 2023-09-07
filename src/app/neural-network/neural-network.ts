@@ -30,7 +30,7 @@ export {ChainModel} from "./engine/models/chain"
 export {SequentialModel} from "./engine/models/sequential"
 export {GenerativeAdversarialModel} from "./engine/models/gan"
 
-export {Dense} from "./engine/layers"
+export {Dense, Dropout} from "./engine/layers"
 
 export {
     SgdOptimizer, SgdMomentumOptimizer, SgdNesterovOptimizer, RMSPropOptimizer, AdamOptimizer

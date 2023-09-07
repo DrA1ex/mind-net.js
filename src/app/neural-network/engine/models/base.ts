@@ -1,8 +1,9 @@
 import * as Iter from "../iter";
 import * as Matrix from "../matrix";
-
-import {ILayer, IOptimizer, ILoss, IModel, ModelTrainOptionsT} from "../base";
 import {Matrix1D, Matrix2D} from "../matrix";
+
+import {ILayer, ILoss, IModel, IOptimizer, ModelTrainOptionsT} from "../base";
+import {Dropout} from "../layers";
 import {buildLoss, CategoricalCrossEntropyLoss, LossT} from "../loss";
 import {buildOptimizer, OptimizerT} from "../optimizers";
 import {SoftMaxActivation} from "../activations";
@@ -18,7 +19,7 @@ export type NeuralNetworkSnapshot = {
 export type LayerCache = {
     deltaWeights: Matrix2D,
     deltaBiases: Matrix1D,
-    mask: Matrix1D,
+    dropout: Dropout
 };
 
 export const DefaultTrainOpts: ModelTrainOptionsT = {
@@ -164,7 +165,7 @@ export abstract class ModelBase implements IModel {
             this.cache.set(layer, {
                 deltaWeights: Matrix.zero_2d(layer.size, prevSize),
                 deltaBiases: Matrix.zero(layer.size),
-                mask: Matrix.one(layer.size),
+                dropout: new Dropout(layer),
             });
         }
 
@@ -182,33 +183,13 @@ export abstract class ModelBase implements IModel {
             result = layer.activation.forward(prime, layer.activationOutput);
 
             if (isTraining && layer.dropout > 0) {
-                const mask = this.cache.get(layer)!.mask;
-                this._calculateDropoutMask(layer, mask);
-                this._applyDropoutMask(layer.activationOutput, mask);
+                const dropout = this.cache.get(layer)!.dropout;
+                dropout.calculateMask();
+                dropout.applyMask(layer.activationOutput);
             }
         }
 
         return result;
-    }
-
-    protected _calculateDropoutMask(layer: ILayer, dst: Matrix1D) {
-        const rate = 1 - layer.dropout;
-        const scale = 1 / rate;
-        const maxZeros = Math.floor(layer.size * layer.dropout);
-
-        let count = 0;
-        for (let i = 0; i < layer.size; i++) {
-            if (count < maxZeros && Math.random() >= rate) {
-                dst[i] = 0;
-                count++;
-            } else {
-                dst[i] = scale;
-            }
-        }
-    }
-
-    protected _applyDropoutMask(values: Matrix1D, mask: Matrix1D) {
-        Matrix.mul_to(mask, values);
     }
 
     protected _backprop(loss: Matrix1D) {
@@ -216,10 +197,10 @@ export abstract class ModelBase implements IModel {
 
         for (let i = this.layers.length - 1; i > 0; i--) {
             const layer = this.layers[i];
-            const {deltaWeights, deltaBiases, mask} = this.cache.get(layer)!;
+            const {deltaWeights, deltaBiases, dropout} = this.cache.get(layer)!;
 
             if (layer.dropout > 0) {
-                this._applyDropoutMask(errors, mask);
+                dropout.applyMask(errors);
             }
 
             const gradient = this.optimizer.step(layer, errors, this.epoch);

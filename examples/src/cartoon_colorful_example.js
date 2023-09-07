@@ -6,8 +6,6 @@ import {
     LeakyReluActivation,
     SequentialModel,
     AdamOptimizer,
-    ParallelModelWrapper,
-    ParallelGanWrapper,
     Matrix,
     ProgressUtils,
     ImageUtils
@@ -15,6 +13,7 @@ import {
 
 import * as DatasetUtils from "./utils/dataset.js";
 import * as ModelUtils from "./utils/model.js";
+import {GpuGanWrapper, GpuModelWrapper} from "@mind-net.js/gpu";
 
 
 const DatasetUrl = "https://github.com/DrA1ex/mind-net.js/files/12407792/cartoon-2500-28.zip";
@@ -95,7 +94,7 @@ discriminator.addLayer(new Dense(1, {activation: "sigmoid", weightInitializer: i
 
 // Creating the generative adversarial (GAN) model
 const ganModel = new GenerativeAdversarialModel(generator, discriminator, createOptimizer(lr), loss);
-const pGan = new ParallelGanWrapper(ganModel);
+const pGan = new GpuGanWrapper(ganModel, {batchSize});
 
 // Creating the variational autoencoder (AE) model
 const ae = new SequentialModel(createOptimizer(lr), "mse");
@@ -108,7 +107,7 @@ ae.addLayer(new Dense(256, {activation: "relu", weightInitializer: initializer})
 ae.addLayer(new Dense(gsImageDim, {activation: "tanh", weightInitializer: initializer}));
 ae.compile();
 
-const pAe = new ParallelModelWrapper(ae);
+const pAe = new GpuModelWrapper(ae, {batchSize});
 
 // Creating the Upscaler model
 const upscaler = new SequentialModel(createOptimizer(lr), "mse");
@@ -118,7 +117,7 @@ upscaler.addLayer(new Dense(512, {activation: "relu", weightInitializer: initial
 upscaler.addLayer(new Dense(upscaleImageDim, {activation: "tanh", weightInitializer: initializer}));
 upscaler.compile();
 
-const pUpscaler = new ParallelModelWrapper(upscaler);
+const pUpscaler = new GpuModelWrapper(upscaler, {batchSize});
 
 async function _filterWithAEBatch(inputs) {
     return ImageUtils.processMultiChannelDataParallel(pAe, inputs, imageChannel);
@@ -145,8 +144,6 @@ async function _saveModel() {
 
 let quitRequested = false;
 process.on("SIGINT", async () => quitRequested = true);
-
-await Promise.all([pAe.init(), pUpscaler.init(), pGan.init()]);
 
 console.log("Training...");
 
@@ -198,4 +195,4 @@ for (const _ of ProgressUtils.progress(epochs)) {
 // Save trained models
 await _saveModel();
 
-await Promise.all([pAe.terminate(), pUpscaler.terminate(), pGan.terminate()]);
+await Promise.all([pAe.destroy(), pUpscaler.destroy(), pGan.destroy()]);
