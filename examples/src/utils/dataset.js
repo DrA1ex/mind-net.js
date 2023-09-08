@@ -25,15 +25,19 @@ export function prepareData(pixels) {
     return data.map(value => (value / 127.5) - 1);
 }
 
-export async function loadDataset(zipFile) {
+export async function loadDataset(zipFile, progressFn = undefined) {
     const result = [];
     const zip = await JSZip.loadAsync(zipFile);
-    for (const file of Object.values(zip.files)) {
+
+    const zipFiles = Object.values(zip.files);
+    let loaded = 0;
+    for (const file of zipFiles) {
         if (file.dir) continue;
 
         const data = await file.async("arraybuffer");
         const pixels = await CommonUtils.promisify(getPixels, Buffer.from(data), CommonUtils.getMimeType(file.name));
 
+        if (progressFn) progressFn(++loaded, zipFiles.length);
         result.push(prepareData(pixels));
     }
 
