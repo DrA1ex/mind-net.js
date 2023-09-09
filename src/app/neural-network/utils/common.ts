@@ -1,7 +1,24 @@
 import * as Matrix from "../engine/matrix";
+import {Matrix1D, Matrix2D} from "../engine/matrix";
 
 export function pickRandomItem(trainingData: Matrix.Matrix1D[]) {
     return trainingData[Math.floor(Math.random() * trainingData.length)]
+}
+
+export function flatten(input: Matrix2D): Matrix1D {
+    const result = [];
+    for (const entry of input) {
+        result.push(...entry);
+    }
+
+    return result;
+}
+
+type ReducerFn = (prev: number, current: number) => number;
+type MatrixReduceFn = (fn: ReducerFn, initial: number) => number;
+
+export function reduce(input: Matrix1D, fn: (prev: number, current: number) => number, initial: number): number {
+    return (input.reduce as MatrixReduceFn)(fn, initial);
 }
 
 export function absoluteAccuracy(input: Matrix.Matrix1D[], expected: Matrix.Matrix1D[], k = 2.5) {
@@ -11,7 +28,7 @@ export function absoluteAccuracy(input: Matrix.Matrix1D[], expected: Matrix.Matr
     if (expected[0].length > 1) {
         precision = std(expected.map(r => std(r))) / k;
     } else {
-        precision = std(expected.flat()) / k;
+        precision = std(flatten(expected)) / k;
     }
 
     const rows = input.length;
@@ -32,8 +49,8 @@ export function absoluteAccuracy(input: Matrix.Matrix1D[], expected: Matrix.Matr
 
 export function std(data: Matrix.Matrix1D) {
     const length = data.length;
-    const mean = data.reduce((p, c) => (p + c) / length, 0);
-    const meanOfSquareDiff = data.reduce((p, c) => p + Math.pow(c - mean, 2) / length, 0);
+    const mean = reduce(data, (p, c) => (p + c) / length, 0);
+    const meanOfSquareDiff = reduce(data, (p, c) => p + Math.pow(c - mean, 2) / length, 0);
     return Math.sqrt(meanOfSquareDiff);
 }
 

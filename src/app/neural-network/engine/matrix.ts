@@ -1,9 +1,7 @@
 import * as iter from './iter';
 
-//TODO: Add support for Float64Array
-
-export type Matrix1D = number[];
-export type Matrix2D = number[][];
+export type Matrix1D = number[] | Float32Array | Float64Array;
+export type Matrix2D = number[][] | Float32Array[] | Float64Array[] | Matrix1D[];
 
 export type OptMatrix1D = Matrix1D | undefined;
 export type OptMatrix2D = Matrix2D | undefined;

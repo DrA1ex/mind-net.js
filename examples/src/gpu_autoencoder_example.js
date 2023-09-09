@@ -32,8 +32,8 @@ import * as ModelUtils from "./utils/model.js";
 console.log("Fetching datasets...");
 
 //const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12398103/cartoon-2500-64.zip";
-//const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12456697/mnist-10000-28.zip";
-const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12407792/cartoon-2500-28.zip";
+//const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12407792/cartoon-2500-28.zip";
+const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12456697/mnist-10000-28.zip";
 
 const zipData = await ProgressUtils.fetchProgress(DatasetBigUrl);
 
@@ -47,34 +47,34 @@ const zipLoadingProgress = ProgressUtils.progressCallback({
 const loadedSet = ImageUtils.grayscaleDataset(await DatasetUtils.loadDataset(zipData.buffer, zipLoadingProgress));
 
 // Create variations with different positioning
-const setMul = 10;
+const setMul = 3;
 const dataSet = new Array(loadedSet.length * setMul);
 for (let k = 0; k < setMul; k++) {
     for (let i = 0; i < loadedSet.length; i++) {
         const [x, y] = [Math.random() * 2 - 1, Math.random() * 2 - 1];
-        dataSet[k * loadedSet.length + i] = ImageUtils.shiftImage(loadedSet[i], x, y, 1);
+        dataSet[k * loadedSet.length + i] = ImageUtils.shiftImage(loadedSet[i], Math.round(x), Math.round(y), 1);
     }
 }
 
 const trainIterations = 100;
-const epochsPerIter = 5;
-const batchSize = 64;
+const epochsPerIter = 1;
+const batchSize = 128;
 const imageChannel = 1;
 const sampleScale = 4;
 const epochSampleSize = 10;
 const finalSampleSize = 20;
 const outPath = "./out";
 
-const lr = 0.0005;
+const lr = 0.005;
 const decay = 5e-4;
 const beta1 = 0.5;
 const dropout = 0.3;
-const activation = "relu";
+const activation = "leakyRelu";
 const loss = "mse";
 const initializer = "xavier";
 
-const LatentSpaceSize = 64;
-const Sizes = [512, 256, 128];
+const LatentSpaceSize = 32;
+const Sizes = [256, 128, 64];
 
 const encoder = new SequentialModel(new AdamOptimizer({lr, decay, beta1}), loss);
 encoder.addLayer(new Dense(dataSet[0].length));
@@ -87,7 +87,7 @@ for (const size of Sizes) {
         })
     );
 }
-encoder.addLayer(new Dense(LatentSpaceSize, {activation: "sigmoid", weightInitializer: initializer}));
+encoder.addLayer(new Dense(LatentSpaceSize, {activation, weightInitializer: initializer}));
 
 const decoder = new SequentialModel(new AdamOptimizer({lr, decay, beta1}), loss);
 decoder.addLayer(new Dense(LatentSpaceSize));
@@ -113,10 +113,8 @@ const pDecoder = new GpuModelWrapper(decoder, {batchSize});
 const pChain = new GpuModelWrapper(chain, {batchSize});
 
 async function _decode(from, to) {
-    const [encFrom, encTo] = await Promise.all([
-        pEncoder.compute(from),
-        pEncoder.compute(to)
-    ]);
+    const encFrom = pEncoder.compute(from);
+    const encTo = pEncoder.compute(to);
 
     const count = from.length;
     const inputData = new Array(count);
