@@ -2,10 +2,11 @@
 
 import {Color, MultiPlotChart, PlotAxisScale, PlotSeriesOverflow} from "text-graph.js";
 
+import NN, {GanSerialization, Matrix, CommonUtils} from "../../neural-network/neural-network";
+import {Matrix1D, Matrix2D} from "../../neural-network/engine/matrix";
+import {LossT} from "../../neural-network/engine/loss";
 import * as iter from "../../neural-network/engine/iter";
 import * as color from "../../utils/color";
-import NN, {GanSerialization, Matrix, CommonUtils} from "../../neural-network/neural-network";
-import {LossT} from "../../neural-network/engine/loss";
 
 import {
     COLOR_A_BIN,
@@ -27,11 +28,11 @@ let batchedTrainingData: number[][][];
 let batchSize = DEFAULT_BATCH_SIZE;
 let batchCount = 0;
 
-let testData: number[][];
-let testDataTrue: number[][];
-let testNoise: number[][];
-let testNoiseTrue: number[][];
-let exampleNoise: number[][][];
+let testData: Matrix2D;
+let testDataTrue: Matrix2D;
+let testNoise: Matrix2D;
+let testNoiseTrue: Matrix2D;
+let exampleNoise: Matrix2D[];
 
 let nnParams: NetworkParams = DEFAULT_NN_PARAMS;
 let learningRate = DEFAULT_LEARNING_RATE;
@@ -285,7 +286,7 @@ function draw() {
     }, [dataSamples, genSamples])
 }
 
-function drawGridSample(gridDimension: number, sampleDimension: number, fn: (i: number, j: number) => number[]): ArrayBuffer {
+function drawGridSample(gridDimension: number, sampleDimension: number, fn: (i: number, j: number) => Matrix1D): ArrayBuffer {
     const resultDim = sampleDimension * gridDimension;
     const result = new Uint32Array(resultDim * resultDim);
     for (let i = 0; i < gridDimension; i++) {
@@ -305,7 +306,7 @@ function drawGridSample(gridDimension: number, sampleDimension: number, fn: (i: 
     return result.buffer;
 }
 
-function dataToImageBuffer(data: number[]): Uint32Array {
+function dataToImageBuffer(data: Matrix1D): Uint32Array {
     const state = new Uint32Array(data.length)
     for (let i = 0; i < data.length; i++) {
         state[i] = color.getLinearColorBin(COLOR_A_BIN, COLOR_B_BIN, (data[i] / 2 + 0.5));
