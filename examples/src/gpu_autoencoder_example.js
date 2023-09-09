@@ -31,9 +31,9 @@ import * as ModelUtils from "./utils/model.js";
 
 console.log("Fetching datasets...");
 
+//const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12456697/mnist-10000-28.zip";
 //const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12398103/cartoon-2500-64.zip";
-//const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12407792/cartoon-2500-28.zip";
-const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12456697/mnist-10000-28.zip";
+const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12407792/cartoon-2500-28.zip";
 
 const zipData = await ProgressUtils.fetchProgress(DatasetBigUrl);
 
@@ -57,7 +57,7 @@ for (let k = 0; k < setMul; k++) {
 }
 
 const trainIterations = 100;
-const epochsPerIter = 1;
+const epochsPerIter = 5;
 const batchSize = 128;
 const imageChannel = 1;
 const sampleScale = 4;
@@ -65,7 +65,7 @@ const epochSampleSize = 10;
 const finalSampleSize = 20;
 const outPath = "./out";
 
-const lr = 0.005;
+const lr = 0.001;
 const decay = 5e-4;
 const beta1 = 0.5;
 const dropout = 0.3;
