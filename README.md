@@ -466,6 +466,7 @@ _Colorful:_
 - [cartoon-500-28.zip](https://github.com/DrA1ex/mind-net.js/files/12394478/cartoon-500-28.zip) ([source](https://google.github.io/cartoonset/))
 - [cartoon-2500-28.zip](https://github.com/DrA1ex/mind-net.js/files/12407792/cartoon-2500-28.zip) ([source](https://google.github.io/cartoonset/))
 - [cartoon-2500-64.zip](https://github.com/DrA1ex/mind-net.js/files/12398103/cartoon-2500-64.zip) ([source](https://google.github.io/cartoonset/))
+- [doomguy-36-28.zip](https://github.com/DrA1ex/mind-net.js/files/12574918/doomguy-36-28.zip)
 
 
 
