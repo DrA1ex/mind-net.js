@@ -45,7 +45,7 @@ export {
 } from "./engine/activations"
 
 export {
-    BinaryCrossEntropy, CategoricalCrossEntropyLoss, MeanSquaredErrorLoss, MeanAbsoluteErrorLoss
+    BinaryCrossEntropy, CategoricalCrossEntropyLoss, MeanSquaredErrorLoss, MeanAbsoluteErrorLoss, L2Loss,
 } from "./engine/loss"
 
 export {

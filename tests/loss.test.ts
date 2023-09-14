@@ -3,7 +3,8 @@ import {
     BinaryCrossEntropy,
     CategoricalCrossEntropyLoss,
     MeanAbsoluteErrorLoss,
-    MeanSquaredErrorLoss
+    MeanSquaredErrorLoss,
+    L2Loss
 } from "../src/app/neural-network/neural-network";
 
 const LossValueTestInput = [[-10, -1], [-0.5, 0], [0.5, 10]];
@@ -21,6 +22,7 @@ describe("Should correctly calculate loss", () => {
         {type: MeanAbsoluteErrorLoss, expected: 0.8833},
         {type: CategoricalCrossEntropyLoss, expected: 10.5494},
         {type: BinaryCrossEntropy, expected: 10.0550},
+        {type: L2Loss, expected: 7.41},
     ])("$type", ({type, expected}) => {
         const obj = new type();
         const loss = obj.loss(LossValueTestInput, LossValueTestExcepted);
@@ -31,10 +33,11 @@ describe("Should correctly calculate loss", () => {
 
 describe("Should correctly calculate accuracy", () => {
     test.each([
-        {type: MeanSquaredErrorLoss, expected: 0.66666},
+        {type: MeanSquaredErrorLoss, expected: 0.6666},
         {type: MeanAbsoluteErrorLoss, expected: 0.6666},
         {type: CategoricalCrossEntropyLoss, expected: 1},
         {type: BinaryCrossEntropy, expected: 0.5},
+        {type: L2Loss, expected: 0.8285},
     ])("$type", ({type, expected}) => {
         const obj = new type();
         const accuracy = obj.accuracy(AccuracyTestInput, AccuracyTestExcepted);
@@ -64,9 +67,10 @@ describe("Should correctly calculate accuracy", () => {
 describe("Should correctly calculated error", () => {
     test.each([
         {type: MeanSquaredErrorLoss, expected: [0.245, -0.024999999999999994, -1, 0.5]},
-        {type: MeanAbsoluteErrorLoss, expected: [-0.25, 0.25, 0.25, -0.25]},
+        {type: MeanAbsoluteErrorLoss, expected: [0.25, -0.25, -0.25, 0.25]},
         {type: CategoricalCrossEntropyLoss, expected: [0.49, -0.04999999999999999, -2, 1]},
         {type: BinaryCrossEntropy, expected: [12.373737373737363, -0.13888888888888884, -2500000, 2500000.0013158894]},
+        {type: L2Loss, expected: [0.49, -0.04999999999999999, -2, 1]},
     ])("$type", ({type, expected}) => {
         const obj = new type();
         const error = obj.calculateError(ErrorTestInput, ErrorTestExpected);
@@ -81,6 +85,7 @@ describe("Should use destination Array if specified", () => {
         MeanAbsoluteErrorLoss,
         CategoricalCrossEntropyLoss,
         BinaryCrossEntropy,
+        L2Loss,
     ])("%p", (type) => {
         const obj = new type();
 

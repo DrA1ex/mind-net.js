@@ -64,7 +64,7 @@ export class MeanAbsoluteErrorLoss implements ILoss {
 
     calculateError(predicted: Matrix1D, expected: Matrix1D, dst?: Matrix1D): Matrix1D {
         return Matrix.matrix1d_binary_op(predicted, expected, (p, e) =>
-            Math.sign(e - p) / predicted.length, dst);
+            -Math.sign(e - p) / predicted.length, dst);
     }
 }
 
@@ -163,6 +163,46 @@ export class BinaryCrossEntropy implements ILoss {
     }
 }
 
+export class L2Loss implements ILoss {
+    loss(predicted: Matrix1D[], expected: Matrix1D[]): number {
+        const rows = predicted.length;
+        const columns = predicted[0].length;
+
+        let result = 0;
+        for (let i = 0; i < rows; i++) {
+            let sum = 0
+            for (let j = 0; j < columns; j++) {
+                sum += Math.pow(expected[i][j] - predicted[i][j], 2)
+            }
+
+            result += Math.sqrt(sum) / rows;
+        }
+
+        return result;
+    }
+
+    accuracy(predicted: Matrix1D[], expected: Matrix1D[]): number {
+        const rows = predicted.length;
+        const columns = predicted[0].length;
+
+        let result = 0;
+        for (let i = 0; i < rows; i++) {
+            let sum = 0;
+            for (let j = 0; j < columns; j++) {
+                sum += Math.pow(expected[i][j] - predicted[i][j], 2);
+            }
+
+            result += Math.sqrt(sum) / rows;
+        }
+
+        return 1 - result;
+    }
+
+    calculateError(predicted: Matrix1D, expected: Matrix1D, dst?: Matrix1D): Matrix1D {
+        return Matrix.matrix1d_binary_op(predicted, expected, (p, e) => p - e, dst);
+    }
+}
+
 export function buildLoss(loss: LossT | ILoss = 'mse') {
     const loss_param = typeof loss === "string" ? LossMap[loss] : loss
     if (!loss_param) {
@@ -176,12 +216,13 @@ export function buildLoss(loss: LossT | ILoss = 'mse') {
     return new loss_param();
 }
 
-export type LossT = "mse" | "mae" | "categoricalCrossEntropy" | "binaryCrossEntropy";
+export type LossT = "mse" | "mae" | "categoricalCrossEntropy" | "binaryCrossEntropy" | "l2";
 const LossMap = {
     mse: MeanSquaredErrorLoss,
     mae: MeanAbsoluteErrorLoss,
     categoricalCrossEntropy: CategoricalCrossEntropyLoss,
-    binaryCrossEntropy: BinaryCrossEntropy
+    binaryCrossEntropy: BinaryCrossEntropy,
+    l2: L2Loss
 }
 
 export const Loss = {
@@ -189,4 +230,5 @@ export const Loss = {
     MeanAbsoluteErrorLoss,
     CategoricalCrossEntropyLoss,
     BinaryCrossEntropy,
+    L2Loss
 }
