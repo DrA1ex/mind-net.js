@@ -7,6 +7,7 @@ import {Loss} from "./engine/loss";
 import * as Matrix from "./engine/matrix"
 import * as Iter from "./engine/iter"
 
+import * as ColorUtils from "./utils/color"
 import * as CommonUtils from "./utils/common"
 import * as ImageUtils from "./utils/image"
 import * as ProgressUtils from "./utils/progress"
@@ -17,12 +18,13 @@ const Utils = {
     ImageUtils,
     ProgressUtils,
     TimeUtils,
+    ColorUtils,
 }
 
 export default {Activations, Initializers, Optimizers, Layers, Loss, Models, ComplexModels, Utils};
 export {
-    Activations, Initializers, Optimizers, Layers, Loss, Models, ComplexModels, Matrix, Iter, CommonUtils,
-    ImageUtils, ProgressUtils, TimeUtils
+    Activations, Initializers, Optimizers, Layers, Loss, Models, ComplexModels, Matrix, Iter,
+    ColorUtils, CommonUtils, ImageUtils, ProgressUtils, TimeUtils
 };
 
 

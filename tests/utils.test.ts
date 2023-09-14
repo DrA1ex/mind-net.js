@@ -1,6 +1,7 @@
 import {jest} from "@jest/globals";
+import * as ArrayUtils from "./utils/array";
 
-import {FetchDataAsyncReader, Matrix, ProgressUtils} from "../src/app/neural-network/neural-network";
+import {ColorUtils, FetchDataAsyncReader, Matrix, ProgressUtils} from "../src/app/neural-network/neural-network";
 import {ValueLimit} from "../src/app/neural-network/utils/progress";
 import {ObservableStreamLoader} from "../src/app/neural-network/utils/fetch";
 import {ChunkedArrayBuffer} from "../src/app/neural-network/utils/array-buffer";
@@ -296,5 +297,154 @@ describe('ObservableStreamLoader', () => {
 
             expect(result.toTypedArray(Uint8Array)).toStrictEqual(fakeData);
         });
+    });
+});
+
+describe("ColorUtils", () => {
+    describe("channels count transformation", () => {
+        test.each([
+            {from: [0, 128, 0], to: [0, 128, 0, 255]},
+            {from: [123, 212, 15, 128], to: [123, 212, 15]},
+            {from: [50], to: [50, 50, 50]},
+            {from: [120], to: [120, 120, 120, 255]},
+            {from: [20, 30, 40], to: [28.148]},
+            {from: [50, 60, 90, 255], to: [60.425]}
+        ])("$from.length -> $to.length", ({from, to}) => {
+            const result = ColorUtils.transformChannelCount(from, from.length, to.length);
+            ArrayUtils.arrayCloseTo(result, to);
+        })
+    });
+
+    describe("channels count transformation invalid channels count", () => {
+        test.failing.each([
+            {from: 4, to: 4},
+            {from: 3, to: 2},
+            {from: 2, to: 3},
+            {from: 1, to: 2},
+            {from: 4, to: 2},
+            {from: 1, to: 1},
+        ])
+        ("$from -> $to", ({from, to}) => {
+            ColorUtils.transformChannelCount(new Array(from).fill(0), from, to);
+        });
+    })
+
+    const ColorEps = 1e-2;
+    const ColorRoughEps = 1;
+
+    const LabToRgbTestData = [
+        {lab: [0, 128, -128], rgb: [0, 0, 195]},
+        {lab: [50, 0, 50], rgb: [141, 117, 25]},
+        {lab: [80, 35, 30], rgb: [255, 172, 144]},
+        {lab: [90, -50, -15], rgb: [0, 253, 253]},
+        {lab: [2.5, 0, 0.5], rgb: [10, 9, 8]},
+    ] as { lab: [number, number, number], rgb: [number, number, number] }[];
+
+    describe("lab -> rgb", () => {
+        test.each(LabToRgbTestData)
+        ("lab: $lab, rgb: $rgb", ({lab, rgb}) => {
+            const transformed = ColorUtils.labToRgb(...lab)
+            ArrayUtils.arrayCloseTo(rgb, transformed, ColorRoughEps);
+        })
+    });
+
+    const RgbToLabTestData = [
+        {rgb: [0, 0, 195], lab: [23, 65, -88]},
+        {rgb: [128, 100, 25], lab: [44, 4, 44]},
+        {rgb: [255, 150, 50], lab: [72, 33, 66]},
+        {rgb: [0, 240, 230], lab: [86, -49, -9]},
+        {rgb: [10, 9, 8], lab: [3, 0, 0]},
+        {rgb: [255, 255, 255], lab: [100, 0, 0]},
+        {rgb: [0, 0, 0], lab: [0, 0, 0]}
+    ] as { lab: [number, number, number], rgb: [number, number, number] }[];
+
+    describe("rgb -> lab", () => {
+        test.each(RgbToLabTestData)
+        ("rgb: $rgb, lab: $lab", ({lab, rgb}) => {
+            const transformed = ColorUtils.rgbToLab(...rgb)
+            ArrayUtils.arrayCloseTo(lab, transformed, ColorRoughEps);
+        })
+    });
+
+    const RgbTestValues = [
+        {rgb: [120, 0, 50]},
+        {rgb: [70, 50, 50]},
+        {rgb: [40, 255, 20]},
+        {rgb: [100, 0, 50]},
+        {rgb: [255, 0, 255]},
+        {rgb: [48.51, 21.32, 241.75]},
+        {rgb: [123, 211, 122]},
+        {rgb: [255, 255, 255]},
+        {rgb: [0, 0, 0]},
+        {rgb: [256, 255.5, 500]},
+        {rgb: [-100, -1, -0.5]},
+    ] as { rgb: [number, number, number] }[];
+
+    describe("rgb <-> lab", () => {
+        test.each(RgbTestValues)
+        ("$rgb", ({rgb}) => {
+            const lab = ColorUtils.rgbToLab(...rgb);
+            const rgbFromLab = ColorUtils.labToRgb(...lab);
+
+            ArrayUtils.arrayCloseTo(ColorUtils.clampRgb(...rgb), rgbFromLab, ColorEps);
+        })
+    });
+
+    describe("rgb <-> tanh", () => {
+        test.each(RgbTestValues)
+        ("$rgb", ({rgb}) => {
+            const tanh = ColorUtils.rgbToTanh(...rgb);
+            const rgbFromTanh = ColorUtils.tanhToRgb(...tanh);
+
+            ArrayUtils.arrayCloseTo(ColorUtils.clampRgb(...rgb), rgbFromTanh, ColorEps);
+        });
+    });
+
+    const LabTestData = [
+        {lab: [8.56, 28.41, 13.52]},
+        {lab: [33.11, 36.27, -71.61]},
+        {lab: [57.11, 69.08, 68.74]},
+        {lab: [70.81, -66.64, 49.75]},
+        {lab: [13.92, -13.42, 10.69]},
+        {lab: [26.85, 20.00, 28.28]},
+        {lab: [83.22, 5.73, 84.54]},
+        {lab: [40.91, 83.17, -93.29]},
+        {lab: [0, 0, 0]}
+    ] as { lab: [number, number, number] }[];
+
+    describe("lab <-> rgb", () => {
+        test.each(LabTestData)
+        ("$lab", ({lab}) => {
+            const rgb = ColorUtils.labToRgb(...lab);
+            const labFromRgb = ColorUtils.rgbToLab(...rgb);
+
+            ArrayUtils.arrayCloseTo(ColorUtils.clampLab(...lab), labFromRgb, ColorEps);
+        });
+    });
+
+    describe("lab <-> tanh", () => {
+        test.each(LabTestData)
+        ("$lab", ({lab}) => {
+            const tanh = ColorUtils.labToTanh(...lab);
+            const labFromTanh = ColorUtils.tanhToLab(...tanh);
+
+            ArrayUtils.arrayCloseTo(ColorUtils.clampLab(...lab), labFromTanh, ColorEps);
+        });
+    });
+
+    test("batch color space transform", () => {
+        const data = [
+            255, 50, 48, 255,
+            45, 39, 0, 255,
+            0, 255, 255, 255,
+            255, 0, 255, 255,
+        ];
+
+        const out = ColorUtils.transformColorSpace(ColorUtils.rgbToLab, data, 4);
+        ColorUtils.transformColorSpace(ColorUtils.labToTanh, out, 4, out);
+        ColorUtils.transformColorSpace(ColorUtils.tanhToLab, out, 4, out);
+        ColorUtils.transformColorSpace(ColorUtils.labToRgb, out, 4, out);
+
+        ArrayUtils.arrayCloseTo(data, out, ColorEps);
     });
 });

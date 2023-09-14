@@ -131,7 +131,6 @@ export async function processMultiChunkDataParallel<T extends IModel>(
 
     if (imageSize % 1 !== 0) throw new Error("Wrong input image size");
     if (cropSize % 1 !== 0) throw new Error("Wrong input model size");
-    if (!(pModel instanceof ParallelModelWrapper)) throw new Error("Model should be ParallelModelWrapper");
 
     const chunks = inputs.map(input =>
         Matrix.fill(
@@ -170,7 +169,6 @@ export async function processMultiChannelDataParallel<T extends IModel>(
     const inputSize = inputs[0].length
     const channelSize = inputSize / channels;
     if (!Number.isFinite(channelSize) || channelSize % 1 !== 0) throw new Error("Invalid input data size");
-    if (!(pModel instanceof ParallelModelWrapper)) throw new Error("Model should be ParallelModelWrapper");
 
     const channelsData = inputs.map(input =>
         Matrix.fill(c => getChannel(input, c, channels), channels)
