@@ -1,4 +1,5 @@
 canvas,
 binary-image-drawer {
     display: block;
+    image-rendering: pixelated;
 }
