@@ -1,5 +1,7 @@
 import fs from "fs";
 import path from "path";
+import {JsonStreamStringify} from 'json-stream-stringify';
+
 import {
     GanSerialization,
     GenerativeAdversarialModel,
@@ -17,8 +19,18 @@ export async function saveModel(model, fileName) {
         dump = UniversalModelSerializer.save(model);
     }
 
-    await CommonUtils.promisify(fs.writeFile, fileName, JSON.stringify(dump));
-    console.log(`Saved ${fileName}`);
+    const jsonStream = new JsonStreamStringify(dump);
+    const fileStream = fs.createWriteStream(fileName);
+    jsonStream.pipe(fileStream);
+
+    return new Promise((resolve, reject) => {
+        fileStream.on("close", () => {
+            console.log(`Saved ${fileName}`);
+            resolve();
+        });
+
+        fileStream.on("error", reject);
+    });
 }
 
 /**
@@ -50,6 +62,7 @@ export async function saveModels(models, outPath) {
  * @property {number} border - Border size (default: 2)
  * @property {number} scale - Scaling value (default: 1)
  * @property {string} prefix - FileName prefix (default: "sample")
+ * @property {string} suffix - FileName suffix (default: "")
  * @property {boolean} time - Include time to fileName (default: true)
  */
 
@@ -62,7 +75,8 @@ const SavingSampleOptionsDefaults = {
     border: 2,
     scale: 1,
     time: true,
-    prefix: "sample"
+    prefix: "sample",
+    suffix: "",
 };
 
 /**
@@ -80,6 +94,7 @@ export async function saveModelsSamples(key, outPath, imageSize, dataFn, options
     const fileName = [
         opts.prefix,
         typeof key === "number" ? key.toString().padStart(6, "0") : key,
+        opts.suffix,
         opts.time ? new Date().toISOString() : null
     ].filter(v => v).join("_");
 
@@ -89,7 +104,7 @@ export async function saveModelsSamples(key, outPath, imageSize, dataFn, options
 /**
  * @param {string|number} key
  * @param {string} outPath
- * @param {number[][]} samples
+ * @param {Matrix1D[]} samples
  * @param {Partial<SavingSampleOptions>} options
  *
  * @return {Promise<void>}
