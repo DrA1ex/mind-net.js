@@ -1,5 +1,5 @@
 import {ILoss} from "./base";
-import {Param} from "../serialization";
+import {Param} from "../serialization/base";
 import {Matrix1D} from "./matrix";
 import * as Matrix from "./matrix";
 import * as CommonUtils from "../utils/common"

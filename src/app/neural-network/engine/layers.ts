@@ -3,7 +3,7 @@ import * as matrix from "./matrix";
 import {IActivation, ILayer, InitializerFn} from "./base";
 import {ActivationsMap, ActivationT} from "./activations";
 import {Initializers, InitializerT} from "./initializers";
-import {Param} from "../serialization";
+import {Param} from "../serialization/base";
 import {Matrix1D} from "./matrix";
 import * as Matrix from "./matrix";
 

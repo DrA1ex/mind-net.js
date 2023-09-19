@@ -1,6 +1,6 @@
 import {IActivation, ISingleValueActivation} from "./base";
 import {Matrix1D} from "./matrix";
-import {Param} from "../serialization";
+import {Param} from "../serialization/base";
 import * as Matrix from "./matrix";
 import * as Iter from "./iter";
 

@@ -53,8 +53,8 @@ export {
 } from "./chart"
 
 export {
-    ModelSerialization, GanSerialization, ChainSerialization, UniversalModelSerializer
-} from "./serialization"
+    ModelSerialization, ChainSerialization, UniversalModelSerializer, GanSerialization
+} from "./serialization";
 
 export {
     ParallelModelWrapper, ParallelUtils

@@ -1,4 +1,4 @@
-import {Param} from "../serialization";
+import {Param} from "../serialization/base";
 import {ILayer, IOptimizer} from "./base";
 import {Matrix1D, Matrix2D} from "./matrix";
 import * as matrix from "./matrix";
