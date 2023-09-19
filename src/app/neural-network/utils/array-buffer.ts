@@ -1,11 +1,11 @@
 type Chunk = { buffer: ArrayBuffer; start: number; end: number; size: number; };
 
-type TypedArrayExt = {
+export type TypedArrayExt = {
     readonly BYTES_PER_ELEMENT: number;
 }
 
-type TypedArray = (Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array);
-type TypedArrayT<T extends TypedArray> = TypedArrayExt & (new (...args: any[]) => T);
+export type TypedArray = (Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array);
+export type TypedArrayT<T extends TypedArray> = TypedArrayExt & (new (...args: any[]) => T);
 
 export class ChunkedArrayBuffer {
     chunks: Chunk[] = [];
@@ -18,7 +18,7 @@ export class ChunkedArrayBuffer {
         }
 
         byteLength = byteLength > 0 ? byteLength : this.byteLength;
-        this.bytesOffset = Math.max(0, Math.min(bytesOffset, this.byteLength));
+        this.bytesOffset = Math.max(0, Math.min(bytesOffset, this.chunks[0].size));
         this.byteLength = Math.max(0, Math.min(this.byteLength - this.bytesOffset, byteLength));
     }
 
@@ -63,7 +63,7 @@ export class ChunkedArrayBuffer {
         }
 
         const itemsCount = Math.floor(this.byteLength / itemSize);
-        if (this.chunks.length === 1) {
+        if (this.chunks.length === 1 && this.bytesOffset % itemSize === 0) {
             const {buffer} = this.chunks[0];
             return new type(buffer, this.bytesOffset, itemsCount);
         }

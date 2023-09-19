@@ -35,36 +35,7 @@ export class ModelSerialization {
 
         let layerIndex = 0;
         for (const layerConf of data.layers) {
-            const layerT = Layers[layerConf.key];
-            if (!layerT) throw new Error(`Invalid layer: ${layerConf.key}`);
-
-            const activationT = Activations[layerConf.activation.key];
-            if (!activationT) throw new Error(`Invalid activation: ${layerConf.activation.key}`);
-
-            const layer = new layerT(layerConf.size, {
-                ...layerConf.params,
-                activation: new activationT(layerConf.activation.params),
-                weightInitializer: InitializerMapping[layerConf.weightInitializer],
-                biasInitializer: InitializerMapping[layerConf.biasInitializer],
-            });
-
-            layer.skipWeightsInitialization = true;
-
-            if (layerIndex > 0) {
-                if (!(layerConf.biases?.length > 0)
-                    || typeof layerConf.biases[0] !== "number") {
-                    throw new Error("Invalid layer biases")
-                }
-                if (!(layerConf.weights?.length > 0)
-                    || !(layerConf.weights[0] instanceof Array)
-                    || typeof layerConf.weights[0][0] !== "number") {
-                    throw new Error("Invalid layer weights");
-                }
-
-                layer.biases = Matrix.copy(layerConf.biases);
-                layer.weights = Matrix.copy_2d(layerConf.weights);
-            }
-
+            const layer = this.loadLayer(layerConf, layerIndex);
             model.addLayer(layer);
             ++layerIndex;
         }
@@ -163,5 +134,43 @@ export class ModelSerialization {
             key: type.key,
             params,
         }
+    }
+
+    public static loadLayer(layerConf: LayerSerializationEntry, layerIndex: number): ILayer {
+        const layerT = Layers[layerConf.key];
+        if (!layerT) throw new Error(`Invalid layer: ${layerConf.key}`);
+
+        const activationT = Activations[layerConf.activation.key];
+        if (!activationT) throw new Error(`Invalid activation: ${layerConf.activation.key}`);
+
+        const layer = new layerT(layerConf.size, {
+            ...layerConf.params,
+            activation: new activationT(layerConf.activation.params),
+            weightInitializer: InitializerMapping[layerConf.weightInitializer],
+            biasInitializer: InitializerMapping[layerConf.biasInitializer],
+        });
+
+        layer.skipWeightsInitialization = true;
+
+        if (layerIndex > 0) {
+            if (!(layerConf.biases?.length > 0)
+                || typeof layerConf.biases[0] !== "number") {
+                throw new Error("Invalid layer biases")
+            }
+            if (!(layerConf.weights?.length > 0)
+                || !(
+                    Array.isArray(layerConf.weights[0])
+                    || layerConf.weights[0] instanceof Float32Array
+                    || layerConf.weights[0] instanceof Float64Array
+                )
+                || typeof layerConf.weights[0][0] !== "number") {
+                throw new Error("Invalid layer weights");
+            }
+
+            layer.biases = Matrix.copy(layerConf.biases);
+            layer.weights = Matrix.copy_2d(layerConf.weights);
+        }
+
+        return layer;
     }
 }
