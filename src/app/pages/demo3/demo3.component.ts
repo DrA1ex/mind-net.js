@@ -11,6 +11,7 @@ import {
 } from "../../neural-network/neural-network";
 import {BinaryImageDrawerComponent} from "../../components/binary-image-drawer/binary-image-drawer.component";
 import * as ColorUtils from "../../neural-network/utils/color";
+import {BinarySerializer} from "../../neural-network/serialization/binary";
 
 @Component({
     selector: 'app-demo3',
@@ -106,7 +107,7 @@ export class Demo3Component implements AfterViewInit {
 
     async loadModel() {
         try {
-            const files = await FileInteraction.openFile('application/json', true) as File[];
+            const files = await FileInteraction.openFile('application/json,.bin', true) as File[];
             if (!files?.length) return;
 
             this.progress.total = files.reduce((p, c) => p + c.size, 0);
@@ -117,9 +118,15 @@ export class Demo3Component implements AfterViewInit {
                 const loader = new ObservableStreamLoader(reader, this.progress.progressFn);
 
                 const data = await loader.load();
-                const config = JSON.parse(new TextDecoder().decode(data));
-                const model = UniversalModelSerializer.load(config);
-                chain.addModel(model);
+
+                if (file.name.endsWith(".json")) {
+                    const config = JSON.parse(new TextDecoder().decode(data));
+                    const model = UniversalModelSerializer.load(config);
+                    chain.addModel(model);
+                } else {
+                    const model = BinarySerializer.load(data)
+                    chain.addModel(model);
+                }
 
                 this.progress.offset += file.size;
             }
