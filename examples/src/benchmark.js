@@ -55,29 +55,29 @@ brModel.train(brSingleData);
 const trainOpts = {batchSize: BatchSize, epochs: 1, iterations: 1, progress: false};
 
 for (let i = 0; i < 3; i++) {
-    await TimeUtils.timeIt(() => pModel.compute(trainData, {batchSize: BatchSize}), `Worker.Compute (Full) #${i}`, ComputeIters / Count);
-    await TimeUtils.timeIt(() => trainData.map(data => model.compute(data)), `Compute (Full) #${i}`, ComputeIters / Count);
-    await TimeUtils.timeIt(() => tfModel.predict(tfTrainData), `TF.Compute (Full) #${i}`, ComputeIters / Count);
-    await TimeUtils.timeIt(() => trainData.map(data => brModel.run(data)), `Brain.Compute (Full) #${i}`, ComputeIters / Count);
-    console.log();
+    // await TimeUtils.timeIt(() => pModel.compute(trainData, {batchSize: BatchSize}), `Worker.Compute (Full) #${i}`, ComputeIters / Count);
+    // await TimeUtils.timeIt(() => trainData.map(data => model.compute(data)), `Compute (Full) #${i}`, ComputeIters / Count);
+    // await TimeUtils.timeIt(() => tfModel.predict(tfTrainData), `TF.Compute (Full) #${i}`, ComputeIters / Count);
+    // await TimeUtils.timeIt(() => trainData.map(data => brModel.run(data)), `Brain.Compute (Full) #${i}`, ComputeIters / Count);
+    // console.log();
 
-    await TimeUtils.timeIt(() => pModel.compute(singleTrainData), `Worker.Compute (Single) #${i}`, ComputeIters);
-    await TimeUtils.timeIt(() => model.compute(singleTrainData[0]), `Compute (Single) #${i}`, ComputeIters);
-    await TimeUtils.timeIt(() => tfModel.predict(tfSingleData), `TF.Compute (Single) #${i}`, ComputeIters);
-    await TimeUtils.timeIt(() => brModel.run(singleTrainData[0]), `Brain.Compute (Single) #${i}`, ComputeIters);
-    console.log();
+    // await TimeUtils.timeIt(() => pModel.compute(singleTrainData), `Worker.Compute (Single) #${i}`, ComputeIters);
+    // await TimeUtils.timeIt(() => model.compute(singleTrainData[0]), `Compute (Single) #${i}`, ComputeIters);
+    // await TimeUtils.timeIt(() => tfModel.predict(tfSingleData), `TF.Compute (Single) #${i}`, ComputeIters);
+    // await TimeUtils.timeIt(() => brModel.run(singleTrainData[0]), `Brain.Compute (Single) #${i}`, ComputeIters);
+    // console.log();
 
     await TimeUtils.timeIt(() => pModel.train(trainData, trainData, trainOpts), `Worker.Train (Full) #${i}`, TrainIters);
     await TimeUtils.timeIt(() => model.train(trainData, trainData, trainOpts), `Train (Full) #${i}`, TrainIters);
-    await TimeUtils.timeIt(() => tfModel.fit(tfTrainData, tfTrainData, trainOpts), `TF.Train (Full) #${i}`, TrainIters);
-    await TimeUtils.timeIt(() => brModel.train(brTrainData, trainOpts), `Brain.Train (Full) #${i}`, TrainIters);
+    // await TimeUtils.timeIt(() => tfModel.fit(tfTrainData, tfTrainData, trainOpts), `TF.Train (Full) #${i}`, TrainIters);
+    // await TimeUtils.timeIt(() => brModel.train(brTrainData, trainOpts), `Brain.Train (Full) #${i}`, TrainIters);
     console.log();
 
-    await TimeUtils.timeIt(() => pModel.train(singleTrainData, singleTrainData, trainOpts), `Worker.Train (Single) #${i}`, TrainIters * Count);
-    await TimeUtils.timeIt(() => model.train(singleTrainData, singleTrainData, trainOpts), `Train (Single) #${i}`, TrainIters * Count);
-    await TimeUtils.timeIt(() => tfModel.fit(tfSingleData, tfSingleData, trainOpts), `TF.Train (Single) #${i}`, TrainIters * Count);
-    await TimeUtils.timeIt(() => brModel.train(brSingleData, trainOpts), `Brain.Train (Single) #${i}`, TrainIters * Count);
-    console.log("\n");
+    // await TimeUtils.timeIt(() => pModel.train(singleTrainData, singleTrainData, trainOpts), `Worker.Train (Single) #${i}`, TrainIters * Count);
+    // await TimeUtils.timeIt(() => model.train(singleTrainData, singleTrainData, trainOpts), `Train (Single) #${i}`, TrainIters * Count);
+    // await TimeUtils.timeIt(() => tfModel.fit(tfSingleData, tfSingleData, trainOpts), `TF.Train (Single) #${i}`, TrainIters * Count);
+    // await TimeUtils.timeIt(() => brModel.train(brSingleData, trainOpts), `Brain.Train (Single) #${i}`, TrainIters * Count);
+    // console.log("\n");
 }
 
 await pModel.terminate();

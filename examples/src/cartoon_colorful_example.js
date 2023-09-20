@@ -10,15 +10,18 @@ import {
     ParallelGanWrapper,
     Matrix,
     ProgressUtils,
-    ImageUtils
+    ImageUtils,
+    ColorUtils
 } from "mind-net.js";
+
+import {GpuModelWrapper, GpuGanWrapper} from "@mind-net.js/gpu"
 
 import * as DatasetUtils from "./utils/dataset.js";
 import * as ModelUtils from "./utils/model.js";
 
 
-const DatasetUrl = "https://github.com/DrA1ex/mind-net.js/files/12407792/cartoon-2500-28.zip";
-const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12398103/cartoon-2500-64.zip";
+const DatasetUrl = "https://127.0.0.1:8080/datasets/cartoon_avatar_4000_32.zip";
+const DatasetBigUrl = "https://127.0.0.1:8080/datasets/cartoon_avatar_4000_64.zip";
 
 console.log("Fetching datasets...");
 
@@ -35,7 +38,7 @@ const [trainData, bigTrainData] = await Promise.all([
 ]);
 
 // You can reduce dataset length
-const CNT = 2500;
+const CNT = 4000;
 trainData.splice(CNT);
 bigTrainData.splice(CNT);
 
@@ -47,15 +50,20 @@ const gsTrainData = ImageUtils.grayscaleDataset(trainData, imageChannel);
 // Creating grayscale Upscaler training data from the big RGB training data
 const upscaleTrainData = ImageUtils.grayscaleDataset(bigTrainData);
 
+for (const tData of trainData) {
+    ColorUtils.transformColorSpace(ColorUtils.tanhToRgb, tData, imageChannel, tData);
+    ColorUtils.transformColorSpace(ColorUtils.rgbToLab, tData, imageChannel, tData);
+    ColorUtils.transformColorSpace(ColorUtils.labToTanh, tData, imageChannel, tData);
+}
 
 // Setting up necessary parameters and dimensions
-const inputDim = 32;
+const inputDim = 64;
 const imageDim = trainData[0].length;
 const gsImageDim = gsTrainData[0].length;
 const upscaleImageDim = upscaleTrainData[0].length;
 
 const epochs = 100;
-const batchSize = 64;
+const batchSize = 128;
 const epochSamples = 10;
 const finalSamples = 20;
 const outPath = "./out";
@@ -69,8 +77,8 @@ const initializer = "xavier";
 
 // Helper functions and models setup
 const createOptimizer = (lr) => new AdamOptimizer({lr, decay, beta1: beta, eps: 1e-7});
-const createHiddenLayer = (size) => new Dense(size, {
-    activation: new LeakyReluActivation({alpha: 0.2}),
+const createHiddenLayer = (size, activation = undefined) => new Dense(size, {
+    activation: activation ?? new LeakyReluActivation({alpha: 0.2}),
     weightInitializer: initializer,
     options: {
         dropout,
@@ -80,22 +88,22 @@ const createHiddenLayer = (size) => new Dense(size, {
 });
 
 // Creating the generator model
-const generator = new SequentialModel(createOptimizer(lr), loss);
+const generator = new SequentialModel(createOptimizer(lr * 1.2), loss);
 generator.addLayer(new Dense(inputDim));
-generator.addLayer(createHiddenLayer(64));
-generator.addLayer(createHiddenLayer(128));
+generator.addLayer(createHiddenLayer(128, "relu"));
+generator.addLayer(createHiddenLayer(256, "relu"));
 generator.addLayer(new Dense(imageDim, {activation: "tanh", weightInitializer: initializer}));
 
 // Creating the discriminator model
 const discriminator = new SequentialModel(createOptimizer(lr), loss);
 discriminator.addLayer(new Dense(imageDim));
+discriminator.addLayer(createHiddenLayer(256));
 discriminator.addLayer(createHiddenLayer(128));
-discriminator.addLayer(createHiddenLayer(64));
 discriminator.addLayer(new Dense(1, {activation: "sigmoid", weightInitializer: initializer}));
 
 // Creating the generative adversarial (GAN) model
 const ganModel = new GenerativeAdversarialModel(generator, discriminator, createOptimizer(lr), loss);
-const pGan = new ParallelGanWrapper(ganModel);
+const pGan = new GpuGanWrapper(ganModel, {batchSize});
 
 // Creating the variational autoencoder (AE) model
 const ae = new SequentialModel(createOptimizer(lr), "mse");
@@ -108,7 +116,7 @@ ae.addLayer(new Dense(256, {activation: "relu", weightInitializer: initializer})
 ae.addLayer(new Dense(gsImageDim, {activation: "tanh", weightInitializer: initializer}));
 ae.compile();
 
-const pAe = new ParallelModelWrapper(ae);
+const pAe = new GpuModelWrapper(ae, {batchSize});
 
 // Creating the Upscaler model
 const upscaler = new SequentialModel(createOptimizer(lr), "mse");
@@ -118,7 +126,7 @@ upscaler.addLayer(new Dense(512, {activation: "relu", weightInitializer: initial
 upscaler.addLayer(new Dense(upscaleImageDim, {activation: "tanh", weightInitializer: initializer}));
 upscaler.compile();
 
-const pUpscaler = new ParallelModelWrapper(upscaler);
+const pUpscaler = new GpuModelWrapper(upscaler, {batchSize});
 
 async function _filterWithAEBatch(inputs) {
     return ImageUtils.processMultiChannelDataParallel(pAe, inputs, imageChannel);
@@ -146,7 +154,7 @@ async function _saveModel() {
 let quitRequested = false;
 process.on("SIGINT", async () => quitRequested = true);
 
-await Promise.all([pAe.init(), pUpscaler.init(), pGan.init()]);
+//await Promise.all([pAe.init(), pUpscaler.init(), pGan.init()]);
 
 console.log("Training...");
 
@@ -167,6 +175,12 @@ for (const _ of ProgressUtils.progress(epochs)) {
 
     // Saving a snapshot of the generator model's output
     const generatedImages = await pGan.compute(generatorInput);
+    for (const tData of generatedImages) {
+        ColorUtils.transformColorSpace(ColorUtils.tanhToLab, tData, imageChannel, tData);
+        ColorUtils.transformColorSpace(ColorUtils.labToRgb, tData, imageChannel, tData);
+        ColorUtils.transformColorSpace(ColorUtils.rgbToTanh, tData, imageChannel, tData);
+    }
+
     await ModelUtils.saveGeneratedModelsSamples(ganModel.epoch, outPath, generatedImages,
         {channel: imageChannel, count: epochSamples, time: false, prefix: "generated", scale: 4});
 
@@ -198,4 +212,4 @@ for (const _ of ProgressUtils.progress(epochs)) {
 // Save trained models
 await _saveModel();
 
-await Promise.all([pAe.terminate(), pUpscaler.terminate(), pGan.terminate()]);
+//await Promise.all([pAe.terminate(), pUpscaler.terminate(), pGan.terminate()]);

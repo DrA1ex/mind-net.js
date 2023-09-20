@@ -57,27 +57,32 @@ export class Demo3Component implements AfterViewInit {
         this.resetDrawing();
     }
 
-    startDrawing(event: MouseEvent) {
+    startDrawing(event: MouseEvent | TouchEvent) {
         this.isDrawing = true;
         this.drawingContext.beginPath();
         this.draw(event);
     }
 
-    draw(event: MouseEvent) {
+    draw(event: MouseEvent | TouchEvent) {
         if (!this.isDrawing) return;
-        if (event.buttons !== 1) return this.stopDrawing();
+        if (event instanceof MouseEvent && event.buttons !== 1) return this.stopDrawing();
 
         const canvas = this.drawingCanvasRef.nativeElement;
         const rect = canvas.getBoundingClientRect();
 
-        const x = (event.clientX - rect.left) / rect.width;
-        const y = (event.clientY - rect.top) / rect.height;
+        const clientX = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
+        const clientY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
+
+        const x = (clientX - rect.left) / rect.width;
+        const y = (clientY - rect.top) / rect.height;
 
         this.drawingContext.lineWidth = this.brushSize;
         this.drawingContext.strokeStyle = this.brushColor;
 
         this.drawingContext.lineTo(canvas.width * x, canvas.height * y);
         this.drawingContext.stroke();
+
+        event.preventDefault();
     }
 
     stopDrawing() {
