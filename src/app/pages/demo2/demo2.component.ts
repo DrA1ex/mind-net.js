@@ -107,7 +107,7 @@ export class Demo2Component {
                 .map(f => ({match: f.name.match(/.*.png$/), file: f}))
                 .filter(p => p.match);
 
-            const result: matrix.Matrix1D[] = new Array();
+            const result: matrix.Matrix1D[] = [];
             this.fileProcessingTotal = items.length;
             for (let i = 0; i < items.length; i++) {
                 const item = items[i];

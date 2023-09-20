@@ -121,7 +121,7 @@ addEventListener('message', ({data}) => {
         testDataTrue = Matrix.one_2d(testData.length, 1);
         testNoise = Matrix.random_normal_2d(100, nnParams[0], -1, 1);
         testNoiseTrue = Matrix.one_2d(testNoise.length, 1);
-        exampleNoise = Matrix.fill(() => Matrix.random_normal_2d(10, nnParams[0], -1, 1), 10);
+        exampleNoise = Matrix.fill(() => Matrix.random_normal_2d(DRAW_GRID_DIMENSION, nnParams[0], -1, 1), DRAW_GRID_DIMENSION);
 
         neuralNetwork = createNn();
         dashboard = createDashboard();
@@ -163,7 +163,7 @@ addEventListener('message', ({data}) => {
             trainingData = data.data;
             for (let i = 0; i < trainingData.length; i++) {
                 for (let j = 0; j < trainingData[i].length; j++) {
-                    trainingData[i][j] = (0.5 - trainingData[i][j]) * 2;
+                    trainingData[i][j] = (trainingData[i][j] - 0.5) * 2;
                 }
             }
 
