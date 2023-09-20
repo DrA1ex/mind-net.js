@@ -93,6 +93,8 @@ export class Demo3Component implements AfterViewInit {
     }
 
     resetDrawing() {
+        this.drawingContext.lineCap = "round";
+        this.drawingContext.lineJoin = "round";
         this.drawingContext.fillStyle = "white";
         this.drawingContext.fillRect(0, 0, this.drawingCanvasRef.nativeElement.width, this.drawingCanvasRef.nativeElement.height);
     }

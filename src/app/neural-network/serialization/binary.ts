@@ -2,7 +2,7 @@ import {ILoss, IModel, IOptimizer} from "../engine/base";
 import {OptimizerT} from "../engine/optimizers";
 import {LossT} from "../engine/loss";
 import {Matrix1D, Matrix2D} from "../engine/matrix";
-import {ChunkedArrayBuffer, TypedArray, TypedArrayT} from "../utils/array-buffer";
+import {ChunkedArrayBuffer, TypedArrayT} from "../utils/array-buffer";
 import {Activations, Layers, Matrix, Models, ModelSerialization} from "../neural-network";
 
 import {SerializationEntry, SerializedParams} from "./base";
@@ -53,7 +53,7 @@ export type TensorConfigHeader = {
 }
 
 export class BinarySerializer {
-    static save(model: IModel, dataType = TensorType.F32): ArrayBuffer {
+    static save(model: IModel, dataType = TensorType.F64): ArrayBuffer {
         if (!model.isCompiled) throw new Error("Model should be compiled");
 
         const tensorsHeader: TensorConfigHeader = {};
@@ -119,6 +119,11 @@ export class BinarySerializer {
 
         const resultChunks = [headerSize, headerBytes].concat(dataChunks);
         const chunkedArray = new ChunkedArrayBuffer(resultChunks.map(c => c.buffer));
+
+        if (dataChunks.reduce((p, c) => p + c.byteLength, 0) !== tensorsHeader[metadata.layers[metadata.layers.length - 1].weightsKey].offsets[1]) {
+            throw new Error("Ooops");
+        }
+
         return chunkedArray.toTypedArray(Uint8Array).buffer;
     }
 
@@ -140,21 +145,37 @@ export class BinarySerializer {
         const model = new modelT(optimizer, loss);
 
         const dataOffset = BigInt64Array.BYTES_PER_ELEMENT + metaSize;
-        const tensorsDataArray = new ChunkedArrayBuffer([data]).createTypedArray(Float64Array, dataOffset);
+        const tensorsDataArray = new ChunkedArrayBuffer([data], dataOffset);
 
         let layerIndex = 0;
         for (const layerConf of headerMeta.layers) {
             const biasesMeta = headerTensors[layerConf.biasesKey];
-            const biases = tensorsDataArray.subarray(
-                biasesMeta.offsets[0] / Float64Array.BYTES_PER_ELEMENT,
-                biasesMeta.offsets[1] / Float64Array.BYTES_PER_ELEMENT
+            const biasesDataType = this._getArrayT(biasesMeta.dtype);
+
+            const biasesExpectedSize = biasesMeta.shape[0];
+            const biases = tensorsDataArray.createTypedArray(
+                biasesDataType,
+                biasesMeta.offsets[0],
+                biasesExpectedSize
             );
 
+            if (biases.length !== biasesExpectedSize) {
+                throw new Error(`Not enough data for layer ${layerIndex} biases. Read ${biases.length} of ${biasesExpectedSize}`);
+            }
+
             const weightsMeta = headerTensors[layerConf.weightsKey];
-            const weightsData = tensorsDataArray.subarray(
-                weightsMeta.offsets[0] / Float64Array.BYTES_PER_ELEMENT,
-                weightsMeta.offsets[1] / Float64Array.BYTES_PER_ELEMENT
+            const weightsDataType = this._getArrayT(weightsMeta.dtype);
+
+            const weightExpectedSize = weightsMeta.shape[0] * weightsMeta.shape[1];
+            const weightsData = tensorsDataArray.createTypedArray(
+                weightsDataType,
+                weightsMeta.offsets[0],
+                weightExpectedSize
             );
+
+            if (weightsData.length !== weightExpectedSize) {
+                throw new Error(`Not enough data for layer ${layerIndex} weights. Read ${weightsData.length} of ${weightExpectedSize}`);
+            }
 
             const prevSize = layerIndex > 0 ? headerMeta.layers[layerIndex - 1].size : 0
             const weights = Matrix.fill(
@@ -196,7 +217,7 @@ export class BinarySerializer {
         return chunks;
     }
 
-    private static _getArrayT(dataType: TensorType): TypedArrayT<TypedArray> {
+    private static _getArrayT(dataType: TensorType): TypedArrayT<Float32Array | Float64Array> {
         switch (dataType) {
             case TensorType.F32:
                 return Float32Array;

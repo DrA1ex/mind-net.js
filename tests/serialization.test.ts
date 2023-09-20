@@ -1,3 +1,5 @@
+import {SetupMockRandom} from "./mock/common";
+import {RandomSimpleMockData} from "./fixture/common";
 import * as ModelsMock from "./mock/models";
 import * as ArrayUtils from "./utils/array";
 
@@ -20,10 +22,9 @@ import {
     TensorConfigHeader,
     TensorType
 } from "../src/app/neural-network/serialization/binary";
+
 import {SerializationUtils} from "../src/app/neural-network/serialization/utils";
 import {ChunkedArrayBuffer} from "../src/app/neural-network/utils/array-buffer";
-import {min} from "rxjs/operators";
-import {AbstractMomentAcceleratedOptimizer} from "../src/app/neural-network/engine/optimizers";
 
 describe("Should correctly serialize model", () => {
     test("Sequential", () => {
@@ -180,6 +181,9 @@ describe("Should fail when invalid data passed", () => {
 
 
 describe("Binary serialization", () => {
+    const eps = 1e-5;
+    SetupMockRandom(RandomSimpleMockData, true);
+
     test("Should correctly serialize to binary format", () => {
         const model = new SequentialModel()
             .addLayer(new Dense(2))
@@ -247,14 +251,26 @@ describe("Binary serialization", () => {
             const model = ModelsMock.sequential();
             model.compile();
 
-            const sModel = BinarySerializer.load(BinarySerializer.save(model, TensorType.F64));
+            const sModel = BinarySerializer.load(BinarySerializer.save(model, tensorType));
             for (let i = 0; i < model.layers.length; i++) {
                 expect(sModel.layers[i].activation).toEqual(model.layers[i].activation);
-                ArrayUtils.arrayCloseTo(sModel.layers[i].biases, model.layers[i].biases)
-                ArrayUtils.arrayCloseTo_2d(sModel.layers[i].weights, model.layers[i].weights)
+                ArrayUtils.arrayCloseTo(sModel.layers[i].biases, model.layers[i].biases, eps)
+                ArrayUtils.arrayCloseTo_2d(sModel.layers[i].weights, model.layers[i].weights, eps)
             }
         })
     })
+
+    test("Should serialize/deserialize chain model", () => {
+        const model = ModelsMock.chain();
+        model.compile();
+
+        const sModel = BinarySerializer.load(BinarySerializer.save(model));
+        for (let i = 0; i < model.layers.length; i++) {
+            expect(sModel.layers[i].activation).toEqual(model.layers[i].activation);
+            ArrayUtils.arrayCloseTo(sModel.layers[i].biases, model.layers[i].biases, eps)
+            ArrayUtils.arrayCloseTo_2d(sModel.layers[i].weights, model.layers[i].weights, eps)
+        }
+    });
 
     test.failing("Should fail if model isn't compiled", () => {
         const model = new SequentialModel()
@@ -263,4 +279,12 @@ describe("Binary serialization", () => {
 
         BinarySerializer.save(model);
     })
-})
+
+    test.failing("Should fail if not enough data", () => {
+        const model = ModelsMock.sequential();
+        model.compile();
+
+        const data = BinarySerializer.save(model);
+        BinarySerializer.load(data.slice(0, data.byteLength - 1));
+    });
+});

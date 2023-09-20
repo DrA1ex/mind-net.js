@@ -1,5 +1,6 @@
 import * as Models from "./mock/models";
 import {SetupMockRandom} from "./mock/common";
+import {RandomSimpleMockData} from "./fixture/common";
 
 import {
     SequentialModel, Dense,
@@ -8,10 +9,7 @@ import {
 } from "../src/app/neural-network/neural-network";
 import * as ArrayUtils from "./utils/array";
 
-SetupMockRandom([
-    0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
-    0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0,
-], true);
+SetupMockRandom(RandomSimpleMockData, true);
 
 const TrainInput = [0.1, 0.5];
 const TrainExpected = [0.5, 0.1];

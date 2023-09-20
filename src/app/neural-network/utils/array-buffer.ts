@@ -17,7 +17,7 @@ export class ChunkedArrayBuffer {
             this._addChunk(chunk);
         }
 
-        byteLength = byteLength > 0 ? byteLength : this.byteLength;
+        byteLength = byteLength >= 0 ? byteLength : this.byteLength;
         this.bytesOffset = Math.max(0, Math.min(bytesOffset, this.chunks[0].size));
         this.byteLength = Math.max(0, Math.min(this.byteLength - this.bytesOffset, byteLength));
     }
@@ -52,7 +52,7 @@ export class ChunkedArrayBuffer {
 
     createTypedArray<T extends TypedArray>(type: TypedArrayT<T>, bytesOffset = 0, count = -1): T {
         const itemSize = type.BYTES_PER_ELEMENT;
-        const totalSize = count > 0 ? count : Math.floor((this.byteLength - bytesOffset) / itemSize);
+        const totalSize = count >= 0 ? count : Math.floor((this.byteLength - bytesOffset) / itemSize);
         return this.slice(bytesOffset, totalSize * itemSize).toTypedArray(type);
     }
 
