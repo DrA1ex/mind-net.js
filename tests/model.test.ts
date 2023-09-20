@@ -6,6 +6,7 @@ import {
     LeakyReluActivation, LinearActivation, ReluActivation, SigmoidActivation, TanhActivation,
     SgdOptimizer, SgdMomentumOptimizer, SgdNesterovOptimizer, RMSPropOptimizer, AdamOptimizer, Matrix,
 } from "../src/app/neural-network/neural-network";
+import * as ArrayUtils from "./utils/array";
 
 SetupMockRandom([
     0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
@@ -47,7 +48,7 @@ describe("Should correctly train with different activations", () => {
         }
 
         const out = model.compute(TrainInput)
-        expect(out).toStrictEqual(expected);
+        ArrayUtils.arrayCloseTo(out, expected)
     });
 
     test.each([
@@ -71,7 +72,7 @@ describe("Should correctly train with different activations", () => {
         }
 
         const out = model.compute(TrainInput);
-        expect(out).toStrictEqual(expected);
+        ArrayUtils.arrayCloseTo(out, expected);
     });
 });
 
@@ -93,7 +94,7 @@ describe("Should correctly train with different optimizers", () => {
         model.train([TrainInput], [TrainExpected], {epochs: 100});
 
         const out = model.compute(TrainInput);
-        expect(out).toStrictEqual(expected);
+        ArrayUtils.arrayCloseTo(out, expected)
     });
 });
 
@@ -138,7 +139,7 @@ describe("Should correctly split batches", () => {
         model.train(trainInput, trainExpected, {batchSize});
 
         const out = model.compute(trainInput[0]);
-        expect(out).toStrictEqual(expected);
+        ArrayUtils.arrayCloseTo(out, expected);
     })
 })
 
@@ -162,7 +163,7 @@ describe("Should correctly apply dropout", () => {
         }
 
         const out = model.compute(TrainInput);
-        expect(out).toStrictEqual(expected);
+        ArrayUtils.arrayCloseTo(out, expected)
     });
 });
 

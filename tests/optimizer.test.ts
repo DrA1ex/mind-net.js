@@ -1,4 +1,5 @@
 import {MockFunctionSequential} from "./mock/common";
+import * as ArrayUtils from "./utils/array";
 
 import {
     Dense, Matrix, Optimizers,
@@ -77,7 +78,8 @@ describe("Should correctly calculate gradient", () => {
         for (let i = 1; i <= 2; i++) {
             gradient = obj.step(layer as any, [i * 0.1, i * 0.5, i * 0.2], i - 1);
         }
-        expect(gradient).toStrictEqual(expected);
+
+        ArrayUtils.arrayCloseTo(gradient!, expected);
     });
 });
 
@@ -103,8 +105,8 @@ describe("Should correctly update weights", () => {
             obj.afterPass();
         }
 
-        expect(layer.weights).toStrictEqual(weights);
-        expect(layer.biases).toStrictEqual(biases);
+        ArrayUtils.arrayCloseTo_2d(layer.weights, weights);
+        ArrayUtils.arrayCloseTo(layer.biases, biases);
     });
 });
 

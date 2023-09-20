@@ -1,5 +1,6 @@
 import {Initializers} from "../src/app/neural-network/neural-network";
 import {SetupMockRandom} from "./mock/common";
+import * as ArrayUtils from "./utils/array";
 
 const InitializerSize = 5;
 const InitializerRandomValues = [
@@ -25,8 +26,7 @@ describe("Should generate correct data", () => {
         expect(initializer).toBeDefined();
 
         const generated = initializer(InitializerSize, 0);
-        expect(generated).toHaveLength(InitializerSize);
-        expect(generated).toStrictEqual(expected);
+        ArrayUtils.arrayCloseTo(generated, expected);
     });
 });
 

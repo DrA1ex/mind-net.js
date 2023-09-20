@@ -121,7 +121,7 @@ export class Demo3Component implements AfterViewInit {
 
                 if (file.name.endsWith(".json")) {
                     const config = JSON.parse(new TextDecoder().decode(data));
-                    const model = UniversalModelSerializer.load(config);
+                    const model = UniversalModelSerializer.load(config, true);
                     chain.addModel(model);
                 } else {
                     const model = BinarySerializer.load(data)

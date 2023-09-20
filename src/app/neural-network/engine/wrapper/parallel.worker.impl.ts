@@ -60,6 +60,6 @@ export class ParallelWorkerImpl {
             out.set(output, i * oSize);
         }
 
-        return {outputs: ParallelUtils.splitBatches(out, oSize)};
+        return {outputs: Matrix.split_2d(out, oSize)};
     }
 }

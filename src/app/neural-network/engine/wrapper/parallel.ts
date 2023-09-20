@@ -328,7 +328,7 @@ export class ParallelUtils {
             );
 
             result[i - 1] = {
-                weights: ParallelUtils.splitBatches(weights, layer.prevSize),
+                weights: Matrix.split_2d<Float64Array>(weights, layer.prevSize),
                 biases: new Float64Array(
                     new ParallelUtils.BufferT(layer.size * Float64Array.BYTES_PER_ELEMENT)
                 )
@@ -336,13 +336,6 @@ export class ParallelUtils {
         }
 
         return result;
-    }
-
-    static splitBatches(data: Float64Array, batchSize: number): Float64Array[] {
-        return Matrix.fill(
-            i => data.subarray(i * batchSize, (i + 1) * batchSize),
-            data.length / batchSize
-        );
     }
 
     static convertForTransfer(
@@ -358,7 +351,7 @@ export class ParallelUtils {
             if (cache) cacheMap.set(data, fInput);
         }
 
-        const pInput = ParallelUtils.splitBatches(fInput, iSize);
+        const pInput = Matrix.split_2d<Float64Array>(fInput, iSize);
         Matrix.copy_to_2d(data, pInput as any);
 
         return pInput;

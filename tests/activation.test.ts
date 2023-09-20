@@ -1,7 +1,13 @@
-import {Activations} from "../src/app/neural-network/neural-network";
+import * as ArrayUtils from "./utils/array";
 
 import {
-    LeakyReluActivation, LinearActivation, ReluActivation, SigmoidActivation, SoftMaxActivation, TanhActivation
+    Activations,
+    LeakyReluActivation,
+    LinearActivation,
+    ReluActivation,
+    SigmoidActivation,
+    SoftMaxActivation,
+    TanhActivation
 } from "../src/app/neural-network/neural-network";
 
 const ActivationValueTestInput = [-10, -1, -0.5, 0, 0.5, 1, 10];
@@ -18,7 +24,8 @@ describe("Activation.value", () => {
         {type, expected}
     ) => {
         const obj = new type();
-        expect(obj.forward(ActivationValueTestInput)).toStrictEqual(expected);
+        const out = obj.forward(ActivationValueTestInput);
+        ArrayUtils.arrayCloseTo(out, expected);
     });
 });
 
@@ -34,7 +41,9 @@ describe("Activation.moment", () => {
         {type, expected}
     ) => {
         const obj = new type();
-        expect(obj.backward(ActivationValueTestInput)).toStrictEqual(expected);
+
+        const out = obj.backward(ActivationValueTestInput);
+        ArrayUtils.arrayCloseTo(out, expected);
     });
 });
 
@@ -48,7 +57,7 @@ describe("Should use destination array if specified ::value", () => {
         const withDst = obj.forward(ActivationValueTestInput, dst);
         const withoutDst = obj.forward(ActivationValueTestInput);
 
-        expect(withDst).toStrictEqual(withoutDst);
+        ArrayUtils.arrayCloseTo(withDst, withoutDst);
         expect(withDst).toBe(dst);
     });
 });
@@ -63,7 +72,7 @@ describe("Should use destination array if specified ::moment", () => {
         const withDst = obj.backward(ActivationValueTestInput, dst);
         const withoutDst = obj.backward(ActivationValueTestInput);
 
-        expect(withDst).toStrictEqual(withoutDst);
+        ArrayUtils.arrayCloseTo(withDst, withoutDst);
         expect(withDst).toBe(dst);
     });
 });

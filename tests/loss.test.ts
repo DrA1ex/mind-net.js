@@ -6,6 +6,7 @@ import {
     MeanSquaredErrorLoss,
     L2Loss
 } from "../src/app/neural-network/neural-network";
+import * as ArrayUtils from "./utils/array";
 
 const LossValueTestInput = [[-10, -1], [-0.5, 0], [0.5, 10]];
 const LossValueTestExcepted = [[1, 0.5], [0.5, 1], [1, 0.3]];
@@ -75,7 +76,7 @@ describe("Should correctly calculated error", () => {
         const obj = new type();
         const error = obj.calculateError(ErrorTestInput, ErrorTestExpected);
 
-        expect(error).toStrictEqual(expected);
+        ArrayUtils.arrayCloseTo(error, expected);
     });
 })
 
@@ -94,6 +95,6 @@ describe("Should use destination Array if specified", () => {
         const withoutDst = obj.calculateError(ErrorTestInput, ErrorTestExpected);
 
         expect(dst).toBe(withDst);
-        expect(withDst).toStrictEqual(withoutDst);
+        ArrayUtils.arrayCloseTo(withDst, withoutDst);
     })
 });

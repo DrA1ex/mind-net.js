@@ -11,8 +11,26 @@ export function fill<T>(value_fn: (i: number) => T, length: number): T[] {
     return Array.from(iter.map(iter.range(0, length), value_fn));
 }
 
+export function fill_matrix(value_fn: (i: number) => number, length: number): Float64Array {
+    const result = new Float64Array(length);
+    for (let i = 0; i < length; i++) {
+        result[i] = value_fn(i);
+    }
+
+    return result;
+}
+
 export function fill_value<T>(value: T, length: number): T[] {
     return fill(() => value, length);
+}
+
+export function split_2d<T extends (Float32Array | Float64Array)>(
+    data: T, batchSize: number
+): T[] {
+    return fill(
+        i => data.subarray(i * batchSize, (i + 1) * batchSize),
+        data.length / batchSize
+    ) as T[];
 }
 
 export function matrix1d_binary_in_place_op(dst: Matrix1D, b: Matrix1D, op: (x1: number, x2: number) => number) {
@@ -27,7 +45,7 @@ export function matrix1d_binary_in_place_op(dst: Matrix1D, b: Matrix1D, op: (x1:
 
 export function matrix1d_binary_op(a: Matrix1D, b: Matrix1D, op: (x1: number, x2: number) => number, dst: OptMatrix1D = undefined): Matrix1D {
     const length = Math.min(a.length, b.length);
-    const result = dst ?? new Array(length);
+    const result = dst ?? new Float64Array(length);
 
     for (let i = 0; i < length; ++i) {
         result[i] = op(a[i], b[i]);
@@ -38,7 +56,7 @@ export function matrix1d_binary_op(a: Matrix1D, b: Matrix1D, op: (x1: number, x2
 
 export function matrix1d_unary_op(a: Matrix1D, op: (x1: number, i: number) => number, dst: OptMatrix1D = undefined): Matrix1D {
     const length = a.length;
-    const result = dst ?? new Array(length);
+    const result = dst ?? new Float64Array(length);
 
     for (let i = 0; i < length; ++i) {
         result[i] = op(a[i], i);
@@ -174,36 +192,49 @@ function random_n(from = 0, to = 1): number {
 
 
 export function zero(length: number): Matrix1D {
-    return fill_value(0, length);
+    return new Float64Array(length);
 }
 
 export function zero_2d(rows: number, cols: number): Matrix2D {
-    return fill(() => zero(cols), rows);
+    return split_2d(new Float64Array(rows * cols), cols);
 }
 
 export function one(length: number): Matrix1D {
-    return fill_value(1, length);
+    const result = new Float64Array(length);
+    result.fill(1);
+    return result;
 }
 
 export function one_2d(rows: number, cols: number): Matrix2D {
-    return fill(() => one(cols), rows);
+    const result = new Float64Array(rows * cols);
+    result.fill(1);
+    return split_2d(result, cols);
 }
 
-export function random_1d(length: number, from: number = 0, to: number = 1): Matrix1D {
+export function random_1d(length: number, from: number = 0, to: number = 1): Float64Array {
     const dist = to - from;
-    return fill(() => from + Math.random() * dist, length);
+    return fill_matrix(() => from + Math.random() * dist, length);
 }
 
-export function random_normal_1d(length: number, from: number = 0, to: number = 1): Matrix1D {
-    return fill(() => random_n(from, to), length);
+export function random_normal_1d(length: number, from: number = 0, to: number = 1): Float64Array {
+    return fill_matrix(() => random_n(from, to), length);
 }
 
 export function copy(a: Matrix1D): Matrix1D {
-    return [...a];
+    return Float64Array.from(a);
 }
 
 export function copy_2d(a: Matrix2D): Matrix2D {
-    return a.map(copy);
+    const rows = a.length;
+    if (rows === 0) return [];
+
+    const columns = a[0].length
+    const result = new Float64Array(rows * columns);
+    for (let i = 0; i < rows; i++) {
+        result.set(a[i], i * columns);
+    }
+
+    return split_2d(result, columns);
 }
 
 export function max(a: Matrix1D, abs = false): number {
@@ -235,16 +266,18 @@ export function transpose(m: Matrix2D): Matrix2D {
 }
 
 export function random_2d(rows: number, cols: number, from: number = 0, to: number = 1): Matrix2D {
-    return fill(() => random_1d(cols, from, to), rows);
+    const result = random_1d(rows * cols, from, to);
+    return split_2d(result, cols);
 }
 
 export function random_normal_2d(rows: number, cols: number, from: number = 0, to: number = 1): Matrix2D {
-    return fill(() => random_1d(cols, from, to), rows);
+    const result = random_normal_1d(rows * cols, from, to);
+    return split_2d(result, cols);
 }
 
 export function dot_2d(x1: Matrix2D, x2: Matrix1D, dst: OptMatrix1D = undefined): Matrix1D {
     const length = x1.length;
-    const result = dst ?? new Array(length);
+    const result = dst ?? new Float64Array(length);
     for (let i = 0; i < length; i++) {
         result[i] = dot(x1[i], x2);
     }
@@ -253,7 +286,7 @@ export function dot_2d(x1: Matrix2D, x2: Matrix1D, dst: OptMatrix1D = undefined)
 }
 
 export function dot_2d_translated(x1: Matrix2D, x2: Matrix1D, dst?: Matrix1D): Matrix1D {
-    const result = dst ?? new Array(x1[0].length);
+    const result = dst ?? new Float64Array(x1[0].length);
     const rowsLength = Math.min(x1.length, x2.length);
 
     for (let i = 0; i < result.length; ++i) {

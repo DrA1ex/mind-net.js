@@ -168,7 +168,7 @@ export class BinarySerializer {
                 weights: weights,
                 biasInitializer: "zero",
                 weightInitializer: "zero"
-            }, layerIndex++)
+            }, layerIndex++, false);
 
             model.addLayer(layer);
         }

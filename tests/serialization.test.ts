@@ -2,7 +2,7 @@ import * as ModelsMock from "./mock/models";
 import * as ArrayUtils from "./utils/array";
 
 import {
-    Activations,
+    Activations, AdamOptimizer,
     ChainModel,
     ChainSerialization,
     Dense,
@@ -22,6 +22,8 @@ import {
 } from "../src/app/neural-network/serialization/binary";
 import {SerializationUtils} from "../src/app/neural-network/serialization/utils";
 import {ChunkedArrayBuffer} from "../src/app/neural-network/utils/array-buffer";
+import {min} from "rxjs/operators";
+import {AbstractMomentAcceleratedOptimizer} from "../src/app/neural-network/engine/optimizers";
 
 describe("Should correctly serialize model", () => {
     test("Sequential", () => {
@@ -62,6 +64,28 @@ describe("Should correctly serialize model", () => {
     });
 });
 
+test("Should correctly deserialized trained model", () => {
+    const model = ModelsMock.sequential(4, 4);
+    model.compile();
+
+    model.train(Matrix.random_2d(4, 4), Matrix.random_2d(4, 4), {epochs: 10, progress: false});
+
+    const sModel = ModelSerialization.load(ModelSerialization.save(model));
+
+    expect(sModel.epoch).toBe(model.epoch);
+    expect(sModel.optimizer.lr).toBe(model.optimizer.lr);
+
+    for (let i = 1; i < model.layers.length; i++) {
+        const sMoments = (sModel.optimizer as AdamOptimizer).moments.get(sModel.layers[i]);
+        const moments = (model.optimizer as AdamOptimizer).moments.get(model.layers[i]);
+
+        ArrayUtils.arrayCloseTo(sMoments!.mBiases, moments!.mBiases);
+        ArrayUtils.arrayCloseTo(sMoments!.cBiases, moments!.cBiases);
+        ArrayUtils.arrayCloseTo_2d(sMoments!.mWeights, moments!.mWeights);
+        ArrayUtils.arrayCloseTo_2d(sMoments!.cWeights, moments!.cWeights);
+    }
+})
+
 describe("Should correctly deserialize through UniversalSerializer", () => {
     test("Sequential", () => {
         const model = ModelsMock.sequential();
@@ -85,7 +109,7 @@ describe("Should correctly deserialize through UniversalSerializer", () => {
         for (const layer of sModel.models[0].layers) (layer as Dense).skipWeightsInitialization = false;
         for (const layer of sModel.models[1].layers) (layer as Dense).skipWeightsInitialization = false;
 
-        expect(sModel).toEqual(chainModel);
+        expect(sModel).toStrictEqual(chainModel);
     });
 });
 

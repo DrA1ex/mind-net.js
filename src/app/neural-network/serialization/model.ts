@@ -19,7 +19,7 @@ export class ModelSerialization {
         }
     }
 
-    public static load(data: ModelSerialized): IModel {
+    public static load(data: ModelSerialized, reuseWeights = false): IModel {
         const modelT = Models[data.model];
 
         if (!modelT) throw new Error(`Invalid model: ${data.model}`);
@@ -35,7 +35,7 @@ export class ModelSerialization {
 
         let layerIndex = 0;
         for (const layerConf of data.layers) {
-            const layer = this.loadLayer(layerConf, layerIndex);
+            const layer = this.loadLayer(layerConf, layerIndex, !reuseWeights);
             model.addLayer(layer);
             ++layerIndex;
         }
@@ -88,10 +88,10 @@ export class ModelSerialization {
             if (layerCache) {
                 result[i] = {} as T;
                 for (const [key, value] of Object.entries(layerCache)) {
-                    if (value[0] instanceof Array) {
-                        result[i][key] = Matrix.copy_2d(value as Matrix.Matrix2D);
+                    if (value[0].length !== undefined) {
+                        result[i][key] = Matrix.copy_2d((value as Matrix.Matrix2D).map(v => Array.from(v)));
                     } else {
-                        result[i][key] = Matrix.copy(value as Matrix.Matrix1D);
+                        result[i][key] = Array.from(value as Matrix.Matrix1D);
                     }
                 }
             }
@@ -120,8 +120,8 @@ export class ModelSerialization {
             activation: this.saveActivation(layer.activation),
             weightInitializer: SerializationUtils.getFnAlias(Initializers, layer.weightInitializer).key,
             biasInitializer: SerializationUtils.getFnAlias(Initializers, layer.biasInitializer).key,
-            weights: Matrix.copy_2d(layer.weights),
-            biases: Matrix.copy(layer.biases),
+            weights: layer.weights.map(a => Array.from(a)),
+            biases: Array.from(layer.biases),
             params,
         }
     }
@@ -136,7 +136,7 @@ export class ModelSerialization {
         }
     }
 
-    public static loadLayer(layerConf: LayerSerializationEntry, layerIndex: number): ILayer {
+    public static loadLayer(layerConf: LayerSerializationEntry, layerIndex: number, copyWeights = true): ILayer {
         const layerT = Layers[layerConf.key];
         if (!layerT) throw new Error(`Invalid layer: ${layerConf.key}`);
 
@@ -157,6 +157,7 @@ export class ModelSerialization {
                 || typeof layerConf.biases[0] !== "number") {
                 throw new Error("Invalid layer biases")
             }
+
             if (!(layerConf.weights?.length > 0)
                 || !(
                     Array.isArray(layerConf.weights[0])
@@ -167,8 +168,13 @@ export class ModelSerialization {
                 throw new Error("Invalid layer weights");
             }
 
-            layer.biases = Matrix.copy(layerConf.biases);
-            layer.weights = Matrix.copy_2d(layerConf.weights);
+            if (copyWeights) {
+                layer.biases = Matrix.copy(layerConf.biases);
+                layer.weights = Matrix.copy_2d(layerConf.weights);
+            } else {
+                layer.biases = layerConf.biases;
+                layer.weights = layerConf.weights;
+            }
         }
 
         return layer;

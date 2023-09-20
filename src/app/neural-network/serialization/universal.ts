@@ -14,11 +14,11 @@ export class UniversalModelSerializer {
         }
     }
 
-    static load(data: ISerializedModel) {
+    static load(data: ISerializedModel, reuseWeights = false) {
         if (data.model === "Chain") {
-            return ChainSerialization.load(data as any);
+            return ChainSerialization.load(data as any, reuseWeights);
         } else {
-            return ModelSerialization.load(data as any);
+            return ModelSerialization.load(data as any, reuseWeights);
         }
     }
 }

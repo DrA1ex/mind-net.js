@@ -19,7 +19,7 @@ export class ChainSerialization {
         }
     }
 
-    public static load(data: ChainSerialized): ChainModel {
+    public static load(data: ChainSerialized, reuseWeights = false): ChainModel {
         const optimizerT = Optimizers[data.optimizer.key];
         if (!optimizerT) throw new Error(`Invalid optimizer: ${data.optimizer.key}`);
 
@@ -31,7 +31,7 @@ export class ChainSerialization {
 
         for (let i = 0; i < data.models.length; i++) {
             model.addModel(
-                ModelSerialization.load(data.models[i]),
+                ModelSerialization.load(data.models[i], reuseWeights),
                 data.trainable[i]
             );
         }

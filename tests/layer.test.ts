@@ -1,10 +1,12 @@
 import {SetupMockRandom} from "./mock/common";
+import * as ArrayUtils from "./utils/array";
 
 // noinspection ES6PreferShortImport
 import {Dense, Matrix} from "../src/app/neural-network/neural-network";
 import {InitializerT} from "../src/app/neural-network/engine/initializers";
 import {IActivation} from "../src/app/neural-network/engine/base";
 import {Matrix1D} from "../src/app/neural-network/engine/matrix";
+import {arrayCloseTo_2d} from "./utils/array";
 
 const LayerRandomValues = [
     0.1, 0.3, 0.2, 0.99, 0.5, 0.4, 0.01, 0.95, 0.4, 0.15,
@@ -24,7 +26,7 @@ describe("Should correctly calculates next value", () => {
         layer.build(1, 3);
 
         const output = layer.step(input);
-        expect(output).toStrictEqual(expected);
+        ArrayUtils.arrayCloseTo(output, expected);
     });
 });
 
@@ -44,7 +46,7 @@ describe("Should correctly calculates next error", () => {
         const dB = Matrix.zero(input.length);
 
         const output = layer.backward(Matrix.random_1d(input.length), dW, dB);
-        expect(output).toStrictEqual(expected);
+        ArrayUtils.arrayCloseTo(output, expected)
     });
 });
 
@@ -59,13 +61,13 @@ test("Should correctly calculates weights delta", () => {
 
     layer.backward([-1, 0, 1], dW, dB);
 
-    expect(dW).toStrictEqual([
+    ArrayUtils.arrayCloseTo_2d(dW, [
         [0.1, -0.1, -0.5],
         [0, 0, 0],
         [-0.1, 0.1, 0.5]
     ]);
 
-    expect(dB).toStrictEqual([-1, 0, 1]);
+    ArrayUtils.arrayCloseTo(dB, [-1, 0, 1])
 });
 
 describe("Should correctly initialize biases", () => {
@@ -77,7 +79,7 @@ describe("Should correctly initialize biases", () => {
         const layer = new Dense(3, {biasInitializer: key as InitializerT});
         layer.build(1, 3);
 
-        expect(layer.biases).toStrictEqual(expected);
+        ArrayUtils.arrayCloseTo(layer.biases, expected)
     });
 });
 
@@ -90,7 +92,7 @@ describe("Should correctly initialize weights", () => {
         const layer = new Dense(2, {weightInitializer: key as InitializerT});
         layer.build(1, 2);
 
-        expect(layer.weights).toStrictEqual(expected);
+        ArrayUtils.arrayCloseTo_2d(layer.weights, expected);
     });
 });
 
@@ -158,8 +160,8 @@ test("Should works with custom activation", () => {
     layer.build(1, 3);
 
     layer.step([1, 2, 3]);
-    expect(layer.output).toStrictEqual([-1.9629909152447278, 0.21939310229205783, 0.1270170592217174]);
+    ArrayUtils.arrayCloseTo(layer.output, [-1.9629909152447278, 0.21939310229205783, 0.1270170592217174])
 
     layer.backward([1, 1, 1], Matrix.zero_2d(3, 3), Matrix.zero(3));
-    expect(layer.error).toStrictEqual([-0.4618802153517006, 0.2886751345948127, -0.5773502691896257]);
+    ArrayUtils.arrayCloseTo(layer.error, [-0.4618802153517006, 0.2886751345948127, -0.5773502691896257])
 })

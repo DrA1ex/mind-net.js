@@ -12,16 +12,16 @@ function dropArrayEps(arr: ArrayT, eps: number) {
     return arr.map(v => dropEps(v, eps));
 }
 
-export function arrayCloseTo(a: ArrayT, b: ArrayT, eps = 1e-8) {
-    const aWithEps = dropArrayEps(a, eps);
-    const bWithEps = dropArrayEps(b, eps);
+export function arrayCloseTo(actual: ArrayT, expected: ArrayT, eps = 1e-8) {
+    const actWithEps = dropArrayEps(actual, eps);
+    const expWithEps = dropArrayEps(expected, eps);
 
-    expect(aWithEps).toStrictEqual(bWithEps);
+    expect(actWithEps).toStrictEqual(expWithEps);
 }
 
-export function arrayCloseTo_2d(a: ArrayT[], b: ArrayT[], eps = 1e-8) {
-    const aWithEps = a.map(arr => dropArrayEps(arr, eps));
-    const bWithEps = b.map(arr => dropArrayEps(arr, eps))
+export function arrayCloseTo_2d(actual: ArrayT[], expected: ArrayT[], eps = 1e-8) {
+    const actWithEps = actual.map(arr => dropArrayEps(arr, eps));
+    const expWithEps = expected.map(arr => dropArrayEps(arr, eps))
 
-    expect(aWithEps).toStrictEqual(bWithEps);
+    expect(actWithEps).toStrictEqual(expWithEps);
 }
