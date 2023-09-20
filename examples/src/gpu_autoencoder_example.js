@@ -20,8 +20,7 @@ import {
     Dense,
     ChainModel,
     ProgressUtils,
-    ImageUtils,
-    Matrix
+    Iter, Matrix, ImageUtils
 } from "mind-net.js";
 
 import {GpuModelWrapper} from "@mind-net.js/gpu"
@@ -32,198 +31,138 @@ import * as ModelUtils from "./utils/model.js";
 
 console.log("Fetching datasets...");
 
-const DatasetSmallUrl = "https://127.0.0.1:8080/datasets/cartoon_avatar_1000_32.zip";
-const DatasetBigUrl = "https://127.0.0.1:8080/datasets/cartoon_avatar_1000_64.zip";
-const DatasetBiggerUrl = "https://127.0.0.1:8080/datasets/cartoon_avatar_1000_128.zip";
-const TestDatasetUrl = "https://127.0.0.1:8080/datasets/doomguy-36-32.zip";
+//const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12456697/mnist-10000-28.zip";
+//const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12398103/cartoon-2500-64.zip";
+const DatasetBigUrl = "https://github.com/DrA1ex/mind-net.js/files/12407792/cartoon-2500-28.zip";
 
+const zipData = await ProgressUtils.fetchProgress(DatasetBigUrl);
 
 console.log("Preparing...")
 
-const getLoadingProgressFn = () => ProgressUtils.progressCallback({
+const zipLoadingProgress = ProgressUtils.progressCallback({
     update: true,
     color: ProgressUtils.Color.magenta,
     limit: ProgressUtils.ValueLimit.inclusive,
 });
-
-const CNT = 2500;
-
-let smallZipData = await ProgressUtils.fetchProgress(DatasetSmallUrl);
-const smallDataSet = ImageUtils.grayscaleDataset(
-    (await DatasetUtils.loadDataset(smallZipData.buffer, getLoadingProgressFn())).slice(0, CNT)
-);
-smallZipData = undefined;
-
-let bigZipData = await ProgressUtils.fetchProgress(DatasetBigUrl);
-const bigDataSet = ImageUtils.grayscaleDataset(
-    (await DatasetUtils.loadDataset(bigZipData.buffer, getLoadingProgressFn())).slice(0, CNT)
-);
-bigZipData = undefined;
-
-let biggerZipData = await ProgressUtils.fetchProgress(DatasetBiggerUrl);
-const biggerDataSet = ImageUtils.grayscaleDataset(
-    (await DatasetUtils.loadDataset(biggerZipData.buffer, getLoadingProgressFn())).slice(0, CNT)
-);
-biggerZipData = undefined;
-
-let testZipData = await ProgressUtils.fetchProgress(TestDatasetUrl);
-const testColorfulDataSet = await DatasetUtils.loadDataset(testZipData.buffer, getLoadingProgressFn());
-testZipData = undefined;
-
-const ShiftingX = 4;
-const ShiftingY = 4;
+const loadedSet = ImageUtils.grayscaleDataset(await DatasetUtils.loadDataset(zipData.buffer, zipLoadingProgress));
 
 // Create variations with different positioning
-const smallDataSetShifted = new Array(smallDataSet.length);
-for (let i = 0; i < smallDataSet.length; i++) {
-    const x = Math.random() * ShiftingX - ShiftingX / 2
-    const y = Math.random() * ShiftingY - ShiftingY / 2;
-    smallDataSetShifted[i] = ImageUtils.shiftImage(smallDataSet[i], x, y, 1);
+const setMul = 3;
+const dataSet = new Array(loadedSet.length * setMul);
+for (let k = 0; k < setMul; k++) {
+    for (let i = 0; i < loadedSet.length; i++) {
+        const [x, y] = [Math.random() * 2 - 1, Math.random() * 2 - 1];
+        dataSet[k * loadedSet.length + i] = ImageUtils.shiftImage(loadedSet[i], Math.round(x), Math.round(y), 1);
+    }
 }
 
-const trainIterations = 50;
-const epochsPerIterShifter = 10;
-const epochsPerIterUpscaler = 5;
-const batchSize = 512;
-const batchSizeUpscaler = 512;
+const trainIterations = 100;
+const epochsPerIter = 5;
+const batchSize = 128;
 const imageChannel = 1;
-const testImageChannel = 3;
-const epochSampleSize = Math.min(10, Math.floor(Math.sqrt(testColorfulDataSet.length)));
-const finalSampleSize = Math.min(20, Math.floor(Math.sqrt(testColorfulDataSet.length)));
+const sampleScale = 4;
+const epochSampleSize = 10;
+const finalSampleSize = 20;
 const outPath = "./out";
 
-const lr = 0.0003;
-const lrUpscaler = 0.0005;
+const lr = 0.001;
 const decay = 5e-4;
 const beta1 = 0.5;
-const dropout = 0.2;
-const activation = "relu";
-const loss = "l2";
+const dropout = 0.3;
+const activation = "leakyRelu";
+const loss = "mse";
 const initializer = "xavier";
 
-const FilterSizes = [512, 384, 256, 384, 512];
-const UpscalerSizes = [512, 640, 784, 896, 1024];
-const Upscaler2Sizes = [512, 1024];
+const LatentSpaceSize = 32;
+const Sizes = [256, 128, 64];
 
-function createOptimizer(lr) {
-    return new AdamOptimizer({lr, decay, beta1});
+const encoder = new SequentialModel(new AdamOptimizer({lr, decay, beta1}), loss);
+encoder.addLayer(new Dense(dataSet[0].length));
+for (const size of Sizes) {
+    encoder.addLayer(
+        new Dense(size, {
+            activation,
+            weightInitializer: initializer,
+            options: {dropout}
+        })
+    );
+}
+encoder.addLayer(new Dense(LatentSpaceSize, {activation, weightInitializer: initializer}));
+
+const decoder = new SequentialModel(new AdamOptimizer({lr, decay, beta1}), loss);
+decoder.addLayer(new Dense(LatentSpaceSize));
+for (const size of Iter.reverse(Sizes)) {
+    decoder.addLayer(
+        new Dense(size, {
+            activation,
+            weightInitializer: initializer,
+            options: {dropout}
+        })
+    );
+}
+decoder.addLayer(new Dense(dataSet[0].length, {weightInitializer: initializer, activation: "tanh"}));
+
+const chain = new ChainModel(new AdamOptimizer({lr, decay, beta1}), loss);
+chain.addModel(encoder);
+chain.addModel(decoder);
+
+chain.compile();
+
+const pEncoder = new GpuModelWrapper(encoder, {batchSize});
+const pDecoder = new GpuModelWrapper(decoder, {batchSize});
+const pChain = new GpuModelWrapper(chain, {batchSize});
+
+async function _decode(from, to) {
+    const encFrom = pEncoder.compute(from);
+    const encTo = pEncoder.compute(to);
+
+    const count = from.length;
+    const inputData = new Array(count);
+    for (let k = 0; k < count; k++) {
+        inputData[k] = encFrom.map(
+            (arr, i) => arr.map((value, j) =>
+                value + (encTo[i][j] - value) * k / (count - 1)
+            )
+        );
+    }
+
+    return pDecoder.compute(inputData.flat());
 }
 
-function createHiddenLayer(size) {
-    return new Dense(size, {
-        activation,
-        weightInitializer: initializer,
-        options: {dropout}
-    });
-}
+async function saveModel() {
+    const savePath = path.join(outPath, "models");
+    await ModelUtils.saveModels({autoencoder: chain}, savePath);
 
-function createModel(inSize, outSize, hiddenLayers, lr) {
-    const model = new SequentialModel(createOptimizer(lr), loss);
-    model.addLayer(new Dense(inSize));
-    for (const size of hiddenLayers) model.addLayer(createHiddenLayer(size));
-    model.addLayer(new Dense(outSize, {activation: "tanh"}));
-    model.compile();
+    console.log("Generate final sample set...");
 
-    return model;
-}
+    const genFrom = Matrix.fill(() => dataSet[Math.floor(Math.random() * dataSet.length)], finalSampleSize);
+    const genTo = Matrix.fill(() => dataSet[Math.floor(Math.random() * dataSet.length)], finalSampleSize);
 
-const filterModel = createModel(smallDataSet[0].length, smallDataSet[0].length, FilterSizes, lr);
-const upscalerModel = createModel(smallDataSet[0].length, bigDataSet[0].length, UpscalerSizes, lrUpscaler);
-const upscaler2Model = createModel(bigDataSet[0].length, biggerDataSet[0].length, Upscaler2Sizes, lrUpscaler);
-
-const resultingModel = new ChainModel();
-resultingModel.addModel(filterModel);
-resultingModel.addModel(upscalerModel);
-resultingModel.addModel(upscaler2Model);
-resultingModel.compile();
-
-const gShifter = new GpuModelWrapper(filterModel, {batchSize});
-const gUpscaler = new GpuModelWrapper(upscalerModel, {batchSize: batchSizeUpscaler});
-const gUpscaler2 = new GpuModelWrapper(upscaler2Model, {batchSize});
-const gResult = new GpuModelWrapper(resultingModel, {batchSize});
-
-const testShiftedDataset = new Array(finalSampleSize ** 2);
-for (let i = 0; i < testShiftedDataset.length; i++) {
-    const x = Math.round(Math.random() * ShiftingX - ShiftingX / 2);
-    const y = Math.round(Math.random() * ShiftingY - ShiftingY / 2);
-
-    const sample = smallDataSet[Math.floor(Math.random() * smallDataSet.length)];
-    testShiftedDataset[i] = ImageUtils.shiftImage(sample, x, y, sample[0]);
+    const generated = await _decode(genFrom, genTo);
+    await ModelUtils.saveGeneratedModelsSamples("autoencoder", savePath, generated,
+        {channel: imageChannel, count: finalSampleSize, scale: sampleScale});
 }
 
 let quitRequested = false;
 process.on("SIGINT", async () => quitRequested = true);
 
-async function saveModel() {
-    const savePath = path.join(outPath, "models");
-    await ModelUtils.saveModels({autoencoder: resultingModel}, savePath);
-
-    console.log("Generate final sample set...");
-
-    const finalGenerated = await ImageUtils.processMultiChannelDataParallel(
-        gResult, testColorfulDataSet.slice(0, finalSampleSize ** 2), testImageChannel
-    );
-    await ModelUtils.saveGeneratedModelsSamples("autoencoder", savePath, finalGenerated,
-        {channel: testImageChannel, count: finalSampleSize});
-}
+const genFrom = Matrix.fill(() => dataSet[Math.floor(Math.random() * dataSet.length)], epochSampleSize);
+const genTo = Matrix.fill(() => dataSet[Math.floor(Math.random() * dataSet.length)], epochSampleSize);
 
 console.log("Training...");
 
-const epochTestData = testColorfulDataSet.slice(0, epochSampleSize ** 2);
-const gsEpochTestData = Matrix.fill(() => smallDataSetShifted[Math.floor(Math.random() * smallDataSetShifted.length)], epochSampleSize ** 2);
-
 for (const epoch of ProgressUtils.progress(trainIterations)) {
-    gShifter.train(smallDataSetShifted, smallDataSet, {epochs: epochsPerIterShifter});
-    gUpscaler.train(smallDataSet, bigDataSet, {epochs: epochsPerIterUpscaler});
-    gUpscaler2.train(bigDataSet, biggerDataSet, {epochs: epochsPerIterUpscaler});
+    await pChain.train(dataSet, dataSet, {epochs: epochsPerIter});
 
-    const shifterGenerated = gShifter.compute(gsEpochTestData);
-    await ModelUtils.saveGeneratedModelsSamples(epoch, outPath, shifterGenerated,
-        {
-            channel: imageChannel,
-            count: epochSampleSize,
-            scale: 4,
-            time: false,
-            prefix: "autoencoder",
-            suffix: "shifter"
-        });
-
-    const upscalerGenerated = gUpscaler.compute(gsEpochTestData);
-    await ModelUtils.saveGeneratedModelsSamples(epoch, outPath, upscalerGenerated,
-        {
-            channel: imageChannel,
-            count: epochSampleSize,
-            scale: 2,
-            time: false,
-            prefix: "autoencoder",
-            suffix: "upscaler"
-        });
-
-    const upscaler2Generated = gUpscaler2.compute(upscalerGenerated);
-    await ModelUtils.saveGeneratedModelsSamples(epoch, outPath, upscaler2Generated,
-        {
-            channel: imageChannel,
-            count: epochSampleSize,
-            time: false,
-            prefix: "autoencoder",
-            suffix: "upscaler2"
-        });
-
-    const finalGenerated = await ImageUtils.processMultiChannelDataParallel(gResult, epochTestData, testImageChannel);
-    await ModelUtils.saveGeneratedModelsSamples(epoch, outPath, finalGenerated,
-        {
-            channel: testImageChannel,
-            count: epochSampleSize,
-            time: false,
-            prefix: "autoencoder",
-            suffix: "final"
-        });
+    const generated = await _decode(genFrom, genTo);
+    await ModelUtils.saveGeneratedModelsSamples(epoch, outPath, generated,
+        {channel: imageChannel, count: epochSampleSize, scale: sampleScale, time: false, prefix: "autoencoder"});
 
     if (quitRequested) break;
 }
 
 await saveModel();
 
-gShifter.destroy();
-gUpscaler.destroy();
-gResult.destroy();
+pChain.destroy();
+pEncoder.destroy();
+pDecoder.destroy();

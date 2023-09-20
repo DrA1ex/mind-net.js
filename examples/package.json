@@ -3,19 +3,10 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
-    "@mind-net.js/gpu": "^1.0.5",
-    "@tensorflow/tfjs": "^4.11.0",
-    "@tensorflow/tfjs-node-gpu": "^4.10.0",
-    "brain.js": "^2.0.0-beta.23",
     "get-pixels": "^3.3.3",
     "jimp": "^0.22.10",
     "json-stream-stringify": "^3.1.0",
     "jszip": "^3.10.1",
-    "mind-net.js": "../lib"
-  },
-  "overrides": {
-    "gpu.js": {
-      "gl": "^6.0.2"
-    }
+    "mind-net.js": "latest"
   }
 }

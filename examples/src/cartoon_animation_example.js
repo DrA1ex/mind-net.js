@@ -4,7 +4,7 @@ import {ModelSerialization, GanSerialization, Matrix, ImageUtils, ParallelModelW
 import * as ModelUtils from "./utils/model.js";
 
 
-const name = "2023-09-14T16:12:01.900Z_100";
+const name = "2023-08-30T12:11:05.784Z_100";
 const path = "./out/models";
 const outPath = "./out/animation";
 
@@ -18,8 +18,8 @@ const ae = ModelSerialization.load(JSON.parse(aeDump.toString()));
 const upscaler = ModelSerialization.load(JSON.parse(upscalerDump.toString()));
 const gan = GanSerialization.load(JSON.parse(ganDump.toString()));
 
-const count = 10;
-const framesPerSample = 10;
+const count = 26;
+const framesPerSample = 3;
 const scale = 2;
 
 const channels = 3;
