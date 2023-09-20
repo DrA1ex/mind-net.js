@@ -75,14 +75,5 @@
     </div>
 </div>
 
-<div class="position-absolute top-0 start-0 h-100 w-100" style="background: rgba(0,0,0,0.4)" *ngIf="fileLoading">
-    <div class="position-absolute top-50 start-50 translate-middle">
-        <h3 class="">Loading training data...</h3>
-        <div class="progress" style="height: 20px">
-            <div class="progress-bar" role="progressbar"
-                 [style]="{'width': (fileProcessingCurrent / fileProcessingTotal) * 100 + '%'}">
-                {{fileProcessingCurrent}}/{{fileProcessingTotal}}
-            </div>
-        </div>
-    </div>
-</div>
+
+<loading-screen [visible]="fileProcessingTotal > 0" [current]="fileProcessingCurrent" [total]="fileProcessingTotal"/>

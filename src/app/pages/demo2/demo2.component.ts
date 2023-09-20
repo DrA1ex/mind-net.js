@@ -9,6 +9,7 @@ import * as image from "../../utils/image";
 import * as matrix from "../../neural-network/engine/matrix";
 import {HttpClient} from "@angular/common/http";
 import {AsyncSubject} from "rxjs";
+import {ProgressUtils} from "../../neural-network/neural-network";
 
 @Component({
     selector: 'app-demo2',
@@ -126,6 +127,7 @@ export class Demo2Component {
             this.nnWorker.postMessage({type: "set_data", data: result});
         } finally {
             this.fileLoading = false;
+            this.fileProcessingTotal = 0;
         }
     }
 
@@ -173,4 +175,5 @@ export class Demo2Component {
 
         this.nnWorker.postMessage({type: "load_dump", dump});
     }
+    protected readonly ProgressUtils = ProgressUtils;
 }

@@ -14,6 +14,7 @@ import {PlotDrawerComponent} from './components/plot-drawer/plot-drawer.componen
 import {NeuralNetworkDrawerComponent} from './components/neural-network-drawer/neural-network-drawer.component';
 import {BinaryImageDrawerComponent} from './components/binary-image-drawer/binary-image-drawer.component';
 import {ColorSelectorComponent} from './components/color-selector/color-selector.component';
+import { LoadingScreenComponent } from './components/loading-screen/loading-screen.component';
 
 const routes: Routes = [
     {path: 'demo1', component: Demo1Component},
@@ -33,6 +34,7 @@ const routes: Routes = [
         Demo2Component,
         Demo3Component,
         ColorSelectorComponent,
+        LoadingScreenComponent,
     ],
     imports: [
         BrowserModule,

@@ -1,17 +1,15 @@
 import {AfterViewInit, Component, ElementRef, ViewChild} from '@angular/core';
-import * as FileInteraction from "../../utils/file-interaction";
-import {IModel} from "../../neural-network/engine/base";
-import {FileAsyncReader, ObservableStreamLoader} from "../../neural-network/utils/fetch";
+import {spawn} from "threads"
+
 import {
-    ChainModel,
-    CommonUtils,
-    ImageUtils,
-    ProgressUtils,
-    UniversalModelSerializer
+    FileAsyncReader,
+    ObservableStreamLoader,
+    CommonUtils, ProgressUtils,
 } from "../../neural-network/neural-network";
+
+import {ModelParams, WorkerT} from "../../workers/demo3/demo3.worker";
 import {BinaryImageDrawerComponent} from "../../components/binary-image-drawer/binary-image-drawer.component";
-import * as ColorUtils from "../../neural-network/utils/color";
-import {BinarySerializer} from "../../neural-network/serialization/binary";
+import * as FileInteraction from "../../utils/file-interaction";
 
 @Component({
     selector: 'app-demo3',
@@ -22,29 +20,32 @@ export class Demo3Component implements AfterViewInit {
     @ViewChild('drawingCanvas', {static: true})
     drawingCanvasRef!: ElementRef<HTMLCanvasElement>;
 
-
     @ViewChild("generatedImage")
     generatedImage!: BinaryImageDrawerComponent;
 
     private drawingContext!: CanvasRenderingContext2D;
-    private model?: IModel;
-    private isDrawing = false;
+    private modelParams?: ModelParams;
+
+    public isDrawing = false;
+    public isRendering = false;
+
+    private renderingRequested = false;
+
+    worker!: WorkerT;
 
     brushColor!: string;
     brushSize!: number
 
     modelDetails: string = "Load model to view details";
     progress = {
-        offset: 0,
         loaded: 0,
         total: 0,
-        progressFn: ProgressUtils.throttle(
-            (loaded: number, _: number) => {
-                this.progress.loaded = this.progress.offset + loaded;
-            }, ProgressUtils.ValueLimit.inclusive, 300
-        ),
+        progressFn: (loaded: number, total: number) => {
+            this.progress.loaded = loaded;
+            this.progress.total = total;
+        },
+
         reset: () => {
-            this.progress.offset = 0
             this.progress.loaded = 0;
             this.progress.total = 0;
         },
@@ -63,7 +64,8 @@ export class Demo3Component implements AfterViewInit {
     }
 
     draw(event: MouseEvent) {
-        if (!this.isDrawing || event.button !== 0) return;
+        if (!this.isDrawing) return;
+        if (event.buttons !== 1) return this.stopDrawing();
 
         const canvas = this.drawingCanvasRef.nativeElement;
         const rect = canvas.getBoundingClientRect();
@@ -79,6 +81,8 @@ export class Demo3Component implements AfterViewInit {
     }
 
     stopDrawing() {
+        if (!this.isDrawing) return;
+
         this.isDrawing = false;
         this.updateModelPrediction();
     }
@@ -106,44 +110,23 @@ export class Demo3Component implements AfterViewInit {
     }
 
     async loadModel() {
+        if (!this.worker) {
+            this.worker = await spawn<WorkerT>(
+                new Worker(new URL('../../workers/demo3/demo3.worker', import.meta.url))
+            );
+        }
+
+        const progressSub = this.worker.progress()
+            .subscribe((data: any) => this.progress.progressFn(data.current, data.total));
+
         try {
             const files = await FileInteraction.openFile('application/json,.bin', true) as File[];
             if (!files?.length) return;
 
-            this.progress.total = files.reduce((p, c) => p + c.size, 0);
+            const res = await this.worker.loadModel(files);
+            this.modelParams = res;
+            this.modelDetails = res.description;
 
-            const chain = new ChainModel();
-            for (const file of files) {
-                const reader = new FileAsyncReader(file);
-                const loader = new ObservableStreamLoader(reader, this.progress.progressFn);
-
-                const data = await loader.load();
-
-                if (file.name.endsWith(".json")) {
-                    const config = JSON.parse(new TextDecoder().decode(data));
-                    const model = UniversalModelSerializer.load(config, true);
-                    chain.addModel(model);
-                } else {
-                    const model = BinarySerializer.load(data)
-                    chain.addModel(model);
-                }
-
-                this.progress.offset += file.size;
-            }
-
-            this.model = chain;
-            this.model.compile();
-
-            const sizes = this.model.layers.map(l => {
-                const size = Math.sqrt(l.size);
-                if (Number.isInteger(size)) {
-                    return `${size}²`;
-                }
-
-                return l.size.toString();
-            });
-
-            this.modelDetails = `${this.model.constructor.name} (${sizes.join(" -> ")})`;
             this.updateModelPrediction();
         } catch (err) {
             if (err instanceof Error) {
@@ -153,25 +136,34 @@ export class Demo3Component implements AfterViewInit {
             }
         } finally {
             this.progress.reset();
+            progressSub.unsubscribe();
         }
     }
 
     updateModelPrediction() {
-        if (!this.model) return;
+        if (!this.modelParams) return;
 
-        const size = Math.sqrt(this.model.inputSize);
+        if (!this.isRendering) {
+            this.isRendering = true;
+            this._updateModelPredictionImpl().finally(() => {
+                this.isRendering = false;
+
+                if (this.renderingRequested) {
+                    this.renderingRequested = false;
+                    this.updateModelPrediction();
+                }
+            });
+        } else if (!this.renderingRequested) {
+            this.renderingRequested = true;
+        }
+    }
+
+    async _updateModelPredictionImpl() {
+        const size = Math.sqrt(this.modelParams!.inputSize);
         const data = this.getImageDataFromCanvas(this.drawingCanvasRef.nativeElement, size, size);
 
-        const input = ColorUtils.transformChannelCount(Array.from(data), 4, 3);
-        ColorUtils.transformColorSpace(ColorUtils.rgbToTanh, input, 3, input);
-
-        const output3 = ImageUtils.processMultiChannelData(this.model, input, 3);
-        ColorUtils.transformColorSpace(ColorUtils.tanhToRgb, output3, 3, output3);
-
-        const output4 = ColorUtils.transformChannelCount(output3, 3, 4);
-        const outData = new Uint8ClampedArray(output4);
-        const outSize = Math.sqrt(this.model.outputSize);
-        this.generatedImage.draw(outData.buffer, outSize, outSize);
+        const result = await this.worker.compute(data);
+        this.generatedImage.draw(result.buffer, result.size, result.size);
     }
 
     getImageDataFromCanvas(canvas: HTMLCanvasElement, targetWidth: number, targetHeight: number) {
@@ -203,4 +195,5 @@ export class Demo3Component implements AfterViewInit {
             image.src = url;
         });
     }
+    protected readonly ProgressUtils = ProgressUtils;
 }
