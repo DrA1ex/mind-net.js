@@ -274,7 +274,7 @@ gpuWrapper.destroy();
 
 ### Saving/Loading model
 ```javascript
-import {SequentialModel, Dense, ModelSerialization} from "mind-net.js";
+import {SequentialModel, Dense, ModelSerialization, BinarySerializer, TensorType} from "mind-net.js";
 
 // Create and configure model
 const network = new SequentialModel();
@@ -289,6 +289,14 @@ console.log(savedModel);
 
 // Load model
 const loadedModel = ModelSerialization.load(savedModel);
+
+// Save model in binary representation and reduce weights precision to Float32
+const binaryModel = BinarySerializer.save(network, TensorType.F32);
+console.log(`Model size: ${binaryModel.byteLength}`);
+
+// Load binary model
+const loadedFromBinary = BinarySerializer.load(binaryModel);
+
 ```
 
 ### Configuration of Training dashboard

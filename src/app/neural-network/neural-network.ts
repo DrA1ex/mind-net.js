@@ -53,7 +53,8 @@ export {
 } from "./chart"
 
 export {
-    ModelSerialization, ChainSerialization, UniversalModelSerializer, GanSerialization, BinarySerializer
+    ModelSerialization, ChainSerialization, UniversalModelSerializer, GanSerialization, BinarySerializer,
+    TensorType,
 } from "./serialization";
 
 export {
