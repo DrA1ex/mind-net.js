@@ -396,7 +396,7 @@ You can find benchmark script at: [/examples/src/benchmark.js](/examples/src/ben
 | Library                   | Mean Time (ms) | Variance (%) | Total time (s) | Speed comparison |
 |---------------------------|----------------|--------------|----------------|------------------|
 | mind-net.js               | 239.7          | 19.9932      | 2.3967         | Baseline         |
-| Tensorflow.js  (native)   | 98.7           | 9.5713       | 0.9869         | ~41.18% Faster   |
+| Tensorflow.js  (native)   | 98.7           | 9.5713       | 0.9869         | ~58.82% Faster   |
 | Brain.js                  | 2629           | 6.0515       | 26.29          | ~991.46% Slower  |
 
 **Full-sized dataset (10 iterations), GPU only, Train speed:**
@@ -404,7 +404,7 @@ You can find benchmark script at: [/examples/src/benchmark.js](/examples/src/ben
 | Library                 | Mean Time (ms) | Variance (%) | Total time (s) | Speed comparison |
 |-------------------------|----------------|--------------|----------------|------------------|
 | mind-net.js             | 677.4          | 5.6329       | 6.7735         | Baseline         |
-| Tensorflow.js (native)  | 216.5          | 4.3513       | 2.1646         | ~31.98%  Faster  |
+| Tensorflow.js (native)  | 216.5          | 4.3513       | 2.1646         | ~68.02%  Faster  |
 | Brain.js                | 3849.8         | 4.8699       | 38.4984        | ~468.94% Slower  |
 
 You can find benchmark script at: [/examples/src/benchmark.js](/examples/src/benchmark_gpu.js)
