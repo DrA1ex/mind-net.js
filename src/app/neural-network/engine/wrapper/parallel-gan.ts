@@ -18,6 +18,7 @@ export class ParallelGanWrapper {
     public readonly ganChainWrapper: ParallelModelWrapper<IModel>
 
     public get parallelism() {return this.generatorWrapper.parallelism;}
+    public get initialized() {return this.generatorWrapper.initialized;}
 
     constructor(public readonly gan: GenerativeAdversarialModel, parallelism?: number) {
         this.generatorWrapper = new ParallelModelWrapper(gan.generator, parallelism);

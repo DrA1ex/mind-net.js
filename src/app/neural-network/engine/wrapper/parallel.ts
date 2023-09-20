@@ -111,6 +111,7 @@ export class ParallelModelWrapper<T extends IModel> {
     private _weights!: LayerWeights[];
 
     public readonly parallelism: number;
+    public get initialized() {return this._initialized;}
 
     constructor(public readonly model: T, parallelism = 4) {
         this.parallelism = Math.max(1, parallelism);
