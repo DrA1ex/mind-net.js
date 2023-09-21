@@ -5,7 +5,9 @@ import {JsonStreamStringify} from 'json-stream-stringify';
 import {
     GanSerialization,
     GenerativeAdversarialModel,
-    UniversalModelSerializer
+    UniversalModelSerializer,
+    BinarySerializer,
+    TensorType
 } from "mind-net.js";
 
 import * as Image from "./image.js";
@@ -33,12 +35,18 @@ export async function saveModel(model, fileName) {
     });
 }
 
+export async function saveModelBinary(model, fileName) {
+    const dump = BinarySerializer.save(model, TensorType.F32);
+    return await CommonUtils.promisify(fs.writeFile, fileName, dump);
+}
+
 /**
  * @param {{[key: string]: IModel|GenerativeAdversarialModel}} models
  * @param {string} outPath
+ * @param {boolean} [binary=false]
  * @return {Promise<void>}
  */
-export async function saveModels(models, outPath) {
+export async function saveModels(models, outPath, binary = false) {
     const time = new Date().toISOString();
     const count = Object.keys(models).length;
     console.log(`Saving ${count} models...`);
@@ -50,8 +58,12 @@ export async function saveModels(models, outPath) {
     for (const [key, model] of Object.entries(models)) {
         const epoch = model.epoch ?? model.ganChain?.epoch ?? 0;
 
-        const fileName = path.join(outPath, `${key}_${time}_${epoch}.json`);
-        await saveModel(model, fileName);
+        const fileName = path.join(outPath, `${key}_${time}_${epoch})`);
+        if (binary) {
+            await saveModelBinary(model, fileName + ".bin");
+        } else {
+            await saveModel(model, fileName + ".json");
+        }
     }
 }
 
