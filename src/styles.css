@@ -10,17 +10,50 @@
     cursor: not-allowed;
 }
 
+.panel {
+    padding: 1.5rem 1rem;
+    background: white;
+    border: 2px #888e92 solid;
+    border-radius: 0.3rem;
+}
+
 .spinner {
     display: inline-block;
     width: 1em;
     height: 1em;
 
     line-height: 1;
-    background-image: url('data:image/svg+xml,<%3Fxml version="1.0" encoding="UTF-8"%3F><svg display="block" style="background:transparent; margin:auto" preserveAspectRatio="xMidYMid" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="29" fill="none" stroke="%231d0e0b" stroke-dasharray="136.659280431156 47.553093477052" stroke-width="7"><animateTransform attributeName="transform" dur="1s" keyTimes="0;1" repeatCount="indefinite" type="rotate" values="0 50 50;360 50 50"/></circle></svg>');
 }
 
 .spinner::before {
     content: " ";
     box-sizing: border-box;
     display: inline-block;
+}
+
+.spinner.circle {
+    background-image: url('data:image/svg+xml,<%3Fxml version="1.0" encoding="UTF-8"%3F><svg display="block" style="background:transparent; margin:auto" preserveAspectRatio="xMidYMid" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="29" fill="none" stroke="%231d0e0b" stroke-dasharray="136.659280431156 47.553093477052" stroke-width="7"><animateTransform attributeName="transform" dur="1s" keyTimes="0;1" repeatCount="indefinite" type="rotate" values="0 50 50;360 50 50"/></circle></svg>');
+}
+
+.spinner.dots {
+    text-align: left;
+}
+
+.spinner.dots::before {
+    content: ".";
+    animation: dot-animation infinite 1s linear;
+}
+
+@keyframes dot-animation {
+    0% {
+        content: ".";
+    }
+
+    20% {
+        content: "..";
+    }
+
+    40% {
+        content: "...";
+    }
 }

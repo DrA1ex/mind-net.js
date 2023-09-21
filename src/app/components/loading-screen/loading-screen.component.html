@@ -1,6 +1,6 @@
 <div class="loading-screen" [ngClass]="{visible}">
-    <div class="loading-screen-progress">
-        <h3 class="text-center">{{label}}</h3>
+    <div class="panel loading-screen-progress">
+        <h3 class="text-center">{{label}}<span class="spinner dots"></span></h3>
         <div class="progress">
             <div class="progress-bar progress-bar-striped progress-bar-animated"
                  role="progressbar" [style.width.%]="total > 0 ? (current / total) * 100 : 0">

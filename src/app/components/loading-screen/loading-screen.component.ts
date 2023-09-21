@@ -8,7 +8,7 @@ export type LoadingConverterFn = (value: number) => string;
     styleUrls: ['./loading-screen.component.css']
 })
 export class LoadingScreenComponent {
-    @Input() label = "Loading...";
+    @Input() label = "Loading";
     @Input() visible: boolean = false;
 
     @Input() current: number = 0
