@@ -85,6 +85,7 @@ esbuild index=index.js parallel.worker=node_modules/mind-net.js/parallel.worker.
 - [Demo](#demo)
     - [Sequential demo](#Sequential-demo)
     - [Generative-adversarial Network demo](#Generative-adversarial-Network-demo)
+    - [Cartoonify image](#generating-cartoon-portrait-from-given-image-link)
 - [Datasets](#Datasets-used-in-examples)
 
 
@@ -461,6 +462,12 @@ node ./src/cartoon_colorful_example.js
 <img width="800" alt="checkmarks" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/0ff74201-6866-4613-a8d9-5a52fe932179">
 
 **Source code**: [src/app/pages/demo2](/src/app/pages/demo2)
+
+## Prediction demo
+### Generating cartoon portrait from given image ([link](https://dra1ex.github.io/mind-net.js/demo3/))
+
+<img width="800" alt="image" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/31d838f9-cabe-40ac-81d8-5e21e573307c">
+
 
 ## Datasets used in examples
 
