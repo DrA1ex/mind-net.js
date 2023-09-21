@@ -4,10 +4,11 @@ import {spawn} from "threads"
 import {
     FileAsyncReader,
     ObservableStreamLoader,
-    CommonUtils, ProgressUtils,
+    CommonUtils,
 } from "../../neural-network/neural-network";
 
-import {ModelParams, WorkerT} from "../../workers/demo3/demo3.worker";
+import {ModelSourceData, ModelParams, ModelSourceType,} from "../../workers/demo3/demo3.worker.base";
+import {WorkerT} from "../../workers/demo3/demo3.worker";
 import {BinaryImageDrawerComponent} from "../../components/binary-image-drawer/binary-image-drawer.component";
 import * as FileInteraction from "../../utils/file-interaction";
 
@@ -38,6 +39,7 @@ export class Demo3Component implements AfterViewInit {
 
     modelDetails: string = "Load model to view details";
     progress = {
+        visible: false,
         loaded: 0,
         total: 0,
         progressFn: (loaded: number, total: number) => {
@@ -46,6 +48,7 @@ export class Demo3Component implements AfterViewInit {
         },
 
         reset: () => {
+            this.progress.visible = false;
             this.progress.loaded = 0;
             this.progress.total = 0;
         },
@@ -117,20 +120,47 @@ export class Demo3Component implements AfterViewInit {
     }
 
     async loadModel() {
+        const files = await FileInteraction.openFile('application/json,.bin', true) as File[];
+        if (!files?.length) return;
+
+        const sources: ModelSourceData[] = files.map(f => ({
+            source: ModelSourceType.file,
+            name: f.name,
+            size: f.size,
+            data: f
+        }));
+
+        await this.loadModelFromSource(sources);
+    }
+
+    async loadPredefined(urls: string[]) {
+        const BASE_URL = "https://media.githubusercontent.com/media/DrA1ex/docs_storage/main/mind-net/models"
+
+        const sources: ModelSourceData[] = urls.map(url => ({
+            source: ModelSourceType.remote,
+            name: url.split("/").pop() ?? url,
+            size: 0,
+            data: `${BASE_URL}/${url}`
+        }));
+
+        await this.loadModelFromSource(sources);
+    }
+
+    async loadModelFromSource(sources: ModelSourceData[]) {
+        if (sources.length === 0) return;
+
         if (!this.worker) {
             this.worker = await spawn<WorkerT>(
                 new Worker(new URL('../../workers/demo3/demo3.worker', import.meta.url))
             );
         }
 
+        this.progress.visible = true;
         const progressSub = this.worker.progress()
             .subscribe((data: any) => this.progress.progressFn(data.current, data.total));
 
         try {
-            const files = await FileInteraction.openFile('application/json,.bin', true) as File[];
-            if (!files?.length) return;
-
-            const res = await this.worker.loadModel(files);
+            const res = await this.worker.loadModel(sources);
             this.modelParams = res;
             this.modelDetails = res.description;
 
@@ -202,5 +232,4 @@ export class Demo3Component implements AfterViewInit {
             image.src = url;
         });
     }
-    protected readonly ProgressUtils = ProgressUtils;
 }

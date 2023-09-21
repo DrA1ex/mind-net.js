@@ -1,6 +1,6 @@
 import {ChunkedArrayBuffer} from "./array-buffer";
 
-interface IAsyncReader {
+export interface IAsyncReader {
     readonly size: number;
     [Symbol.asyncIterator](): AsyncGenerator<Uint8Array>;
 }
@@ -93,12 +93,29 @@ export class FileAsyncReader implements IAsyncReader {
     public readonly size: number
 
     constructor(public readonly file: File) {
-        this.file = file;
         this.size = file.size;
     }
 
     async* [Symbol.asyncIterator]() {
         const reader = this.file.stream().getReader()
+
+        while (true) {
+            const chunk = await reader.read();
+            if (chunk.done) {
+                break;
+            }
+
+            yield chunk.value;
+        }
+    }
+}
+
+export class StreamAsyncReader implements IAsyncReader {
+    constructor(public readonly stream: ReadableStream,
+                public readonly size: number = 0) {}
+
+    async* [Symbol.asyncIterator]() {
+        const reader = this.stream.getReader()
 
         while (true) {
             const chunk = await reader.read();

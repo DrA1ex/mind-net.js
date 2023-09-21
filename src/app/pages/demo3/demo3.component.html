@@ -32,10 +32,33 @@
             <button class="btn btn-primary" (click)="resetDrawing()">Reset</button>
         </div>
         <div class="mt-2 col-md-6">
-            <button class="btn btn-primary" (click)="loadModel()">Load Model</button>
+            <button class="btn btn-primary dropdown-toggle"
+                    title="Load training data"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                Load Model
+            </button>
+
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item pointer" (click)="loadModel()">File...</a></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+                <li>
+                    <a class="dropdown-item pointer" (click)="loadPredefined(['cartoon-32-32.bin'])">cartoon-32-to-32
+                        (12.5 MB)</a>
+                </li>
+                <li>
+                    <a class="dropdown-item pointer" (click)="loadPredefined(['cartoon-32-64.bin'])">cartoon-32-to-64
+                        (33.6 MB)</a>
+                </li>
+                <li>
+                    <a class="dropdown-item pointer" (click)="loadPredefined(['cartoon-32-128.bin'])">cartoon-32-to-128
+                        (215 MB)</a>
+                </li>
+            </ul>
         </div>
     </div>
 </div>
 
-<loading-screen [visible]="progress.total > 0" [converter]="ProgressUtils.Converters.Bytes"
+<loading-screen [visible]="progress.visible" [converter]="progress.converter"
                 [current]="progress.loaded" [total]="progress.total"/>

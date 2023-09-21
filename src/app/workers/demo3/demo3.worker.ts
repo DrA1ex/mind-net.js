@@ -1,8 +1,8 @@
 import {expose} from "threads/worker";
-import {Observable, Subject} from "threads/observable";
+import {Observable} from "threads/observable";
 
 import {IModel} from "../../neural-network/engine/base";
-import {ProgressFn} from "../../neural-network/utils/fetch";
+import {FetchDataAsyncReader, IAsyncReader, StreamAsyncReader} from "../../neural-network/utils/fetch";
 import {
     ChainModel,
     UniversalModelSerializer,
@@ -10,77 +10,25 @@ import {
     FileAsyncReader,
     ObservableStreamLoader,
     ImageUtils,
-    ColorUtils,
-    ProgressUtils
+    ColorUtils
 } from "../../neural-network/neural-network";
-
-class Progress {
-    private _current = 0;
-    private _total = 0;
-
-    private readonly _throttledSendProgress: ProgressFn;
-
-    readonly subject = new Subject();
-    offset = 0;
-
-    get current() {return this._current;}
-    set current(value: number) {
-        this._current = value;
-        this.refresh();
-    }
-
-    get total() {return this._total;}
-    set total(value: number) {
-        this._total = value;
-        this.refresh();
-    }
-
-    constructor(delay = 100) {
-        this._throttledSendProgress = ProgressUtils.throttle(
-            (current, total) => this.subject.next({current, total}),
-            ProgressUtils.ValueLimit.inclusive,
-            delay
-        );
-    }
-
-    reset() {
-        this.offset = 0;
-        this._current = 0;
-        this._total = 0;
-
-        this.refresh();
-    }
-
-    refresh() {
-        this._throttledSendProgress(this.offset + this.current, this.total);
-    }
-
-    progressFn(current: number, _: number) {
-        this.current = current;
-    }
-}
+import {Progress, ModelSourceData, ModelSourceType, ModelParams} from "./demo3.worker.base";
 
 const progress = new Progress();
 let model: IModel;
 
-export type ModelParams = {
-    inputSize: number
-    outputSize: number
-    description: string
-}
-
 const WorkerImpl = {
-    async loadModel(files: File[]): Promise<ModelParams> {
-        progress.total = files.reduce((p, c) => p + c.size, 0);
+    async loadModel(modelLoadEntries: ModelSourceData[]): Promise<ModelParams> {
+        progress.total = modelLoadEntries.reduce((p, c) => p + c.size, 0);
 
         try {
             const chain = new ChainModel();
-            for (const file of files) {
-                const reader = new FileAsyncReader(file);
+            for (const loadEntry of modelLoadEntries) {
+                const reader = await _getModerDataReader(loadEntry);
                 const loader = new ObservableStreamLoader(reader, progress.progressFn.bind(progress));
 
-                const data = await loader.load();
-                if (file.name.endsWith(".json")) {
+                const data = (await loader.loadChunked()).toTypedArray(Int8Array).buffer;
+                if (loadEntry.name.endsWith(".json")) {
                     const config = JSON.parse(new TextDecoder().decode(data));
                     const model = UniversalModelSerializer.load(config, true);
                     chain.addModel(model);
@@ -89,7 +37,7 @@ const WorkerImpl = {
                     chain.addModel(model);
                 }
 
-                progress.offset += file.size;
+                progress.offset += loadEntry.size;
             }
 
             model = chain;
@@ -138,3 +86,23 @@ const WorkerImpl = {
 expose(WorkerImpl);
 
 export type WorkerT = typeof WorkerImpl;
+
+async function _getModerDataReader(loadEntry: ModelSourceData): Promise<IAsyncReader> {
+    if (loadEntry.source === ModelSourceType.file) {
+        return new FileAsyncReader(loadEntry.data as File);
+    } else if (loadEntry.source === ModelSourceType.remote) {
+        const response = await fetch(loadEntry.data as string);
+        return new FetchDataAsyncReader(response);
+    } else if (loadEntry.source === ModelSourceType.stream) {
+        return new StreamAsyncReader(loadEntry.data as ReadableStream);
+    } else if (loadEntry.source === ModelSourceType.buffer) {
+        return {
+            size: loadEntry.size,
+            async* [Symbol.asyncIterator]() {
+                yield new Uint8Array(loadEntry.data as ArrayBuffer, 0, loadEntry.size);
+            }
+        } as IAsyncReader
+    }
+
+    throw new Error(`Unsupported source: ${loadEntry.source}`);
+}
