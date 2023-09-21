@@ -37,7 +37,7 @@ export async function saveModel(model, fileName) {
 
 export async function saveModelBinary(model, fileName) {
     const dump = BinarySerializer.save(model, TensorType.F32);
-    return await CommonUtils.promisify(fs.writeFile, fileName, dump);
+    return await CommonUtils.promisify(fs.writeFile, fileName, new Uint8Array(dump));
 }
 
 /**
@@ -58,7 +58,7 @@ export async function saveModels(models, outPath, binary = false) {
     for (const [key, model] of Object.entries(models)) {
         const epoch = model.epoch ?? model.ganChain?.epoch ?? 0;
 
-        const fileName = path.join(outPath, `${key}_${time}_${epoch})`);
+        const fileName = path.join(outPath, `${key}_${time}_${epoch}`);
         if (binary) {
             await saveModelBinary(model, fileName + ".bin");
         } else {
