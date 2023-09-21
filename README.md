@@ -467,7 +467,7 @@ node ./src/cartoon_colorful_example.js
 ### Generating cartoon portrait from given image ([link](https://dra1ex.github.io/mind-net.js/demo3/))
 
 <img width="800" alt="image" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/31d838f9-cabe-40ac-81d8-5e21e573307c">
-
+<img width="800" alt="image" src="https://github.com/DrA1ex/mind-net.js/assets/1194059/1dc2d774-56d6-481f-b2e4-e75434ec703a">
 
 ## Datasets used in examples
 
