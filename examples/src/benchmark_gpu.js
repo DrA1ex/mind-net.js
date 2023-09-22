@@ -47,7 +47,7 @@ tfModel.compile({loss: "meanSquaredError", optimizer: "sgd"});
 
 const trainData = Matrix.random_2d(Count, Sizes[0]);
 
-const tfTrainData = tf.tensor(Matrix.copy_2d(trainData));
+const tfTrainData = tf.tensor(trainData.map(t => Array.from(t)));
 
 const brTrainData = trainData.map(d => ({input: d, output: d}));
 

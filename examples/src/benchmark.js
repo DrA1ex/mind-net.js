@@ -39,8 +39,8 @@ const Count = 2000;
 const trainData = Matrix.random_2d(Count, Sizes[0]);
 const singleTrainData = trainData.slice(0, 1);
 
-const tfTrainData = tf.tensor(Matrix.copy_2d(trainData));
-const tfSingleData = tf.tensor(Matrix.copy_2d(singleTrainData));
+const tfTrainData = tf.tensor(trainData.map(t => Array.from(t)));
+const tfSingleData = tf.tensor(singleTrainData.map(t => Array.from(t)));
 
 const brTrainData = trainData.map(d => ({input: d, output: d}));
 const brSingleData = brTrainData.slice(0, 1);
