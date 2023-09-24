@@ -1,6 +1,5 @@
 import {FetchDataAsyncReader, FileAsyncReader, ObservableStreamLoader, ProgressFn} from "./fetch";
 import * as CommonUtils from "./common";
-import {ProgressUtils} from "../neural-network";
 
 export enum Color {
     red = "\u001B[31m",
@@ -123,7 +122,6 @@ export function progressCallback(options: Partial<ProgressOptions> = {}): Progre
 
         const elapsedTime = (performance.now() - startTime) / 1000;
         const isFirstIter = iteration === 0;
-        const progress = iteration / total;
 
         const speed = !isFirstIter ? elapsedTime / iteration : 0
         const estimateTime = !isFirstIter ? speed * total : 0
@@ -143,6 +141,7 @@ export function progressCallback(options: Partial<ProgressOptions> = {}): Progre
             speedStr = speed !== 0 ? `${Converters.TimeSpan(speed * 1000)}/it` : "n/a";
         }
 
+        const progress = displayIterationValue / total;
         const output = opts.color + opts.background
             + `${Math.floor(progress * 100).toString().padStart(3, " ")}%|`
             + progressBar(progress, opts.width)
