@@ -130,6 +130,9 @@ export function progressCallback(options: Partial<ProgressOptions> = {}): Progre
         const iterationsStr = opts.valueConverter(displayIterationValue);
         const totalStr = opts.valueConverter(total);
 
+        const assumingTotal = opts.limit === ValueLimit.exclusive ? Math.max(0, total - 1) : total;
+        const progress = iteration / assumingTotal;
+
         let speedMethod = opts.speed == SpeedCalculationKind.auto
             ? (speed >= 1 ? SpeedCalculationKind.timePerIteration : SpeedCalculationKind.iterationsPerSecond)
             : opts.speed;
@@ -141,7 +144,6 @@ export function progressCallback(options: Partial<ProgressOptions> = {}): Progre
             speedStr = speed !== 0 ? `${Converters.TimeSpan(speed * 1000)}/it` : "n/a";
         }
 
-        const progress = displayIterationValue / total;
         const output = opts.color + opts.background
             + `${Math.floor(progress * 100).toString().padStart(3, " ")}%|`
             + progressBar(progress, opts.width)
