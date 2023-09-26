@@ -73,13 +73,13 @@ const epochSampleSize = Math.min(10, Math.floor(Math.sqrt(testColorfulDataSet.le
 const finalSampleSize = Math.min(20, Math.floor(Math.sqrt(testColorfulDataSet.length)));
 const outPath = "./out";
 
-const lr = 0.0003;
-const lrUpscaler = 0.0005;
+const lr = 0.0005;
+const lrUpscaler = 0.001;
 const decay = 5e-4;
 const beta1 = 0.5;
 const dropout = 0.2;
 const activation = "relu";
-const loss = "l2";
+const loss = "mse";
 const initializer = "xavier";
 
 const FilterSizes = [512, 384, 256, 384, 512];
