@@ -145,7 +145,7 @@ export class BinarySerializer {
         const model = new modelT(optimizer, loss);
 
         const dataOffset = BigInt64Array.BYTES_PER_ELEMENT + metaSize;
-        const tensorsDataArray = new ChunkedArrayBuffer([data], dataOffset);
+        const tensorsDataArray = data.slice(dataOffset);
 
         let layerIndex = 0;
         for (const layerConf of headerMeta.layers) {
@@ -153,8 +153,8 @@ export class BinarySerializer {
             const biasesDataType = this._getArrayT(biasesMeta.dtype);
 
             const biasesExpectedSize = biasesMeta.shape[0];
-            const biases = tensorsDataArray.createTypedArray(
-                biasesDataType,
+            const biases = new biasesDataType(
+                tensorsDataArray,
                 biasesMeta.offsets[0],
                 biasesExpectedSize
             );
@@ -167,8 +167,8 @@ export class BinarySerializer {
             const weightsDataType = this._getArrayT(weightsMeta.dtype);
 
             const weightExpectedSize = weightsMeta.shape[0] * weightsMeta.shape[1];
-            const weightsData = tensorsDataArray.createTypedArray(
-                weightsDataType,
+            const weightsData = new weightsDataType(
+                tensorsDataArray,
                 weightsMeta.offsets[0],
                 weightExpectedSize
             );
